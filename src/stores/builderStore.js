@@ -67,6 +67,20 @@ export const useBuilderStore = defineStore("builder", () => {
   }
 
   /**
+   * Removes a module file and its modules from the list.
+   * @param {string} filename - The name of the file to remove.
+   */
+  function removeModuleFile(filename) {
+    const index = this.availableModules.findIndex(
+      (f) => f.filename === filename
+    )
+
+    if (index !== -1) {
+      this.availableModules.splice(index, 1)
+    }
+  }
+
+  /**
    * Called when a module is dropped onto the workbench.
    * @param {string} moduleName - The name of the module to add.
    * @param {object} position - { x, y } coordinates from the drop event.
@@ -118,6 +132,7 @@ export const useBuilderStore = defineStore("builder", () => {
     addModuleFile,
     addModuleToWorkbench,
     moveModule,
+    removeModuleFile,
     setAvailableModules,
     setLastExportName,
     setLastSaveName,

@@ -1,0 +1,117 @@
+.module-node {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.module-node.selected {
+  /* Use the Element Plus primary color for the border */
+  border-color: #409eff;
+
+  /* Add a "focus ring" glow using the primary color */
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.4);
+}
+
+.module-card {
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.module-name {
+  pointer-events: none;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+div.module-name,
+.module-button {
+  pointer-events: auto;
+}
+
+.button-group {
+  padding-top: 4px;
+  display: flex;
+  gap: 10px;
+}
+
+.title {
+  background: #f9f9f9;
+  font-weight: bold;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  border-radius: 8px 8px 0 0;
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.module-label {
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  padding: 6px 0;
+}
+
+.context-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.context-menu-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.context-menu-list li:hover {
+  background: #f5f7fa;
+}
+
+.domain-type-default.el-card {
+  background-color: #ffffff;
+}
+
+.domain-type-compartment.el-card {
+  background-color: #ffe7e1;
+}
+
+.domain-type-membrane.el-card {
+  background-color: #ffe2ec;
+}
+
+.domain-type-process.el-card {
+  background-color: #e1edff;
+}
+
+.domain-type-protein.el-card {
+  background-color: #d1fff0;
+}

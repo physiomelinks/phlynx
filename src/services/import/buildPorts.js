@@ -15,6 +15,7 @@ function buildPorts(vessel) {
       ports.push({
         uid: crypto.randomUUID(),
         type: TARGET_PORT_TYPE,
+        side: 'left',
         name,
       })
     })
@@ -26,6 +27,7 @@ function buildPorts(vessel) {
       ports.push({
         uid: crypto.randomUUID(),
         type: SOURCE_PORT_TYPE,
+        side: 'right',
         name,
       })
     })

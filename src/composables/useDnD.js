@@ -1,5 +1,8 @@
-import { useVueFlow } from "@vue-flow/core"
-import { ref, shallowRef, watch } from "vue"
+import { useVueFlow } from '@vue-flow/core'
+import { ref, shallowRef, watch } from 'vue'
+
+import { GHOST_MODULE_FILENAME, GHOST_NODE_TYPE } from '../utils/constants'
+import { generateUniqueModuleName } from '../utils/nodes'
 
 /**
  * In a real world scenario you'd want to avoid creating refs in a global scope like this as they might not be cleaned up properly.
@@ -26,13 +29,12 @@ export default function useDragAndDrop(pendingHistoryNodes) {
   } = useVueFlow()
 
   function getId() {
-    const allNodes = getNodes.value
 
     // Find the highest existing ID
     let maxId = -1
-    allNodes.forEach((node) => {
-      if (node.id.startsWith("dndnode_")) {
-        const numPart = parseInt(node.id.split("_")[1], 10)
+    getNodes.value.forEach((node) => {
+      if (node.id.startsWith('dndnode_')) {
+        const numPart = parseInt(node.id.split('_')[1], 10)
         if (!isNaN(numPart) && numPart > maxId) {
           maxId = numPart
         }
@@ -43,20 +45,23 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     return `dndnode_${maxId + 1}`
   }
 
+  const isGhostSetupOpen = ref(false)
+  const pendingGhostNodeId = ref(null)
+
   watch(isDragging, (dragging) => {
-    document.body.style.userSelect = dragging ? "none" : ""
+    document.body.style.userSelect = dragging ? 'none' : ''
   })
 
   function onDragStart(event, module) {
     if (event.dataTransfer) {
-      event.dataTransfer.setData("application/vueflow", module.name)
-      event.dataTransfer.effectAllowed = "move"
+      event.dataTransfer.setData('application/vueflow', module.name)
+      event.dataTransfer.effectAllowed = 'move'
     }
 
     draggedType.value = module
     isDragging.value = true
 
-    document.addEventListener("drop", onDragEnd)
+    document.addEventListener('drop', onDragEnd)
   }
 
   /**
@@ -71,7 +76,7 @@ export default function useDragAndDrop(pendingHistoryNodes) {
       isDragOver.value = true
 
       if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = "move"
+        event.dataTransfer.dropEffect = 'move'
       }
     }
   }
@@ -84,7 +89,7 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     isDragging.value = false
     isDragOver.value = false
     draggedType.value = null
-    document.removeEventListener("drop", onDragEnd)
+    document.removeEventListener('drop', onDragEnd)
   }
 
   /**
@@ -106,25 +111,22 @@ export default function useDragAndDrop(pendingHistoryNodes) {
       return
     }
 
-    const allNodes = getNodes.value
-    const existingNames = new Set(allNodes.map((node) => node.data.name))
-    let finalName = moduleData.name
-    let counter = 1
-
-    while (existingNames.has(finalName)) {
-      finalName = `${moduleData.name}_${counter}`
-      counter++
-    }
+    const existingNames = new Set(getNodes.value.map((node) => node.data.name))
+    const finalName = generateUniqueModuleName(moduleData, existingNames)
 
     // Build a non-editable label that reflects the component and CellML source file.
-    const compLabel = moduleData.componentName 
-    const filePart = moduleData.sourceFile 
+    const compLabel = moduleData.componentName
+    const nodeType =
+      moduleData.sourceFile === GHOST_MODULE_FILENAME
+        ? GHOST_NODE_TYPE
+        : 'moduleNode'
+    const filePart = moduleData.sourceFile
     const label = filePart ? `${compLabel} — ${filePart}` : compLabel
     pendingHistoryNodes.add(nodeId)
 
     const newNode = {
       id: nodeId,
-      type: "moduleNode",
+      type: nodeType,
       position,
       data: {
         ...JSON.parse(JSON.stringify(moduleData)), // Keep deep copy
@@ -150,12 +152,19 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     })
 
     addNodes(newNode)
+
+    if (nodeType === GHOST_NODE_TYPE) {
+      pendingGhostNodeId.value = newNode.id
+      isGhostSetupOpen.value = true
+    }
   }
 
   return {
     draggedType,
     isDragOver,
     isDragging,
+    isGhostSetupOpen,
+    pendingGhostNodeId,
     onDragStart,
     onDragLeave,
     onDragOver,

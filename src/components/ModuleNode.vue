@@ -45,7 +45,7 @@
           </template>
         </el-dropdown>
 
-        <el-dropdown trigger="click" @command="addPort({ type: $event })">
+        <el-dropdown trigger="click" @command="addPort({ side: $event })">
           <el-button size="small" circle class="module-button">
             <el-icon><Place /></el-icon>
           </el-button>
@@ -80,10 +80,9 @@
       >
         <Handle
           :id="getHandleId(port)"
-          :ref="'handle_' + port.type + '_' + port.uid"
-          :type="port.type"
-          :position="port.position"
-          :style="getHandleStyle(port)"
+          :ref="'handle_' + port.side + '_' + port.uid"
+          :position="portPosition(port.side)"
+          :style="getHandleStyle(port, data.ports)"
           class="port-handle"
         />
         <template #content>
@@ -118,11 +117,13 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
-import { Handle, Position, useVueFlow } from '@vue-flow/core'
+import { Handle, useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
 import { Delete, Edit, Key, Place } from '@element-plus/icons-vue'
 import { useFlowHistoryStore } from '../stores/historyStore'
-import { getHandleId } from '../utils/ports'
+import { getHandleId, getHandleStyle, portPosition } from '../utils/ports'
+
+import '../assets/vueflownode.css'
 
 const { addEdges, edges, removeEdges, updateNodeData, updateNodeInternals } =
   useVueFlow()
@@ -163,52 +164,9 @@ const domainTypeClass = computed(() => {
     : 'domain-type-default'
 })
 
-function portPosition(position) {
-  switch (position) {
-    case 'left':
-      return Position.Left
-    case 'right':
-      return Position.Right
-    case 'top':
-      return Position.Top
-    case 'bottom':
-      return Position.Bottom
-    default:
-      return Position.Left
-  }
-}
-
 function handleSetDomainType(typeCommand) {
   const newType = typeCommand === 'undefined' ? undefined : typeCommand
   updateNodeData(props.id, { domainType: newType })
-}
-
-function getHandleStyle(port) {
-  const portsOfSameType = props.data.ports.filter((p) => p.position === port.position)
-  const n = portsOfSameType.length
-
-  // Space between each port.
-  const portSpacing = 16
-  const positionIndex = portsOfSameType.findIndex((p) => p.uid === port.uid)
-
-  // guard: if not found, fall back to 0
-  const safeIndex = positionIndex === -1 ? 0 : positionIndex
-
-  // This calculates the offset from the center
-  const offset = portSpacing * (positionIndex - (n - 1) / 2)
-
-  if (['top', 'bottom'].includes(port.position
-  )) {
-    // Let CSS calculate the 50% mark and apply the offset
-    return {
-      left: `calc(50% + ${offset}px)`,
-    }
-  }
-
-  // Let CSS calculate the 50% mark and apply the offset
-  return {
-    top: `calc(50% + ${offset}px)`,
-  }
 }
 
 const applyPorts = async (portsToSet) => {
@@ -425,134 +383,6 @@ function handleDocumentContextmenu(e) {
 }
 </script>
 
-<style scoped>
-.module-node {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.module-node.selected {
-  /* Use the Element Plus primary color for the border */
-  border-color: #409eff;
-
-  /* Add a "focus ring" glow using the primary color */
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.4);
-}
-
-.module-card {
-  pointer-events: auto;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.module-name {
-  pointer-events: none;
-  font-weight: bold;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  cursor: pointer;
-  margin-bottom: 4px;
-}
-
-div.module-name,
-.module-button {
-  pointer-events: auto;
-}
-
-.button-group {
-  padding-top: 4px;
-  display: flex;
-  gap: 10px;
-}
-
-.title {
-  background: #f9f9f9;
-  font-weight: bold;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-  border-radius: 8px 8px 0 0;
-}
-
-.module-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.module-label {
-  margin-bottom: 4px;
-  font-size: 11px;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  user-select: none;
-}
-
-.context-menu {
-  position: fixed;
-  z-index: 10000;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-  min-width: 180px;
-  padding: 6px 0;
-}
-
-.context-menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.context-menu-list li {
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.context-menu-list li:hover {
-  background: #f5f7fa;
-}
-
-/* 
-  This is needed to ensure the handle is 
-  *above* the card's content, not just unclipped.
-*/
-:deep(.vue-flow__handle) {
-  width: 10px;
-  height: 10px;
-  border: 2px solid #409eff;
-  border-radius: 10px;
-  background: #000000;
-}
-
-.domain-type-default.el-card {
-  background-color: #ffffff;
-}
-
-.domain-type-compartment.el-card {
-  background-color: #ffe7e1;
-}
-
-.domain-type-membrane.el-card {
-  background-color: #ffe2ec;
-}
-
-.domain-type-process.el-card {
-  background-color: #e1edff;
-}
-
-.domain-type-protein.el-card {
-  background-color: #d1fff0;
-}
+<style lang="scss" scoped>
+@import "../assets/vueflowhandle.css";
 </style>

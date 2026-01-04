@@ -1,0 +1,11 @@
+/* 
+  This is needed to ensure the handle is 
+  *above* the card's content, not just unclipped.
+*/
+:deep(.vue-flow__handle) {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #409eff;
+  border-radius: 10px;
+  background: #000000;
+}

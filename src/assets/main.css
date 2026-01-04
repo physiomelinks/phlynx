@@ -26,3 +26,48 @@
   background: rgba(0, 100, 255, 0.1);
   border: 1px solid #0064ff;
 }
+
+.module-aside {
+  padding: 20px;
+  border-right: 1px solid #dcdfe6;
+  background-color: #fcfcfc;
+
+  display: flex;
+  flex-direction: column;
+
+  flex-shrink: 0;
+}
+
+.resize-handle {
+  width: 5px;
+  height: 100%;
+  /* transform: translateY(50%); */
+  cursor: col-resize;
+  background-color: #f4f2f2;
+  border-left: 1px solid #dcdfe6;
+  border-right: 1px solid #dcdfe6;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.resize-handle:hover {
+  background-color: #e0e0e0;
+}
+
+.handle-icon {
+  /* Center the icon */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  /* This does three things:
+    1. translate(-50%, -50%): Moves the icon back by half its own size to perfectly center it.
+    2. rotate(90deg): Rotates it to point left/right.
+  */
+  transform: translate(-53%, -50%) rotate(90deg);
+
+  /* Style it */
+  font-size: 26px;
+  color: #434344; /* Element Plus secondary text color */
+  z-index: 10;
+}
