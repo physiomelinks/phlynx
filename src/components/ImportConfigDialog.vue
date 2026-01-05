@@ -59,6 +59,10 @@
           </el-icon>
         </div>
       </el-form-item>
+      <el-form-item
+        label="Upload required"
+        :required="true">
+      </el-form-item>
     </el-form>
 
     <template #footer>
