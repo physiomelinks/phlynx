@@ -10,7 +10,7 @@ import { runElkLayout } from '../services/layouts/elk'
 import { runFcoseLayout } from '../services/layouts/cytoscape'
 import { runPortGranularLayout } from '../services/layouts/dagre'
 
-export function useLoadFromConfigFiles() {
+export function useLoadFromConfigData() {
   const {
     nodes,
     edges,
@@ -28,10 +28,10 @@ export function useLoadFromConfigFiles() {
   let pendingEdges = []
   let pendingNodeDataMap = new Map()
 
-  async function loadFromConfigFiles(configFiles) {
+  async function loadFromConfigData(configData) {
     try {
       const { valid, missing } = validateWorkflowModules(
-        configFiles.moduleConfig,
+        configData.module,
         store.availableModules
       )
       if (!valid) throw new Error(`Missing modules: ${missing.join(', ')}`)
@@ -41,7 +41,7 @@ export function useLoadFromConfigFiles() {
       edges.value = []
       setViewport({ x: 0, y: 0, zoom: 1 })
 
-      const result = buildWorkflowGraph(store.availableModules, configFiles)
+      const result = buildWorkflowGraph(store.availableModules, configData)
 
       pendingEdges = result.edges
       pendingNodeDataMap.clear()
@@ -86,5 +86,5 @@ export function useLoadFromConfigFiles() {
     }
   })
 
-  return { loadFromConfigFiles }
+  return { loadFromConfigData}
 }

@@ -1,7 +1,12 @@
+let _libcellml = null
 
-export function processModuleData(libcellml, cellmlString, fileName) {
-  let parser = new libcellml.library.Parser(false)
-  let printer = new libcellml.library.Printer()
+export function initLibCellML(instance) {
+  _libcellml = instance
+}
+
+export function processModuleData(cellmlString) {
+  let parser = new _libcellml.Parser(false)
+  let printer = new _libcellml.Printer()
   let model = null
   try {
     model = parser.parseModel(cellmlString)
@@ -46,9 +51,7 @@ export function processModuleData(libcellml, cellmlString, fileName) {
     let options = []
     for (let j = 0; j < comp.variableCount(); j++) {
       let varr = comp.variableByIndex(j)
-      if (
-        varr.hasInterfaceType(libcellml.library.Variable.InterfaceType.PUBLIC)
-      ) {
+      if (varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC)) {
         let units = varr.units()
         options.push({
           name: varr.name(),
@@ -63,11 +66,88 @@ export function processModuleData(libcellml, cellmlString, fileName) {
       portOptions: options,
       ports: [],
       componentName: comp.name(),
-      sourceFile: fileName,
     })
     comp.delete()
   }
 
   model.delete()
-  return { type: 'success', data }
+  return { type: 'success', data, model: cellmlString }
+}
+
+export function processUnitsData(content) {
+  let parser = new _libcellml.Parser(false)
+  let model = null
+  try {
+    model = parser.parseModel(content)
+  } catch (err) {
+    parser.delete()
+
+    return {
+      issues: [
+        {
+          description: 'Failed to parse model.  Reason:' + err.message,
+        },
+      ],
+      type: 'parser',
+    }
+  }
+
+  const errorCount = parser.errorCount()
+  parser.delete()
+  if (errorCount) {
+    model.delete()
+    return {
+      issues: [
+        {
+          description: 'Found parsing errors in model.',
+        },
+      ],
+      type: 'parser',
+    }
+  }
+
+  let unitsModel = new _libcellml.Model()
+  const unitsCount = model.unitsCount()
+
+  let i = 0
+  for (i = 0; i < unitsCount; i++) {
+    let units = model.unitsByIndex(i)
+    let clonedUnits = units.clone()
+    unitsModel.addUnits(clonedUnits)
+    units.delete()
+    clonedUnits.delete()
+  }
+
+  let printer = new _libcellml.Printer()
+  const unitsModelString = printer.printModel(unitsModel, false)
+
+  model.delete()
+  unitsModel.delete()
+  printer.delete()
+
+  return {
+    type: 'success',
+    model: unitsModelString,
+    units: { count: unitsCount },
+  }
+}
+
+export function isCellML(content) {
+  if (!_libcellml) {
+    throw new Error("LibCellML is not ready or hasn't been initialized.")
+  }
+  let parser = new _libcellml.Parser(false)
+  let model = null
+  try {
+    model = parser.parseModel(content)
+  } catch (err) {
+    parser.delete()
+    return false
+  }
+  const errorCount = parser.errorCount()
+
+  parser.delete()
+  model.delete()
+
+  return model !== null && errorCount === 0
 }
