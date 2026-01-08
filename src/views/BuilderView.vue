@@ -101,6 +101,7 @@
             ref="exportDropdownRef"
             split-button
             type="info"
+            style="margin-left: 10px"
             @click="triggerCurrentExport"
             @command="handleExportCommand"
             :disabled="!exportAvailable"
@@ -144,15 +145,6 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-
-          <el-button
-            type="info"
-            @click="handleExport"
-            style="margin-left: 10px"
-            :disabled="!exportAvailable"
-          >
-            Export Config Files
-          </el-button>
         </div>
       </div>
     </el-header>
@@ -467,7 +459,7 @@ const exportOptions = computed(() => [
     label: 'CellML',
     icon: markRaw(IconCellML),
     disabled: libcellml.status !== 'ready',
-    suffix: '.cellml'
+    suffix: '.cellml',
   },
 ])
 currentExportMode.value = exportOptions.value[0]
@@ -998,7 +990,9 @@ async function handleExport() {
  */
 async function onExportConfirm(fileName, handle) {
   const caExport = currentExportMode.value.key === EXPORT_KEYS.CA
-  const message = caExport ? 'Generating and zipping CA files.' : 'Generating flattened CellML model.'
+  const message = caExport
+    ? 'Generating and zipping CA files.'
+    : 'Generating flattened CellML model.'
   const notification = ElNotification.info({
     title: 'Exporting ...',
     message: message,
@@ -1020,11 +1014,18 @@ async function onExportConfirm(fileName, handle) {
 
     let finalName = undefined
     if (fileName) {
-      finalName = fileName.endsWith(currentExportMode.value.suffix) ? fileName : `${fileName}${currentExportMode.value.suffix}`
+      finalName = fileName.endsWith(currentExportMode.value.suffix)
+        ? fileName
+        : `${fileName}${currentExportMode.value.suffix}`
       legacyDownload(finalName, blob)
     } else if (handle) {
       writeFileHandle(handle, blob)
       finalName = handle.name
+    }
+
+    if (fileName && finalName.endsWith(currentExportMode.value.suffix)) {
+      const suffixLen = currentExportMode.value.suffix.length
+      finalName = finalName.slice(0, -suffixLen)
     }
 
     builderStore.setLastExportName(finalName)
