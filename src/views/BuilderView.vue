@@ -241,8 +241,8 @@ import {
   CameraFilled,
   Menu as IconVessel,
   Box as IconCellML,
-  Operation as IconModuleConfig,
-  Setting as IconParameters,
+  Operation as IconParameters,
+  Setting as IconModuleConfig,
   ScaleToOriginal as IconUnits,
 } from '@element-plus/icons-vue'
 import { Controls, ControlButton } from '@vue-flow/controls'
@@ -267,7 +267,11 @@ import { useScreenshot } from '../services/useScreenshot'
 import { generateExportZip } from '../services/caExport'
 import { useMacroGenerator } from '../services/generate/generateWorkflow'
 import { getHelperLines } from '../utils/helperLines'
-import { initLibCellML, processModuleData } from '../utils/cellml'
+import {
+  initLibCellML,
+  processModuleData,
+  processUnitsData,
+} from '../utils/cellml'
 import { edgeLineOptions, FLOW_IDS, IMPORT_KEYS } from '../utils/constants'
 import {
   getId as getNextNodeId,
@@ -709,6 +713,11 @@ async function onImportConfirm(importPayload) {
       importPayload[IMPORT_KEYS.CELLML_FILE]?.data,
       importPayload[IMPORT_KEYS.CELLML_FILE]?.fileName
     )
+  } else if (currentImportMode.value.key === IMPORT_KEYS.UNITS) {
+    loadCellMLUnitsData(
+      importPayload[IMPORT_KEYS.UNITS]?.data,
+      importPayload[IMPORT_KEYS.UNITS]?.fileName
+    )
   } else {
     console.log('Handle this import:', currentImportMode.value.key)
   }
@@ -745,6 +754,7 @@ const loadCellMLModuleData = (content, filename) => {
     builderStore.addModuleFile({
       filename: filename,
       modules: augmentedData,
+      model: result.model,
     })
     ElNotification.success({
       title: 'CellML Modules Loaded',
@@ -752,10 +762,29 @@ const loadCellMLModuleData = (content, filename) => {
     })
   } else if (result.issues) {
     ElNotification.error({
-      title: 'Error',
+      title: 'Loading Module Error',
       message: `${result.issues.length} issues found in model file.`,
     })
     console.error('Model import issues:', result.issues)
+  }
+}
+
+const loadCellMLUnitsData = (content, filename) => {
+  const result = processUnitsData(content)
+  if (result.type === 'success') {
+    builderStore.addUnitsFile({
+      filename: filename,
+      model: result.model,
+    })
+    ElNotification.success({
+      title: 'CellML Units Loaded',
+      message: `Loaded ${result.units.count} units from ${filename}.`,
+    })
+  } else if (result.issues) {
+    ElNotification.error({
+      title: 'Loading Units Error',
+      message: `${result.issues[0].description}`,
+    })
   }
 }
 
@@ -1135,13 +1164,13 @@ const handleKeyDown = (event) => {
   }
 }
 
-// --- Development Test Data ---
 onMounted(async () => {
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('mousemove', onMouseMove)
   libcellmlReadyPromise.then((instance) => {
     initLibCellML(instance)
   })
+  // --- Development Test Data ---
   // import.meta.env.DEV is a Vite variable that is true
   // only when running 'yarn dev'
   if (import.meta.env.DEV) {

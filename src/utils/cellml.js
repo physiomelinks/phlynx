@@ -1,7 +1,7 @@
-let _libcellml = null;
+let _libcellml = null
 
 export function initLibCellML(instance) {
-  _libcellml = instance;
+  _libcellml = instance
 }
 
 export function processModuleData(cellmlString) {
@@ -51,9 +51,7 @@ export function processModuleData(cellmlString) {
     let options = []
     for (let j = 0; j < comp.variableCount(); j++) {
       let varr = comp.variableByIndex(j)
-      if (
-        varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC)
-      ) {
+      if (varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC)) {
         let units = varr.units()
         options.push({
           name: varr.name(),
@@ -73,12 +71,70 @@ export function processModuleData(cellmlString) {
   }
 
   model.delete()
-  return { type: 'success', data }
+  return { type: 'success', data, model: cellmlString }
+}
+
+export function processUnitsData(content) {
+  let parser = new _libcellml.Parser(false)
+  let model = null
+  try {
+    model = parser.parseModel(content)
+  } catch (err) {
+    parser.delete()
+
+    return {
+      issues: [
+        {
+          description: 'Failed to parse model.  Reason:' + err.message,
+        },
+      ],
+      type: 'parser',
+    }
+  }
+
+  const errorCount = parser.errorCount()
+  parser.delete()
+  if (errorCount) {
+    model.delete()
+    return {
+      issues: [
+        {
+          description: 'Found parsing errors in model.',
+        },
+      ],
+      type: 'parser',
+    }
+  }
+
+  let unitsModel = new _libcellml.Model()
+  const unitsCount = model.unitsCount()
+
+  let i = 0
+  for (i = 0; i < unitsCount; i++) {
+    let units = model.unitsByIndex(i)
+    let clonedUnits = units.clone()
+    unitsModel.addUnits(clonedUnits)
+    units.delete()
+    clonedUnits.delete()
+  }
+
+  let printer = new _libcellml.Printer()
+  const unitsModelString = printer.printModel(unitsModel, false)
+
+  model.delete()
+  unitsModel.delete()
+  printer.delete()
+
+  return {
+    type: 'success',
+    model: unitsModelString,
+    units: { count: unitsCount },
+  }
 }
 
 export function isCellML(content) {
   if (!_libcellml) {
-    throw new Error("LibCellML is not ready or hasn't been initialized.");
+    throw new Error("LibCellML is not ready or hasn't been initialized.")
   }
   let parser = new _libcellml.Parser(false)
   let model = null
@@ -89,7 +145,7 @@ export function isCellML(content) {
     return false
   }
   const errorCount = parser.errorCount()
-  
+
   parser.delete()
   model.delete()
 
