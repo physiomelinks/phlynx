@@ -21,15 +21,11 @@ export const GHOST_NODE_TYPE = 'ghostNode'
 export const GHOST_MODULE_FILENAME = 'ghostModule.cellml'
 export const GHOST_MODULE_DEFINITION = { filename: GHOST_MODULE_FILENAME, modules: [{name: 'Ghost', componentName: 'ghost', sourceFile: GHOST_MODULE_FILENAME}] }
 
-const vesselKey = 'vessel'
-const moduleKey = 'module'
-const parameterKey = 'parameter'
-const unitsKey = 'units'
-
 export const IMPORT_KEYS = {
-  VESSEL: vesselKey,
-  MODULE: moduleKey,
-  PARAMETER: parameterKey,
-  UNITS: unitsKey
+  VESSEL: 'vessel',
+  MODULE_CONFIG: 'moduleConfig',
+  CELLML_FILE: 'cellMLFile',
+  PARAMETER: 'parameter',
+  UNITS: 'units'
 }
 

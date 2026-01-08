@@ -1,7 +1,12 @@
+let _libcellml = null;
 
-export function processModuleData(libcellml, cellmlString, fileName) {
-  let parser = new libcellml.library.Parser(false)
-  let printer = new libcellml.library.Printer()
+export function initLibCellML(instance) {
+  _libcellml = instance;
+}
+
+export function processModuleData(cellmlString) {
+  let parser = new _libcellml.Parser(false)
+  let printer = new _libcellml.Printer()
   let model = null
   try {
     model = parser.parseModel(cellmlString)
@@ -47,7 +52,7 @@ export function processModuleData(libcellml, cellmlString, fileName) {
     for (let j = 0; j < comp.variableCount(); j++) {
       let varr = comp.variableByIndex(j)
       if (
-        varr.hasInterfaceType(libcellml.library.Variable.InterfaceType.PUBLIC)
+        varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC)
       ) {
         let units = varr.units()
         options.push({
@@ -63,11 +68,30 @@ export function processModuleData(libcellml, cellmlString, fileName) {
       portOptions: options,
       ports: [],
       componentName: comp.name(),
-      sourceFile: fileName,
     })
     comp.delete()
   }
 
   model.delete()
   return { type: 'success', data }
+}
+
+export function isCellML(content) {
+  if (!_libcellml) {
+    throw new Error("LibCellML is not ready or hasn't been initialized.");
+  }
+  let parser = new _libcellml.Parser(false)
+  let model = null
+  try {
+    model = parser.parseModel(content)
+  } catch (err) {
+    parser.delete()
+    return false
+  }
+  const errorCount = parser.errorCount()
+  
+  parser.delete()
+  model.delete()
+
+  return model !== null && errorCount === 0
 }

@@ -29,7 +29,6 @@ export function useLoadFromConfigData() {
   let pendingNodeDataMap = new Map()
 
   async function loadFromConfigData(configData) {
-    console.log('Loading workflow from config data:', configData)
     try {
       const { valid, missing } = validateWorkflowModules(
         configData.module,

@@ -100,7 +100,7 @@ const formState = reactive({})
 const resetForm = () => {
   // Clear all keys
   Object.keys(formState).forEach((k) => {
-    formState[k] = { fileName: null, isValid: false, data: null }
+    formState[k] = { fileName: null, isValid: false, payload: null }
   })
 }
 
@@ -111,7 +111,7 @@ watch(
     resetForm()
     if (newConfig?.fields) {
       newConfig.fields.forEach((f) => {
-        formState[f.key] = { fileName: null, isValid: false, data: null }
+        formState[f.key] = { fileName: null, isValid: false, payload: null }
       })
     }
   },
@@ -139,16 +139,15 @@ const handleFileChange = async (uploadFile, fieldConfig) => {
     // We expect the parser to return a Promise that resolves with data or rejects
     const parsedData = await fieldConfig.parser(rawFile)
 
-    state.data = parsedData
+    state.payload = { data: parsedData, fileName: state.fileName }
     state.isValid = true
   } catch (error) {
-    console.error(error)
     ElNotification.error({
       title: 'Import Error',
       message: error.message || 'Failed to parse file.',
     })
     state.isValid = false
-    state.data = null
+    state.payload = null
   }
 }
 
@@ -156,7 +155,7 @@ const handleConfirm = () => {
   // Construct the result object
   const result = {}
   props.config.fields.forEach((field) => {
-    result[field.key] = formState[field.key].data
+    result[field.key] = formState[field.key].payload
   })
 
   emit('confirm', result)

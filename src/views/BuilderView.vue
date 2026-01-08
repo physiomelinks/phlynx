@@ -5,7 +5,6 @@
     <el-header class="app-header">
       <div class="file-uploads">
         <div class="file-io-buttons">
-
           <el-upload
             action="#"
             :auto-upload="false"
@@ -29,7 +28,6 @@
           <el-button
             type="info"
             @click="handleUndo"
-            style="margin-left: 10px"
             :disabled="!historyStore.canUndo"
           >
             Undo
@@ -46,11 +44,7 @@
 
           <el-divider direction="vertical" style="margin: 0 15px" />
 
-          <el-button
-            type="primary"
-            @click="onOpenMacroBuilderDialog"
-            style="margin-left: 10px"
-          >
+          <el-button type="primary" @click="onOpenMacroBuilderDialog">
             Macro Build
           </el-button>
 
@@ -246,7 +240,8 @@ import {
   DCaret,
   CameraFilled,
   Menu as IconVessel,
-  Box as IconModule,
+  Box as IconCellML,
+  Operation as IconModuleConfig,
   Setting as IconParameters,
   ScaleToOriginal as IconUnits,
 } from '@element-plus/icons-vue'
@@ -272,7 +267,7 @@ import { useScreenshot } from '../services/useScreenshot'
 import { generateExportZip } from '../services/caExport'
 import { useMacroGenerator } from '../services/generate/generateWorkflow'
 import { getHelperLines } from '../utils/helperLines'
-import { processModuleData } from '../utils/cellml'
+import { initLibCellML, processModuleData } from '../utils/cellml'
 import { edgeLineOptions, FLOW_IDS, IMPORT_KEYS } from '../utils/constants'
 import {
   getId as getNextNodeId,
@@ -371,16 +366,22 @@ const importOptions = computed(() => [
     disabled: false,
   },
   {
-    key: IMPORT_KEYS.MODULE,
-    label: 'Module',
-    icon: markRaw(IconModule),
+    key: IMPORT_KEYS.CELLML_FILE,
+    label: 'CellML File',
+    icon: markRaw(IconCellML),
+    disabled: libcellml.status !== 'ready',
+  },
+  {
+    key: IMPORT_KEYS.MODULE_CONFIG,
+    label: 'CellML Module Config',
+    icon: markRaw(IconModuleConfig),
     disabled: libcellml.status !== 'ready',
   },
   {
     key: IMPORT_KEYS.PARAMETER,
     label: 'Parameters',
     icon: markRaw(IconParameters),
-    disabled: libcellml.status !== 'ready',
+    disabled: false,
   },
   {
     key: IMPORT_KEYS.UNITS,
@@ -681,10 +682,8 @@ const screenshotDisabled = computed(
 )
 
 const performImport = (mode) => {
-  console.log('Performing import for mode:', mode)
   currentImportConfig.value = getImportConfig(mode.key)
-  console.log('Import config:', currentImportConfig.value)
-  
+
   if (currentImportConfig.value) {
     importDialogVisible.value = true
   }
@@ -699,17 +698,26 @@ const handleImportCommand = (option) => {
   performImport(option)
 }
 
-async function onImportConfirm(eventPayload) {
-  console.log('Import confirmed with payload:', eventPayload)
-
-  loadFromConfigData(eventPayload)
+async function onImportConfirm(importPayload) {
+  if (currentImportMode.value.key === IMPORT_KEYS.VESSEL) {
+    loadFromConfigData({
+      vessels: importPayload[IMPORT_KEYS.VESSEL]?.data,
+      module: importPayload[IMPORT_KEYS.MODULE_CONFIG]?.data,
+    })
+  } else if (currentImportMode.value.key === IMPORT_KEYS.CELLML_FILE) {
+    loadCellMLModuleData(
+      importPayload[IMPORT_KEYS.CELLML_FILE]?.data,
+      importPayload[IMPORT_KEYS.CELLML_FILE]?.fileName
+    )
+  } else {
+    console.log('Handle this import:', currentImportMode.value.key)
+  }
 }
 
 function onOpenEditDialog(eventPayload) {
   currentEditingNode.value = {
     ...eventPayload,
   }
-  // Open the dialog
   editDialogVisible.value = true
 }
 
@@ -727,52 +735,28 @@ async function onEditConfirm(updatedData) {
   updateNodeData(nodeId, updatedData)
 }
 
-const handleModuleFile = (file) => {
-  const filename = file.name
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    try {
-      try {
-        const result = processModuleData(libcellml, e.target.result, filename)
-        if (result.type !== 'success') {
-          if (result.issues) {
-            ElNotification({
-              title: 'Error',
-              message: `${result.issues.length} issues found in model file.`,
-              type: 'error',
-            })
-            console.error('Model import issues:', result.issues)
-          }
-          return
-        }
-        builderStore.addModuleFile({
-          filename: filename,
-          modules: result.data,
-        })
-        ElNotification.success({
-          title: 'Modules Loaded',
-          message: `Loaded ${result.data.length} parameters from ${file.name}.`,
-          offset: 50,
-        })
-      } catch (err) {
-        console.error('Error parsing file:', err)
-        ElNotification({
-          title: 'Error',
-          message: 'Failed to parse module file as CellML.',
-          type: 'error',
-        })
-        return
-      }
-    } catch (error) {
-      console.error('Error parsing module file:', error)
-      ElNotification({
-        title: 'Error',
-        message: 'An error occurred while processing the module file.',
-        type: 'error',
-      })
-    }
+const loadCellMLModuleData = (content, filename) => {
+  const result = processModuleData(content)
+  if (result.type === 'success') {
+    const augmentedData = result.data.map((item) => ({
+      ...item,
+      sourceFile: filename,
+    }))
+    builderStore.addModuleFile({
+      filename: filename,
+      modules: augmentedData,
+    })
+    ElNotification.success({
+      title: 'CellML Modules Loaded',
+      message: `Loaded ${result.data.length} parameters from ${filename}.`,
+    })
+  } else if (result.issues) {
+    ElNotification.error({
+      title: 'Error',
+      message: `${result.issues.length} issues found in model file.`,
+    })
+    console.error('Model import issues:', result.issues)
   }
-  reader.readAsText(file.raw)
 }
 
 const handleParametersFile = (file) => {
@@ -793,7 +777,6 @@ const handleParametersFile = (file) => {
       ElNotification.success({
         title: 'Parameters Loaded',
         message: `Loaded ${results.data.length} parameters from ${file.name}.`,
-        offset: 50,
       })
     },
 
@@ -856,10 +839,9 @@ function handleExport() {
  * Collects all state and processes it into a zip file for CA ingestion.
  */
 async function onExportConfirm(fileName) {
-  const notification = ElNotification({
+  const notification = ElNotification.info({
     title: 'Exporting...',
     message: 'Generating and zipping files.',
-    type: 'info',
     duration: 0, // Stays open until closed
   })
 
@@ -881,7 +863,7 @@ async function onExportConfirm(fileName) {
     }
     builderStore.setLastExportName(fileName)
     notification.close()
-    ElNotification.success({ message: 'Export successful!', offset: 50 })
+    ElNotification.success({ message: 'Export successful!' })
   } catch (error) {
     notification.close()
     ElNotification.error(`Export failed: ${error.message}`)
@@ -920,7 +902,7 @@ function onSaveConfirm(fileName) {
   URL.revokeObjectURL(url)
 
   builderStore.setLastSaveName(fileName)
-  ElNotification.success({ message: 'Workflow saved!', offset: 50 })
+  ElNotification.success({ message: 'Workflow saved!' })
 }
 
 function mergeModules(newModules) {
@@ -980,7 +962,6 @@ function handleLoadWorkspace(file) {
 
       ElNotification.success({
         message: 'Workflow loaded successfully!',
-        offset: 50,
       })
     } catch (error) {
       ElNotification.error(`Failed to load workflow: ${error.message}`)
@@ -1137,7 +1118,6 @@ const handleKeyDown = (event) => {
   }
 
   if (isCtrl && event.key === 'v') {
-    console.log(event.clientX)
     pasteSelection(true)
   }
 
@@ -1159,25 +1139,16 @@ const handleKeyDown = (event) => {
 onMounted(async () => {
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('mousemove', onMouseMove)
+  libcellmlReadyPromise.then((instance) => {
+    initLibCellML(instance)
+  })
   // import.meta.env.DEV is a Vite variable that is true
   // only when running 'yarn dev'
   if (import.meta.env.DEV) {
     await libcellmlReadyPromise
     if (!builderStore.hasModuleFile(testData.filename)) {
       handleParametersFile({ raw: testParamertersCSV })
-      const result = processModuleData(
-        libcellml,
-        testData.content,
-        testData.filename
-      )
-      if (result.type !== 'success') {
-        throw new Error('Failed to process test parameters file.')
-      } else {
-        builderStore.addModuleFile({
-          filename: testData.filename,
-          modules: result.data,
-        })
-      }
+      loadCellMLModuleData(testData.content, testData.filename)
     }
   }
 })
@@ -1213,12 +1184,6 @@ watchPostEffect(() => {
 </script>
 
 <style>
-/* Basic Styles */
-body {
-  margin: 0;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
 .app-header {
   display: flex;
   justify-content: space-between;
