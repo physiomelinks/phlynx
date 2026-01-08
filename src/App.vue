@@ -26,13 +26,6 @@ const appVersion = __APP_VERSION__
 </script>
 
 <style>
-/* Reset body margin */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Helvetica, Arial, sans-serif;
-}
-
 .app-layout {
   display: flex;
   flex-direction: column;

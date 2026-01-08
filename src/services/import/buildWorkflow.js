@@ -100,14 +100,14 @@ function buildEdges(vessels, nodes) {
   return edges
 }
 
-export function buildWorkflowGraph(store, configFiles) {
+export function buildWorkflowGraph(store, configData) {
   const nodes = buildNodes(
     store,
-    configFiles.vesselArray,
-    configFiles.moduleConfig
+    configData.vessels,
+    configData.module
   )
 
-  const edges = buildEdges(configFiles.vesselArray, nodes)
+  const edges = buildEdges(configData.vessels, nodes)
 
   return { nodes, edges }
 }
