@@ -280,10 +280,8 @@ import {
 import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig } from '../utils/import'
 
-import testModuleBGContent from '../assets/bg_modules.cellml?raw'
-import testModuleColonContent from '../assets/colon_FTU_modules.cellml?raw'
-import testModuleNewColonContent from '../assets/colon_FTU_modules_new.cellml?raw'
-import testParamertersCSV from '../assets/colon_FTU_parameters.csv?raw'
+import testModuleContent from '../assets/phlynx_test_model/resources/CB_network_modules.cellml?raw'
+import testParametersCSV from '../assets/phlynx_test_model/test_dale_phlynx_parameters.csv?raw'
 
 const {
   addEdges,
@@ -325,8 +323,8 @@ const alignment = ref('edge')
 const dropdownRef = ref(null)
 
 const testData = {
-  filename: 'colon_FTU_modules.cellml',
-  content: testModuleNewColonContent,
+  filename: 'CB_network_modules.cellml',
+  content: testModuleContent,
 }
 
 const builderStore = useBuilderStore()
@@ -1176,7 +1174,7 @@ onMounted(async () => {
   if (import.meta.env.DEV) {
     await libcellmlReadyPromise
     if (!builderStore.hasModuleFile(testData.filename)) {
-      handleParametersFile({ raw: testParamertersCSV })
+      handleParametersFile({ raw: testParametersCSV })
       loadCellMLModuleData(testData.content, testData.filename)
     }
   }
