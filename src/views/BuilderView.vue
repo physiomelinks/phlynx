@@ -19,6 +19,7 @@
             type="success"
             @click="handleSaveWorkspace"
             style="margin-left: 10px"
+            :disabled="!somethingAvailable"
           >
             Save Workspace
           </el-button>
@@ -114,7 +115,7 @@
             style="margin-left: 10px"
             @click="triggerCurrentExport"
             @command="handleExportCommand"
-            :disabled="!exportAvailable"
+            :disabled="!somethingAvailable"
           >
             <el-tooltip
               :disabled="!currentExportMode.disabled"
@@ -431,7 +432,7 @@ const exportTooltip = useAutoClosingTooltip(1500)
 
 const allNodeNames = computed(() => nodes.value.map((n) => n.data.name))
 
-const exportAvailable = computed(
+const somethingAvailable = computed(
   () => nodes.value.length > 0 && builderStore.parameterData.length > 0
 )
 
