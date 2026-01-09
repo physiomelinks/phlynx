@@ -1,12 +1,13 @@
-import { defineStore } from "pinia"
-import { ref, computed } from "vue"
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 // 'builder' is the store's ID
-export const useBuilderStore = defineStore("builder", () => {
+export const useBuilderStore = defineStore('builder', () => {
   // --- STATE ---
 
   // Holds the *definitions* loaded from your file
   const availableModules = ref([])
+  const availableUnits = ref([])
   const parameterData = ref([])
   const lastSaveName = ref('ca-model-builder')
   const lastExportName = ref('ca-model-builder')
@@ -67,6 +68,22 @@ export const useBuilderStore = defineStore("builder", () => {
   }
 
   /**
+   * Adds a new units file and its model.
+   * If the units file already exists it will be replaced.
+   * @param {*} payload
+   */
+  function addUnitsFile(payload) {
+    const existingFile = this.availableUnits.find(
+      (f) => f.filename === payload.filename
+    )
+    if (existingFile) {
+      existingFile.model = payload.model
+    } else {
+      this.availableUnits.push(payload)
+    }
+  }
+
+  /**
    * Removes a module file and its modules from the list.
    * @param {string} filename - The name of the file to remove.
    */
@@ -77,6 +94,18 @@ export const useBuilderStore = defineStore("builder", () => {
 
     if (index !== -1) {
       this.availableModules.splice(index, 1)
+    }
+  }
+
+  /**
+   * Removes a units file and its modules from the list.
+   * @param {string} filename - The name of the file to remove.
+   */
+  function removeUnitsFile(filename) {
+    const index = this.availableUnits.findIndex((f) => f.filename === filename)
+
+    if (index !== -1) {
+      this.availableUnits.splice(index, 1)
     }
   }
 
@@ -130,6 +159,7 @@ export const useBuilderStore = defineStore("builder", () => {
   return {
     // State
     availableModules,
+    availableUnits,
     connections,
     lastExportName,
     lastSaveName,
@@ -140,9 +170,11 @@ export const useBuilderStore = defineStore("builder", () => {
     // Actions
     addModuleFile,
     addModuleToWorkbench,
+    addUnitsFile,
     hasModuleFile,
     moveModule,
     removeModuleFile,
+    removeUnitsFile,
     setAvailableModules,
     setLastExportName,
     setLastSaveName,

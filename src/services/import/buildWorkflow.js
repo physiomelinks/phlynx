@@ -10,26 +10,31 @@ function buildNodes(availableModules, vessels, moduleConfig) {
     })
   })
 
-  return vessels.map((vessel, index) => {
+  return vessels.map((vessel) => {
     const moduleConfigData = moduleConfig.find(
       (m) => m.vessel_type === vessel.vessel_type
     )
 
-    const moduleData = moduleLookup.get(
+    const moduleData = moduleLookup.get( 
       `${moduleConfigData.module_file}::${moduleConfigData.module_type}`
     )
 
+    const hasPosition = vessel.x !== undefined && vessel.y !== undefined
+
     return {
-      // Hopefully the vessel names are unique.
+      // Assumes vessel names are unique.
       id: vessel.name,
       type: 'moduleNode',
 
-      // Give them a dummy position initially
-      position: { x: 100, y: 100 },
-
-      // Start invisible so the user doesn't see them stack at (0,0)
-      style: { opacity: 0 },
-
+      // Give them a dummy position if not declared in vessel array file 
+      // - recalculated later by runLayout. In this instance, start invisible 
+      // so the user doesn't see them stack at (0,0)
+      ...(hasPosition ? {
+        position: { x: vessel.x, y: vessel.y }
+      } : { 
+        position: { x: 100, y: 100 },
+        style: { opacity: 0 } 
+      }),
       data: {
         ...vessel,
         ...moduleData,
@@ -100,14 +105,14 @@ function buildEdges(vessels, nodes) {
   return edges
 }
 
-export function buildWorkflowGraph(store, configFiles) {
+export function buildWorkflowGraph(store, configData) {
   const nodes = buildNodes(
     store,
-    configFiles.vesselArray,
-    configFiles.moduleConfig
+    configData.vessels,
+    configData.module
   )
 
-  const edges = buildEdges(configFiles.vesselArray, nodes)
+  const edges = buildEdges(configData.vessels, nodes)
 
   return { nodes, edges }
 }
