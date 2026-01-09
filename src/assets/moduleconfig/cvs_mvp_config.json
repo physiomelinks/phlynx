@@ -1,0 +1,1010 @@
+[
+    {
+        "vessel_type":"heart_simple_OLD",
+        "BC_type":"vp",
+        "module_format":"cellml",
+        "module_file":"cvs_mvp_modules.cellml",
+        "module_type":"heart_simplesimple_type_OLD",
+        "entrance_ports":
+        [
+          {
+            "port_type":"vessel_port",
+            "variables":["v_headV","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_lArmV","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_rArmV","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_V1","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_pulmV","u_LA"]
+          }
+        ],
+        "exit_ports":
+        [
+          {
+            "port_type":"vessel_port",
+            "variables":["v_AV","u_AA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_PV","u_pulmA"]
+          }
+        ],
+        "general_ports":[],
+        "variables_and_units":
+        [
+          ["T", "second", "access", "global_constant"],
+          ["mt", "dimensionless", "access", "variable"],
+          ["mta", "dimensionless", "access", "variable"],
+          ["delay", "dimensionless", "access", "global_constant"],
+          ["To_pk", "dimensionless", "access", "global_constant"],
+          ["q_LV_init", "litre", "access", "global_constant"],
+          ["q_LV_us", "litre", "access", "global_constant"],
+          ["q_LV", "litre", "access", "variable"],
+          ["u_LV", "kPa", "access", "variable"],
+          ["E_LV", "kPa_per_L", "access", "variable"],
+          ["E_LVmax", "kPa_per_L", "access", "global_constant"],
+          ["E_LVmin", "kPa_per_L", "access", "global_constant"],
+          ["q_RV_init", "litre", "access", "global_constant"],
+          ["q_RV_us", "litre", "access", "global_constant"],
+          ["q_RV", "litre", "access", "variable"],
+          ["u_RV", "kPa", "access", "variable"],
+          ["E_RV", "kPa_per_L", "access", "variable"],
+          ["E_RVmax", "kPa_per_L", "access", "global_constant"],
+          ["E_RVmin", "kPa_per_L", "access", "global_constant"],
+          ["q_LA_init", "litre", "access", "global_constant"],
+          ["q_LA_us", "litre", "access", "global_constant"],
+          ["q_LA", "litre", "access", "variable"],
+          ["u_LA", "kPa", "access", "variable"],
+          ["E_LA", "kPa_per_L", "access", "global_constant"],
+          ["v_pulmV", "L_per_s", "access", "boundary_condition"],
+          ["q_RA_init", "litre", "access", "global_constant"],
+          ["q_RA_us", "litre", "access", "global_constant"],
+          ["q_RA", "litre", "access", "variable"],
+          ["u_RA", "kPa", "access", "variable"],
+          ["E_RA", "kPa_per_L", "access", "global_constant"],
+          ["v_headV", "L_per_s", "access", "boundary_condition"],
+          ["v_lArmV", "L_per_s", "access", "boundary_condition"],
+          ["v_rArmV", "L_per_s", "access", "boundary_condition"],
+          ["v_V1", "L_per_s", "access", "boundary_condition"],
+          ["v_AV", "L_per_s", "access", "variable"],
+          ["R_AV", "kPa_s_per_L", "access", "global_constant"],
+          ["u_AA", "kPa", "access", "boundary_condition"],
+          ["v_PV", "L_per_s", "access", "variable"],
+          ["R_PV", "kPa_s_per_L", "access", "global_constant"],
+          ["u_pulmA", "kPa", "access", "boundary_condition"],
+          ["v_TV", "L_per_s", "access", "variable"],
+          ["R_TV", "kPa_s_per_L", "access", "global_constant"],
+          ["v_MV", "L_per_s", "access", "variable"],
+          ["R_MV", "kPa_s_per_L", "access", "global_constant"]
+        ]
+    },
+    {
+        "vessel_type":"heart_simple",
+        "BC_type":"vp",
+        "module_format":"cellml",
+        "module_file":"cvs_mvp_modules.cellml",
+        "module_type":"heart_simplesimple_type",
+        "entrance_ports":
+        [
+          {
+            "port_type":"vessel_port",
+            "variables":["v_ivc","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_svc","u_RA"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_pvn","u_LA"]
+          }
+        ],
+        "exit_ports":
+        [
+          {
+            "port_type":"vessel_port",
+            "variables":["v_AV","u_root"]
+          },
+          {
+            "port_type":"vessel_port",
+            "variables":["v_PV","u_par"]
+          },
+          {
+            "port_type":"volume_port",
+            "variables":["q"]
+          }
+        ],
+        "general_ports":[],
+        "variables_and_units":
+        [
+          ["T", "second", "access", "global_constant"],
+          ["mt", "dimensionless", "access", "variable"],
+          ["mta", "dimensionless", "access", "variable"],
+          ["delay", "dimensionless", "access", "global_constant"],
+          ["To_pk", "dimensionless", "access", "global_constant"],
+          ["q_LV_init", "litre", "access", "global_constant"],
+          ["q_LV_us", "litre", "access", "global_constant"],
+          ["q_LV", "litre", "access", "variable"],
+          ["u_LV", "kPa", "access", "variable"],
+          ["E_LV", "kPa_per_L", "access", "variable"],
+          ["E_LVmax", "kPa_per_L", "access", "global_constant"],
+          ["E_LVmin", "kPa_per_L", "access", "global_constant"],
+          ["q_RV_init", "litre", "access", "global_constant"],
+          ["q_RV_us", "litre", "access", "global_constant"],
+          ["q_RV", "litre", "access", "variable"],
+          ["u_RV", "kPa", "access", "variable"],
+          ["E_RV", "kPa_per_L", "access", "variable"],
+          ["E_RVmax", "kPa_per_L", "access", "global_constant"],
+          ["E_RVmin", "kPa_per_L", "access", "global_constant"],
+          ["q_LA_init", "litre", "access", "global_constant"],
+          ["q_LA_us", "litre", "access", "global_constant"],
+          ["q_LA", "litre", "access", "variable"],
+          ["u_LA", "kPa", "access", "variable"],
+          ["E_LA", "kPa_per_L", "access", "global_constant"],
+          ["v_pvn", "L_per_s", "access", "boundary_condition"],
+          ["q_RA_init", "litre", "access", "global_constant"],
+          ["q_RA_us", "litre", "access", "global_constant"],
+          ["q_RA", "litre", "access", "variable"],
+          ["u_RA", "kPa", "access", "variable"],
+          ["E_RA", "kPa_per_L", "access", "global_constant"],
+          ["v_ivc", "L_per_s", "access", "boundary_condition"],
+          ["v_svc", "L_per_s", "access", "boundary_condition"],
+          ["v_AV", "L_per_s", "access", "variable"],
+          ["R_AV", "kPa_s_per_L", "access", "global_constant"],
+          ["u_root", "kPa", "access", "boundary_condition"],
+          ["v_PV", "L_per_s", "access", "variable"],
+          ["R_PV", "kPa_s_per_L", "access", "global_constant"],
+          ["u_par", "kPa", "access", "boundary_condition"],
+          ["v_TV", "L_per_s", "access", "variable"],
+          ["R_TV", "kPa_s_per_L", "access", "global_constant"],
+          ["v_MV", "L_per_s", "access", "variable"],
+          ["R_MV", "kPa_s_per_L", "access", "global_constant"],
+          ["q", "litre", "access", "variable"]
+        ]
+    },
+    {
+      "vessel_type":"heart_simple_2",
+      "BC_type":"vp",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"heart_simplesimple_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_ivc","u_RA"]
+        },
+        {
+          "port_type":"vessel_port",
+          "variables":["v_svc","u_RA"]
+        },
+        {
+          "port_type":"vessel_port",
+          "variables":["v_pvn","u_LA"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_AV","u_root"]
+        },
+        {
+          "port_type":"vessel_port",
+          "variables":["v_PV","u_par"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["T", "second", "access", "global_constant"],
+        ["mt", "dimensionless", "access", "variable"],
+        ["mta", "dimensionless", "access", "variable"],
+        ["delay", "dimensionless", "access", "global_constant"],
+        ["To_pk", "dimensionless", "access", "global_constant"],
+        ["q_LV_init", "m3", "access", "global_constant"],
+        ["q_LV_us", "m3", "access", "global_constant"],
+        ["q_LV", "m3", "access", "variable"],
+        ["u_LV", "J_per_m3", "access", "variable"],
+        ["E_LV", "J_per_m6", "access", "variable"],
+        ["E_LVmax", "J_per_m6", "access", "global_constant"],
+        ["E_LVmin", "J_per_m6", "access", "global_constant"],
+        ["q_RV_init", "m3", "access", "global_constant"],
+        ["q_RV_us", "m3", "access", "global_constant"],
+        ["q_RV", "m3", "access", "variable"],
+        ["u_RV", "J_per_m3", "access", "variable"],
+        ["E_RV", "J_per_m6", "access", "variable"],
+        ["E_RVmax", "J_per_m6", "access", "global_constant"],
+        ["E_RVmin", "J_per_m6", "access", "global_constant"],
+        ["q_LA_init", "m3", "access", "global_constant"],
+        ["q_LA_us", "m3", "access", "global_constant"],
+        ["q_LA", "m3", "access", "variable"],
+        ["u_LA", "J_per_m3", "access", "variable"],
+        ["E_LA", "J_per_m6", "access", "global_constant"],
+        ["v_pvn", "m3_per_s", "access", "boundary_condition"],
+        ["q_RA_init", "m3", "access", "global_constant"],
+        ["q_RA_us", "m3", "access", "global_constant"],
+        ["q_RA", "m3", "access", "variable"],
+        ["u_RA", "J_per_m3", "access", "variable"],
+        ["E_RA", "J_per_m6", "access", "global_constant"],
+        ["v_ivc", "m3_per_s", "access", "boundary_condition"],
+        ["v_svc", "m3_per_s", "access", "boundary_condition"],
+        ["v_AV", "m3_per_s", "access", "variable"],
+        ["R_AV", "Js_per_m6", "access", "global_constant"],
+        ["u_root", "J_per_m3", "access", "boundary_condition"],
+        ["v_PV", "m3_per_s", "access", "variable"],
+        ["R_PV", "Js_per_m6", "access", "global_constant"],
+        ["u_par", "J_per_m3", "access", "boundary_condition"],
+        ["v_TV", "m3_per_s", "access", "variable"],
+        ["R_TV", "Js_per_m6", "access", "global_constant"],
+        ["v_MV", "m3_per_s", "access", "variable"],
+        ["R_MV", "Js_per_m6", "access", "global_constant"],
+        ["q", "m3", "access", "variable"]
+      ]
+    },
+
+
+    {
+      "vessel_type":"simple",
+      "BC_type":"pv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pv_simple_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["v", "L_per_s", "access", "variable"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["R", "kPa_s_per_L", "access", "constant"],
+        ["u_in", "kPa", "access", "boundary_condition"],
+        ["v_out", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple",
+      "BC_type":"vp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vp_simple_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_out"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["v", "L_per_s", "access", "variable"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["R", "kPa_s_per_L", "access", "constant"],
+        ["v_in", "L_per_s", "access", "boundary_condition"],
+        ["u_out", "kPa", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple",
+      "BC_type":"pp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pp_simple_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_d","u_out"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["v", "L_per_s", "access", "variable"],
+        ["v_d", "L_per_s", "access", "variable"],
+        ["R", "kPa_s_per_L", "access", "constant"],
+        ["u_in", "kPa", "access", "boundary_condition"],
+        ["u_out", "kPa", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_simple_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u_d"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_d", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["v_in", "L_per_s", "access", "boundary_condition"],
+        ["v_out", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+
+    {
+      "vessel_type":"Nout_junction",
+      "BC_type":"pv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pv_Nout_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["v", "L_per_s", "access", "variable"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["R", "kPa_s_per_L", "access", "constant"],
+        ["u_in", "kPa", "access", "boundary_condition"],
+        ["v_out_sum", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Nout_junction",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_Nout_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u_d"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_d", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["v_in", "L_per_s", "access", "boundary_condition"],
+        ["v_out_sum", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Min_junction",
+      "BC_type":"vp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vp_Min_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_out"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["v", "L_per_s", "access", "variable"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["R", "kPa_s_per_L", "access", "constant"],
+        ["v_in_sum", "L_per_s", "access", "boundary_condition"],
+        ["u_out", "kPa", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Min_junction",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_Min_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u_d"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_d", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["v_in_sum", "L_per_s", "access", "boundary_condition"],
+        ["v_out", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"MinNout_junction",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_MinNout_noI_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u_d"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "litre", "access", "constant"],
+        ["q_0", "litre", "access", "constant"],
+        ["q", "litre", "access", "variable"],
+        ["u", "kPa", "access", "variable"],
+        ["u_d", "kPa", "access", "variable"],
+        ["u_0", "kPa", "access", "constant"],
+        ["C", "L_per_kPa", "access", "constant"],
+        ["v_in_sum", "L_per_s", "access", "boundary_condition"],
+        ["v_out_sum", "L_per_s", "access", "boundary_condition"]
+      ]
+    },
+
+    {
+      "vessel_type":"simple_2",
+      "BC_type":"pv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pv_simple_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["v", "m3_per_s", "access", "variable"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["R", "Js_per_m6", "access", "constant"],
+        ["u_in", "J_per_m3", "access", "boundary_condition"],
+        ["v_out", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple_2",
+      "BC_type":"vp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vp_simple_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_out"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["v", "m3_per_s", "access", "variable"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["R", "Js_per_m6", "access", "constant"],
+        ["v_in", "m3_per_s", "access", "boundary_condition"],
+        ["u_out", "J_per_m3", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple_2",
+      "BC_type":"pp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pp_simple_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_d","u_out"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["v", "m3_per_s", "access", "variable"],
+        ["v_d", "m3_per_s", "access", "variable"],
+        ["R", "Js_per_m6", "access", "constant"],
+        ["u_in", "J_per_m3", "access", "boundary_condition"],
+        ["u_out", "J_per_m3", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"simple_2",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_simple_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u_d"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_d", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["v_in", "m3_per_s", "access", "boundary_condition"],
+        ["v_out", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+
+    {
+      "vessel_type":"Nout_junction_2",
+      "BC_type":"pv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"pv_Nout_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_in"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["v", "m3_per_s", "access", "variable"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["R", "Js_per_m6", "access", "constant"],
+        ["u_in", "J_per_m3", "access", "boundary_condition"],
+        ["v_out_sum", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Nout_junction_2",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_Nout_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in","u"]
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u_d"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_d", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["v_in", "m3_per_s", "access", "boundary_condition"],
+        ["v_out_sum", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Min_junction_2",
+      "BC_type":"vp_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vp_Min_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v","u_out"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["v", "m3_per_s", "access", "variable"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["R", "Js_per_m6", "access", "constant"],
+        ["v_in_sum", "m3_per_s", "access", "boundary_condition"],
+        ["u_out", "J_per_m3", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"Min_junction_2",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_Min_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out","u_d"]
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_d", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["v_in_sum", "m3_per_s", "access", "boundary_condition"],
+        ["v_out", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+    {
+      "vessel_type":"MinNout_junction_2",
+      "BC_type":"vv_noI",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"vv_MinNout_noI_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_in_sum","u"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"vessel_port",
+          "variables":["v_out_sum","u_d"],
+          "multi_port":"True"
+        },
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_init", "m3", "access", "constant"],
+        ["q_0", "m3", "access", "constant"],
+        ["q", "m3", "access", "variable"],
+        ["u", "J_per_m3", "access", "variable"],
+        ["u_d", "J_per_m3", "access", "variable"],
+        ["u_0", "J_per_m3", "access", "constant"],
+        ["C", "m6_per_J", "access", "constant"],
+        ["v_in_sum", "m3_per_s", "access", "boundary_condition"],
+        ["v_out_sum", "m3_per_s", "access", "boundary_condition"]
+      ]
+    },
+
+    {
+      "vessel_type":"sum_blood_vol",
+      "BC_type":"nn",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"sum_blood_vol_type",
+      "entrance_ports":
+      [
+        {
+          "port_type":"volume_port",
+          "variables":["q_sum"],
+          "multi_port":"True"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_sum", "litre", "access", "boundary_condition"],
+        ["q", "litre", "access", "variable"]
+      ]
+    },
+    {
+      "vessel_type":"sum_blood_vol_2",
+      "BC_type":"nn",
+      "module_format":"cellml",
+      "module_file":"cvs_mvp_modules.cellml",
+      "module_type":"sum_blood_vol_type2",
+      "entrance_ports":
+      [
+        {
+          "port_type":"volume_port",
+          "variables":["q_sum"],
+          "multi_port":"sum"
+        }
+      ],
+      "exit_ports":
+      [
+        {
+          "port_type":"volume_port",
+          "variables":["q"]
+        }
+      ],
+      "general_ports":[],
+      "variables_and_units":
+      [
+        ["q_sum", "m3", "access", "boundary_condition"],
+        ["q", "m3", "access", "variable"]
+      ]
+    }
+   
+]

@@ -1,0 +1,2165 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////// heart ////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="heart_simplesimple_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="T" public_interface="in" units="second"/>
+        <variable name="mt" public_interface="out" units="dimensionless"/>
+        <variable name="mta" public_interface="out" units="dimensionless"/>
+        <variable name="delay" public_interface="in" units="dimensionless"/>
+        <variable name="To_pk" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>mt</ci>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <divide/>
+                        <ci>t</ci>
+                        <ci>T</ci>
+                    </apply>
+                    <apply>
+                        <floor/>
+                        <apply>
+                            <divide/>
+                            <ci>t</ci>
+                            <ci>T</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>mta</ci>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <divide/>
+                            <ci>t</ci>
+                            <ci>T</ci>
+                        </apply>
+                        <ci>delay</ci>
+                    </apply>
+                    <apply>
+                        <floor/>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>t</ci>
+                                <apply>
+                                    <times/>
+                                    <ci>delay</ci>
+                                    <ci>T</ci>
+                                </apply>
+                            </apply>
+                            <ci>T</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Left ventricle-->
+        <variable name="q_LV_init" public_interface="in" units="litre"/>
+        <variable name="q_LV_us" public_interface="in" units="litre"/>
+        <variable initial_value="q_LV_init" name="q_LV" public_interface="out" units="litre"/>
+        <variable name="u_LV" public_interface="out" units="kPa"/>
+        <variable name="E_LV" public_interface="out" units="kPa_per_L"/>
+        <variable name="E_LVmax" public_interface="in" units="kPa_per_L"/>
+        <variable name="E_LVmin" public_interface="in" units="kPa_per_L"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>E_LV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_LVmax</ci>
+                                            <ci>E_LVmin</ci>
+                                        </apply>
+                                        <ci>mt</ci>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <ci>mt</ci>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_LVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_LVmax</ci>
+                                            <ci>E_LVmin</ci>
+                                        </apply>
+                                        <cn cellml:units="dimensionless">0.4</cn>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <cn cellml:units="dimensionless">0.4</cn>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_LVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.6</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <ci>E_LVmin</ci>
+                    </otherwise>
+                </piecewise>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_LV</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_MV</ci>
+                    <ci>v_AV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_LV</ci>
+                <apply>
+                    <times/>
+                    <ci>E_LV</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_LV</ci>
+                        <ci>q_LV_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Right ventricle-->
+        <variable name="q_RV_init" public_interface="in" units="litre"/>
+        <variable name="q_RV_us" public_interface="in" units="litre"/>
+        <variable initial_value="q_RV_init" name="q_RV" public_interface="out" units="litre"/>
+        <variable name="u_RV" public_interface="out" units="kPa"/>
+        <variable name="E_RV" public_interface="out" units="kPa_per_L"/>
+        <variable name="E_RVmax" public_interface="in" units="kPa_per_L"/>
+        <variable name="E_RVmin" public_interface="in" units="kPa_per_L"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>E_RV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_RVmax</ci>
+                                            <ci>E_RVmin</ci>
+                                        </apply>
+                                        <ci>mt</ci>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <ci>mt</ci>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_RVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_RVmax</ci>
+                                            <ci>E_RVmin</ci>
+                                        </apply>
+                                        <cn cellml:units="dimensionless">0.4</cn>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <cn cellml:units="dimensionless">0.4</cn>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_RVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.6</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <ci>E_RVmin</ci>
+                    </otherwise>
+                </piecewise>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_RV</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_TV</ci>
+                    <ci>v_PV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_RV</ci>
+                <apply>
+                    <times/>
+                    <ci>E_RV</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_RV</ci>
+                        <ci>q_RV_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Left atrium-->
+        <variable name="q_LA_init" public_interface="in" units="litre"/>
+        <variable name="q_LA_us" public_interface="in" units="litre"/>
+        <variable initial_value="q_LA_init" name="q_LA" public_interface="out" units="litre"/>
+        <variable name="u_LA" public_interface="out" units="kPa"/>
+        <variable name="E_LA" public_interface="in" units="kPa_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="v_pvn" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_LA</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_pvn</ci>
+                    <ci>v_MV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_LA</ci>
+                <apply>
+                    <times/>
+                    <ci>E_LA</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_LA</ci>
+                        <ci>q_LA_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Right atrium-->
+        <variable name="q_RA_init" public_interface="in" units="litre"/>
+        <variable name="q_RA_us" public_interface="in" units="litre"/>
+        <variable initial_value="q_RA_init" name="q_RA" public_interface="out" units="litre"/>
+        <variable name="u_RA" public_interface="out" units="kPa"/>
+        <variable name="E_RA" public_interface="in" units="kPa_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="v_svc" public_interface="in" units="L_per_s"/>
+        <variable name="v_ivc" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_RA</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <plus/>
+                        <ci>v_svc</ci>
+                        <ci>v_ivc</ci>
+                    </apply>
+                    <ci>v_TV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_RA</ci>
+                <apply>
+                    <times/>
+                    <ci>E_RA</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_RA</ci>
+                        <ci>q_RA_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Aortic valve-->
+        <variable name="v_AV" public_interface="out" units="L_per_s"/>
+        <variable name="R_AV" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="u_root" public_interface="in" units="kPa"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_AV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_LV</ci>
+                                <ci>u_root</ci>
+                            </apply>
+                            <ci>R_AV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_LV</ci>
+                            <ci>u_root</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="L_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Pulmonary Valve-->
+        <variable name="v_PV" public_interface="out" units="L_per_s"/>
+        <variable name="R_PV" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="u_par" public_interface="in" units="kPa"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_PV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_RV</ci>
+                                <ci>u_par</ci>
+                            </apply>
+                            <ci>R_PV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_RV</ci>
+                            <ci>u_par</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="L_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Tricuspid Valve-->
+        <variable name="v_TV" public_interface="out" units="L_per_s"/>
+        <variable name="R_TV" public_interface="in" units="kPa_s_per_L"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_TV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_RA</ci>
+                                <ci>u_RV</ci>
+                            </apply>
+                            <ci>R_TV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_RA</ci>
+                            <ci>u_RV</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="L_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Mitral Valve-->
+        <variable name="v_MV" public_interface="out" units="L_per_s"/>
+        <variable name="R_MV" public_interface="in" units="kPa_s_per_L"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_MV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_LA</ci>
+                                <ci>u_LV</ci>
+                            </apply>
+                            <ci>R_MV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_LA</ci>
+                            <ci>u_LV</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="L_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Total heart volume-->
+        <variable name="q" public_interface="out" units="litre"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_RA</ci>
+                    <ci>q_RV</ci>
+                    <ci>q_LA</ci>
+                    <ci>q_LV</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- standard units used gor CVS modelling modules-->
+    <component name="heart_simplesimple_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="T" public_interface="in" units="second"/>
+        <variable name="mt" public_interface="out" units="dimensionless"/>
+        <variable name="mta" public_interface="out" units="dimensionless"/>
+        <variable name="delay" public_interface="in" units="dimensionless"/>
+        <variable name="To_pk" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>mt</ci>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <divide/>
+                        <ci>t</ci>
+                        <ci>T</ci>
+                    </apply>
+                    <apply>
+                        <floor/>
+                        <apply>
+                            <divide/>
+                            <ci>t</ci>
+                            <ci>T</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>mta</ci>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <divide/>
+                            <ci>t</ci>
+                            <ci>T</ci>
+                        </apply>
+                        <ci>delay</ci>
+                    </apply>
+                    <apply>
+                        <floor/>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>t</ci>
+                                <apply>
+                                    <times/>
+                                    <ci>delay</ci>
+                                    <ci>T</ci>
+                                </apply>
+                            </apply>
+                            <ci>T</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Left ventricle-->
+        <variable name="q_LV_init" public_interface="in" units="m3"/>
+        <variable name="q_LV_us" public_interface="in" units="m3"/>
+        <variable initial_value="q_LV_init" name="q_LV" public_interface="out" units="m3"/>
+        <variable name="u_LV" public_interface="out" units="J_per_m3"/>
+        <variable name="E_LV" public_interface="out" units="J_per_m6"/>
+        <variable name="E_LVmax" public_interface="in" units="J_per_m6"/>
+        <variable name="E_LVmin" public_interface="in" units="J_per_m6"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>E_LV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_LVmax</ci>
+                                            <ci>E_LVmin</ci>
+                                        </apply>
+                                        <ci>mt</ci>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <ci>mt</ci>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_LVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_LVmax</ci>
+                                            <ci>E_LVmin</ci>
+                                        </apply>
+                                        <cn cellml:units="dimensionless">0.4</cn>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <cn cellml:units="dimensionless">0.4</cn>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_LVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.6</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <ci>E_LVmin</ci>
+                    </otherwise>
+                </piecewise>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_LV</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_MV</ci>
+                    <ci>v_AV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_LV</ci>
+                <apply>
+                    <times/>
+                    <ci>E_LV</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_LV</ci>
+                        <ci>q_LV_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Right ventricle-->
+        <variable name="q_RV_init" public_interface="in" units="m3"/>
+        <variable name="q_RV_us" public_interface="in" units="m3"/>
+        <variable initial_value="q_RV_init" name="q_RV" public_interface="out" units="m3"/>
+        <variable name="u_RV" public_interface="out" units="J_per_m3"/>
+        <variable name="E_RV" public_interface="out" units="J_per_m6"/>
+        <variable name="E_RVmax" public_interface="in" units="J_per_m6"/>
+        <variable name="E_RVmin" public_interface="in" units="J_per_m6"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>E_RV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_RVmax</ci>
+                                            <ci>E_RVmin</ci>
+                                        </apply>
+                                        <ci>mt</ci>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <ci>mt</ci>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_RVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>E_RVmax</ci>
+                                            <ci>E_RVmin</ci>
+                                        </apply>
+                                        <cn cellml:units="dimensionless">0.4</cn>
+                                    </apply>
+                                    <ci>To_pk</ci>
+                                </apply>
+                                <apply>
+                                    <exp/>
+                                    <apply>
+                                        <times/>
+                                        <cn cellml:units="dimensionless">0.5</cn>
+                                        <apply>
+                                            <minus/>
+                                            <cn cellml:units="dimensionless">1</cn>
+                                            <apply>
+                                                <power/>
+                                                <apply>
+                                                    <divide/>
+                                                    <cn cellml:units="dimensionless">0.4</cn>
+                                                    <ci>To_pk</ci>
+                                                </apply>
+                                                <cn cellml:units="dimensionless">2</cn>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>E_RVmin</ci>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>mt</ci>
+                            <cn cellml:units="dimensionless">0.6</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <ci>E_RVmin</ci>
+                    </otherwise>
+                </piecewise>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_RV</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_TV</ci>
+                    <ci>v_PV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_RV</ci>
+                <apply>
+                    <times/>
+                    <ci>E_RV</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_RV</ci>
+                        <ci>q_RV_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Left atrium-->
+        <variable name="q_LA_init" public_interface="in" units="m3"/>
+        <variable name="q_LA_us" public_interface="in" units="m3"/>
+        <variable initial_value="q_LA_init" name="q_LA" public_interface="out" units="m3"/>
+        <variable name="u_LA" public_interface="out" units="J_per_m3"/>
+        <variable name="E_LA" public_interface="in" units="J_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="v_pvn" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_LA</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_pvn</ci>
+                    <ci>v_MV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_LA</ci>
+                <apply>
+                    <times/>
+                    <ci>E_LA</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_LA</ci>
+                        <ci>q_LA_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Right atrium-->
+        <variable name="q_RA_init" public_interface="in" units="m3"/>
+        <variable name="q_RA_us" public_interface="in" units="m3"/>
+        <variable initial_value="q_RA_init" name="q_RA" public_interface="out" units="m3"/>
+        <variable name="u_RA" public_interface="out" units="J_per_m3"/>
+        <variable name="E_RA" public_interface="in" units="J_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="v_svc" public_interface="in" units="m3_per_s"/>
+        <variable name="v_ivc" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_RA</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <plus/>
+                        <ci>v_svc</ci>
+                        <ci>v_ivc</ci>
+                    </apply>
+                    <ci>v_TV</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_RA</ci>
+                <apply>
+                    <times/>
+                    <ci>E_RA</ci>
+                    <apply>
+                        <minus/>
+                        <ci>q_RA</ci>
+                        <ci>q_RA_us</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- Aortic valve-->
+        <variable name="v_AV" public_interface="out" units="m3_per_s"/>
+        <variable name="R_AV" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="u_root" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_AV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_LV</ci>
+                                <ci>u_root</ci>
+                            </apply>
+                            <ci>R_AV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_LV</ci>
+                            <ci>u_root</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="m3_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Pulmonary Valve-->
+        <variable name="v_PV" public_interface="out" units="m3_per_s"/>
+        <variable name="R_PV" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="u_par" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_PV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_RV</ci>
+                                <ci>u_par</ci>
+                            </apply>
+                            <ci>R_PV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_RV</ci>
+                            <ci>u_par</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="m3_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Tricuspid Valve-->
+        <variable name="v_TV" public_interface="out" units="m3_per_s"/>
+        <variable name="R_TV" public_interface="in" units="Js_per_m6"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_TV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_RA</ci>
+                                <ci>u_RV</ci>
+                            </apply>
+                            <ci>R_TV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_RA</ci>
+                            <ci>u_RV</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="m3_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Mitral Valve-->
+        <variable name="v_MV" public_interface="out" units="m3_per_s"/>
+        <variable name="R_MV" public_interface="in" units="Js_per_m6"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v_MV</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <minus/>
+                                <ci>u_LA</ci>
+                                <ci>u_LV</ci>
+                            </apply>
+                            <ci>R_MV</ci>
+                        </apply>
+                        <apply>
+                            <gt/>
+                            <ci>u_LA</ci>
+                            <ci>u_LV</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="m3_per_s">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- Total heart volume-->
+        <variable name="q" public_interface="out" units="m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_RA</ci>
+                    <ci>q_RV</ci>
+                    <ci>q_LA</ci>
+                    <ci>q_LV</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////// vascular compartments ////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="pv_simple_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <variable name="v" public_interface="out" units="L_per_s"/>
+        <!-- consitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <variable name="R" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="kPa"/>
+        <variable name="v_out" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vp_simple_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <variable name="v" public_interface="out" units="L_per_s"/>
+        <!-- consitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <variable name="R" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="L_per_s"/>
+        <variable name="u_out" public_interface="in" units="kPa"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="pp_simple_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="v" public_interface="out" units="L_per_s"/>
+        <variable name="v_d" public_interface="out" units="L_per_s"/>
+        <!-- constitutive parameters-->
+        <variable name="R" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="kPa"/>
+        <variable name="u_out" public_interface="in" units="kPa"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_d</ci>
+                <ci>v</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_simple_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_d" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="L_per_s"/>
+        <variable name="v_out" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="pv_Nout_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <variable name="v" public_interface="out" units="L_per_s"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <variable name="R" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="kPa"/>
+        <variable name="v_out_sum" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_Nout_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_d" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="L_per_s"/>
+        <variable name="v_out_sum" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vp_Min_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <variable name="v" public_interface="out" units="L_per_s"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <variable name="R" public_interface="in" units="kPa_s_per_L"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="L_per_s"/>
+        <variable name="u_out" public_interface="in" units="kPa"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_Min_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_d" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: out};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="L_per_s"/>
+        <variable name="v_out" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_MinNout_noI_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="litre"/>
+        <variable name="q_0" public_interface="in" units="litre"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="litre"/>
+        <variable name="u" public_interface="out" units="kPa"/>
+        <variable name="u_d" public_interface="out" units="kPa"/>
+        <variable name="u_0" public_interface="in" units="kPa"/>
+        <!-- constitutive parameters
+ var E: kPa_per_L {pub: in};-->
+        <variable name="C" public_interface="in" units="L_per_kPa"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="L_per_s"/>
+        <variable name="v_out_sum" public_interface="in" units="L_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <!-- standard units used gor CVS modelling modules-->
+    <component name="pv_simple_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <variable name="v" public_interface="out" units="m3_per_s"/>
+        <!-- consitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <variable name="R" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="J_per_m3"/>
+        <variable name="v_out" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vp_simple_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <variable name="v" public_interface="out" units="m3_per_s"/>
+        <!-- consitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <variable name="R" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="m3_per_s"/>
+        <variable name="u_out" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="pp_simple_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="v" public_interface="out" units="m3_per_s"/>
+        <variable name="v_d" public_interface="out" units="m3_per_s"/>
+        <!-- constitutive parameters-->
+        <variable name="R" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="J_per_m3"/>
+        <variable name="u_out" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_d</ci>
+                <ci>v</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_simple_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_d" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="m3_per_s"/>
+        <variable name="v_out" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="pv_Nout_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <variable name="v" public_interface="out" units="m3_per_s"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <variable name="R" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="u_in" public_interface="in" units="J_per_m3"/>
+        <variable name="v_out_sum" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u_in</ci>
+                        <ci>u</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_Nout_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_d" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <!-- boundary conditions-->
+        <variable name="v_in" public_interface="in" units="m3_per_s"/>
+        <variable name="v_out_sum" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vp_Min_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <variable name="v" public_interface="out" units="m3_per_s"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <variable name="R" public_interface="in" units="Js_per_m6"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="m3_per_s"/>
+        <variable name="u_out" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>u</ci>
+                        <ci>u_out</ci>
+                    </apply>
+                    <ci>R</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_Min_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_d" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: out};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="m3_per_s"/>
+        <variable name="v_out" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v_out</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <component name="vv_MinNout_noI_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q_init" public_interface="in" units="m3"/>
+        <variable name="q_0" public_interface="in" units="m3"/>
+        <variable initial_value="q_init" name="q" public_interface="out" units="m3"/>
+        <variable name="u" public_interface="out" units="J_per_m3"/>
+        <variable name="u_d" public_interface="out" units="J_per_m3"/>
+        <variable name="u_0" public_interface="in" units="J_per_m3"/>
+        <!-- constitutive parameters
+ var E: J_per_m6 {pub: in};-->
+        <variable name="C" public_interface="in" units="m6_per_J"/>
+        <!-- boundary conditions-->
+        <variable name="v_in_sum" public_interface="in" units="m3_per_s"/>
+        <variable name="v_out_sum" public_interface="in" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_in_sum</ci>
+                    <ci>v_out_sum</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u</ci>
+                <apply>
+                    <plus/>
+                    <ci>u_0</ci>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>q</ci>
+                            <ci>q_0</ci>
+                        </apply>
+                        <ci>C</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>u_d</ci>
+                <ci>u</ci>
+            </apply>
+        </math>
+    </component>
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// blood volume /////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="sum_blood_vol_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q" public_interface="out" units="litre"/>
+        <!-- boundary conditions-->
+        <variable name="q_sum" public_interface="in" units="litre"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q</ci>
+                <ci>q_sum</ci>
+            </apply>
+        </math>
+    </component>
+    <!-- standard units used gor CVS modelling modules-->
+    <component name="sum_blood_vol_type2">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q" public_interface="out" units="m3"/>
+        <!-- boundary conditions-->
+        <variable name="q_sum" public_interface="in" units="m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q</ci>
+                <ci>q_sum</ci>
+            </apply>
+        </math>
+    </component>
+</model>

@@ -1,0 +1,250 @@
+[
+  {
+    "vessel_type":"i_piezo_Na_tutorial",
+    "BC_type":"nn",
+    "module_format":"cellml",
+    "module_file":"tutorial_modules.cellml",
+    "module_type":"i_piezo_Na_tutorial",
+    "entrance_ports":
+    [
+    ],
+    "exit_ports":
+    [
+    ],
+    "general_ports":
+    [
+      {
+        "port_type":"membrane_mVage",
+        "variables":["Vm"]
+      },
+      {
+        "port_type":"Na_Nernst_potential",
+        "variables":["E_Na"]
+      }
+    ],
+    "variables_and_units":
+    [
+      ["I_piezo", "picoA", "access", "variable"],
+      ["g", "nS", "access", "constant"],
+      ["Vm", "milliV", "access", "boundary_condition"],
+      ["E_Na", "milliV", "access", "boundary_condition"],
+      ["m_V", "dimensionless", "access", "variable"],
+      ["m_V_init", "dimensionless", "access", "constant"],
+      ["m_V_inf", "dimensionless", "access", "variable"],
+      ["tau_V", "ms", "access", "constant"],
+      ["V_50", "milliV", "access", "constant"],
+      ["k_V", "milliV", "access", "constant"]
+    ]
+  },
+  {
+    "vessel_type": "smc_hernandez_with_piezo",
+    "BC_type": "nn",
+    "module_format": "cellml",
+    "module_file": "tutorial_modules.cellml",
+    "module_type": "smc_hernandez_with_piezo",
+    "entrance_ports": [],
+    "exit_ports": [],
+    "general_ports": 
+    [
+      {
+        "port_type":"membrane_mVage",
+        "variables":["V"]
+      },
+      {
+        "port_type":"Na_Nernst_potential",
+        "variables":["E_Na"]
+      },
+      {
+        "port_type":"piezo_current",
+        "variables":["I_piezo"]
+      },
+      {
+        "port_type":"Ca_port",
+        "variables":["Ca_i"]
+      }
+    ],
+    "variables_and_units": [
+      ["I_piezo","picoA","access","boundary_condition"],
+      ["I_Ca_total","picoA","access","variable"],
+      ["I_Na_total","picoA","access","variable"],
+      ["I_K_total","picoA","access","variable"],
+      ["I_KvAll","picoA","access","variable"],
+      ["J_SERCA","mM_per_ms","access","variable"],
+      ["J_rel","mM_per_ms","access","variable"],
+      ["J_jun_in","mM_per_ms","access","variable"],
+      ["Y_RyR_Ca_jun","dimensionless","access","variable"],
+      ["tau_alpha","ms","access","variable"],
+      ["alpha_inf","dimensionless","access","variable"],
+      ["alpha_act","ms","access","variable"],
+      ["beta_act","ms","access","variable"],
+      ["dL_bar","dimensionless","access","variable"],
+      ["tau_dL","ms","access","variable"],
+      ["alpha_ina","ms","access","variable"],
+      ["beta_ina","ms","access","variable"],
+      ["dF_bar","dimensionless","access","variable"],
+      ["tau_dF","ms","access","variable"],
+      ["I_CaV","picoA","access","variable"],
+      ["I_PMCA","picoA","access","variable"],
+      ["E_Ca","mV","access","variable"],
+      ["I_Ca_leak","picoA","access","variable"],
+      ["phi_f","dimensionless","access","variable"],
+      ["phi_r","dimensionless","access","variable"],
+      ["X_NCX","dimensionless","access","variable"],
+      ["I_NCX","picoA","access","variable"],
+      ["N_2","dimensionless","access","variable"],
+      ["N_0","dimensionless","access","variable"],
+      ["I_NaK","picoA","access","variable"],
+      ["E_Na","mV","access","variable"],
+      ["I_Na_Leak","picoA","access","variable"],
+      ["E_K","mV","access","variable"],
+      ["I_K_Leak","picoA","access","variable"],
+      ["alpha_x","dimensionless","access","variable"],
+      ["beta_x","dimensionless","access","variable"],
+      ["Pk_bar","dimensionless","access","variable"],
+      ["tau_Pk","ms","access","variable"],
+      ["I_Kv15","picoA","access","variable"],
+      ["E_NSC","mV","access","variable"],
+      ["I_NSC","picoA","access","variable"],
+      ["I_NSC_Na","picoA","access","variable"],
+      ["I_NSC_K","picoA","access","variable"],
+      ["alpha_x21","dimensionless","access","variable"],
+      ["beta_x21","dimensionless","access","variable"],
+      ["Pk_bar21","dimensionless","access","variable"],
+      ["tau_Pk21","ms","access","variable"],
+      ["I_Kv21","picoA","access","variable"],
+      ["xabss_z","dimensionless","access","variable"],
+      ["xabss_vh","mV","access","variable"],
+      ["xabss","dimensionless","access","variable"],
+      ["xabtc","ms","access","variable"],
+      ["I_BKCa","picoA","access","variable"],
+      ["I_leak_all","picoA","access","variable"],
+      ["I_total","picoA","access","variable"],
+      ["Ca_i_init","mM","access","constant"],
+      ["V_init","mV","access","constant"],
+      ["F","C_per_millimol","access","constant"],
+      ["R","J_per_mol_K","access","constant"],
+      ["T","kelvin","access","constant"],
+      ["Ca_out","mM","access","constant"],
+      ["Ca_jun_init","mM","access","constant"],
+      ["Z_ca","dimensionless","access","constant"],
+      ["Na_out","mM","access","constant"],
+      ["Na_i_init","mM","access","constant"],
+      ["K_out","mM","access","constant"],
+      ["K_i_init","mM","access","constant"],
+      ["Pk","dimensionless","access","constant"],
+      ["vol_cell","microm3","access","constant"],
+      ["vol_SRcen","microm3","access","constant"],
+      ["vol_jun","microm3","access","constant"],
+      ["BUF_1_init","mM","access","constant"],
+      ["Z_Na","dimensionless","access","constant"],
+      ["Z_K","dimensionless","access","constant"],
+      ["C_m","picoFarad","access","constant"],
+      ["BUF_T","mM","access","constant"],
+      ["K_BUF_on","per_mMms","access","constant"],
+      ["K_BUF_off","per_ms","access","constant"],
+      ["BUF_jun_T","mM","access","constant"],
+      ["CSQ_SRcen_T","mM","access","constant"],
+      ["CSQ_SRper_T","mM","access","constant"],
+      ["k_CSQ_on","per_mMms","access","constant"],
+      ["k_CSQ_off","per_ms","access","constant"],
+      ["CSQ_SRcen1_init","mM","access","constant"],
+      ["Ca_SRcen_init","mM","access","constant"],
+      ["I_SERC_bar","mM_per_ms","access","constant"],
+      ["k_mSERCA","mM","access","constant"],
+      ["BUF_jun_1_init","mM","access","constant"],
+      ["n_RyR_Ca_jun","dimensionless","access","constant"],
+      ["R_10_init","dimensionless","access","constant"],
+      ["dL_init","dimensionless","access","constant"],
+      ["dF_init","dimensionless","access","constant"],
+      ["I_PMCA_bar","picoA","access","constant"],
+      ["K_m_PMCA","mM","access","constant"],
+      ["G_Ca_b","nS","access","constant"],
+      ["P_NCX","picoA","access","constant"],
+      ["gammax","dimensionless","access","constant"],
+      ["Q10","dimensionless","access","constant"],
+      ["K_mNaK_k","mM","access","constant"],
+      ["K_mNaK_na","mM","access","constant"],
+      ["I_NaK_max","picoA","access","constant"],
+      ["G_Na_b","nS","access","constant"],
+      ["G_K_b","nS","access","constant"],
+      ["Pk_15_init","dimensionless","access","constant"],
+      ["G_k15","nS","access","constant"],
+      ["PnsK","dimensionless","access","constant"],
+      ["PnsNa","dimensionless","access","constant"],
+      ["gns","nS","access","constant"],
+      ["gnsNa","dimensionless","access","constant"],
+      ["gnsK","dimensionless","access","constant"],
+      ["Pk_21_init","dimensionless","access","constant"],
+      ["G_k21","nS","access","constant"],
+      ["BK_T","dimensionless","access","constant"],
+      ["Perm_BKCa","cm3_per_second","access","constant"],
+      ["x_ab_init","dimensionless","access","constant"],
+      ["Ca_i","mM","access","variable"],
+      ["V","mV","access","variable"],
+      ["Ca_jun","mM","access","variable"],
+      ["Na_i","mM","access","variable"],
+      ["K_i","mM","access","variable"],
+      ["BUF_1","mM","access","variable"],
+      ["CSQ_SRcen1","mM","access","variable"],
+      ["Ca_SRcen","mM","access","variable"],
+      ["BUF_jun_1","mM","access","variable"],
+      ["R_10","dimensionless","access","variable"],
+      ["dL","dimensionless","access","variable"],
+      ["dF","dimensionless","access","variable"],
+      ["Pk_15","dimensionless","access","variable"],
+      ["Pk_21","dimensionless","access","variable"],
+      ["x_ab","dimensionless","access","variable"]
+    ]
+  },
+  {
+    "vessel_type":"material_prop_visco_myogenic",
+    "BC_type":"nn",
+    "module_format":"cellml",
+    "module_file":"tutorial_modules.cellml",
+    "module_type":"material_prop_visco_myogenic_type",
+    "entrance_ports":
+    [
+    ],
+    "exit_ports":
+    [
+    ],
+    "general_ports":
+    [
+      {
+        "port_type":"len_port",
+        "variables":["l"]
+      },
+      {
+        "port_type":"radius_0_and_s_port",
+        "variables":["r_0", "r"]
+      },
+      
+      {
+        "port_type":"stiffness_port",
+        "variables":["K_tube"]
+      },
+      {
+        "port_type":"visco_coeff_port",
+        "variables":["K_tube_visco"]
+      }
+    ],
+    "variables_and_units":
+    [
+      ["K_tube", "J_per_m3", "access", "variable"],
+      ["K_tube_0", "J_per_m3", "access", "variable"],
+      ["K_tube_visco", "Js_per_m6", "access", "variable"],
+      ["l", "metre", "access", "boundary_condition"],
+      ["r_0", "metre", "access", "boundary_condition"],
+      ["r", "metre", "access", "boundary_condition"],
+      ["E", "J_per_m3", "access", "constant"],
+      ["K_m", "Js_per_m3", "access", "constant"],
+      ["Ca_i", "milliM", "access", "boundary_condition"],
+      ["Ca_50", "milliM", "access", "constant"],
+      ["k_Ca", "milliM", "access", "constant"],
+      ["a_vessel", "dimensionless", "no_access", "global_constant"],
+      ["b_vessel", "per_m", "no_access", "global_constant"],
+      ["c_vessel", "dimensionless", "no_access", "global_constant"],
+      ["d_vessel", "per_m", "no_access", "global_constant"]
+    ]
+  }
+]

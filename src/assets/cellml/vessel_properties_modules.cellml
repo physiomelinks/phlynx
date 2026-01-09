@@ -1,0 +1,177 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <component name="material_prop_const_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="r_us" public_interface="in" units="metre"/>
+        <variable name="E" public_interface="in" units="J_per_m3"/>
+        <variable name="a_vessel" public_interface="in" units="dimensionless"/>
+        <variable name="b_vessel" public_interface="in" units="per_m"/>
+        <variable name="c_vessel" public_interface="in" units="dimensionless"/>
+        <variable name="d_vessel" public_interface="in" units="per_m"/>
+        <variable name="h" public_interface="out" units="metre"/>
+        <variable name="K_tube" public_interface="out" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>h</ci>
+                <apply>
+                    <times/>
+                    <ci>r_us</ci>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <times/>
+                            <ci>a_vessel</ci>
+                            <apply>
+                                <exp/>
+                                <apply>
+                                    <times/>
+                                    <ci>b_vessel</ci>
+                                    <ci>r_us</ci>
+                                </apply>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>c_vessel</ci>
+                            <apply>
+                                <exp/>
+                                <apply>
+                                    <times/>
+                                    <ci>d_vessel</ci>
+                                    <ci>r_us</ci>
+                                </apply>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>K_tube</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <divide/>
+                            <cn cellml:units="dimensionless">4</cn>
+                            <cn cellml:units="dimensionless">3</cn>
+                        </apply>
+                        <ci>E</ci>
+                        <ci>h</ci>
+                    </apply>
+                    <ci>r_us</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="material_prop_visco_const_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="l" public_interface="in" units="metre"/>
+        <variable name="r_us" public_interface="in" units="metre"/>
+        <variable name="E" public_interface="in" units="J_per_m3"/>
+        <variable name="K_m" public_interface="in" units="Js_per_m3"/>
+        <variable name="Gamma" public_interface="out" units="Js_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>Gamma</ci>
+                <apply>
+                    <times/>
+                    <cn cellml:units="dimensionless">0.1</cn>
+                    <ci>K_m</ci>
+                </apply>
+            </apply>
+        </math>
+        <variable name="a_vessel" public_interface="in" units="dimensionless"/>
+        <variable name="b_vessel" public_interface="in" units="per_m"/>
+        <variable name="c_vessel" public_interface="in" units="dimensionless"/>
+        <variable name="d_vessel" public_interface="in" units="per_m"/>
+        <variable name="h" public_interface="out" units="metre"/>
+        <variable name="K_tube" public_interface="out" units="J_per_m3"/>
+        <variable name="K_tube_visco" public_interface="out" units="Js_per_m6"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>h</ci>
+                <apply>
+                    <times/>
+                    <ci>r_us</ci>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <times/>
+                            <ci>a_vessel</ci>
+                            <apply>
+                                <exp/>
+                                <apply>
+                                    <times/>
+                                    <ci>b_vessel</ci>
+                                    <ci>r_us</ci>
+                                </apply>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>c_vessel</ci>
+                            <apply>
+                                <exp/>
+                                <apply>
+                                    <times/>
+                                    <ci>d_vessel</ci>
+                                    <ci>r_us</ci>
+                                </apply>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>K_tube</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <divide/>
+                            <cn cellml:units="dimensionless">4</cn>
+                            <cn cellml:units="dimensionless">3</cn>
+                        </apply>
+                        <ci>E</ci>
+                        <ci>h</ci>
+                    </apply>
+                    <ci>r_us</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>K_tube_visco</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <divide/>
+                            <cn cellml:units="dimensionless">2</cn>
+                            <cn cellml:units="dimensionless">3</cn>
+                        </apply>
+                        <ci>Gamma</ci>
+                        <ci>h</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>l</ci>
+                        <pi/>
+                        <apply>
+                            <power/>
+                            <ci>r_us</ci>
+                            <cn cellml:units="dimensionless">3</cn>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+</model>
