@@ -30,7 +30,7 @@ function buildNodes(availableModules, vessels, moduleConfig) {
       // - recalculated later by runLayout. In this instance, start invisible 
       // so the user doesn't see them stack at (0,0)
       ...(hasPosition ? {
-        position: { x: vessel.x*400, y: vessel.y*200 }
+        position: { x: vessel.x, y: vessel.y }
       } : { 
         position: { x: 100, y: 100 },
         style: { opacity: 0 } 

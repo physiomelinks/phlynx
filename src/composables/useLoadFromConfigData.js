@@ -9,6 +9,7 @@ import { buildWorkflowGraph } from '../services/import/buildWorkflow'
 import { runElkLayout } from '../services/layouts/elk'
 import { runFcoseLayout } from '../services/layouts/cytoscape'
 import { runPortGranularLayout } from '../services/layouts/dagre'
+import { runRescaleLayout } from '../services/layouts/rescale'
 
 export function useLoadFromConfigData() {
   const {
@@ -62,10 +63,14 @@ export function useLoadFromConfigData() {
       // If position is not declared in vessel array file, 
       // Run Layout (Calculates positions & sorts port arrays).
       // Could make this choice configurable later.
-      if (initializedNodes[0].data.x === undefined || initializedNodes[0].data.y === undefined) 
+      if (initializedNodes[0].data.x === undefined || initializedNodes[0].data.y === undefined) {
         // runPortGranularLayout(initializedNodes, pendingEdges)
         // runElkLayout(initializedNodes, pendingEdges)
         runFcoseLayout(initializedNodes, pendingEdges)
+      } else {
+        // recalculate declared positions to ensure compatibility with workspace dimensions
+        runRescaleLayout(initializedNodes)
+      }
       
       await nextTick()
 
