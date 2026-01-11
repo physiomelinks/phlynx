@@ -80,28 +80,37 @@ export const useBuilderStore = defineStore('builder', () => {
    * ]
    */
   function addConfigFile(payload, filename) {
-
     const configs = payload
     const configFilename = filename
 
+    //console.log('Adding configs from file:', configFilename)
     configs.forEach((config) => {
-      const moduleFile = availableModules.value.find(
+      let moduleFile = availableModules.value.find(
         (f) => f.filename === config.module_file 
       )
 
+      //console.log(config)
       if (!moduleFile) {
-        console.warn(`Module file ${config.module_file} not found for config.`)
-        return
+        moduleFile = {
+          filename: config.module_file,
+          modules: [],
+          isStub: true // marker to indicate this needs real content later
+        }
+        availableModules.value.push(moduleFile)
       }
 
-      const module = moduleFile.modules.find(
+      let module = moduleFile.modules.find(
         (m) => m.name === config.module_type || 
                m.type === config.module_type
       )
 
       if (!module) {
-        console.warn(`Module type ${config.module_type} not found in file ${config.module_file}.`)
-        return
+        module = {
+          name: config.module_type,
+          componentName: config.module_type,
+          configs: []
+        }
+        moduleFile.modules.push(module)
       }
 
       if (!module.configs) {
@@ -126,18 +135,29 @@ export const useBuilderStore = defineStore('builder', () => {
     })
   }
 
-  /**
-   * Adds a new file and its modules to the list.
-   * If the file already exists, it will be replaced.
-   */
   function addModuleFile(payload) {
+    const existingFile = availableModules.value.find(
+      (f) => f.filename === payload.filename
+    )
+
+    if (existingFile) {
+        if (existingFile.isStub) {
+            delete existingFile.isStub
+        }
+
+        if (existingFile.modules) {
+            payload.modules.forEach(newMod => {
+                const oldMod = existingFile.modules.find(m => m.name === newMod.name)
+                if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
+                newMod.configs = oldMod.configs
+                }
+            })
+        }
+    }
+
     addOrUpdateFile(availableModules, payload)
   }
 
-  /**
-   * Adds a new units file and its model.
-   * If the units file already exists it will be replaced.
-   */
   function addUnitsFile(payload) {
     addOrUpdateFile(availableUnits, payload)
   }
@@ -270,17 +290,23 @@ export const useBuilderStore = defineStore('builder', () => {
    */
   function addModuleToWorkbench(moduleName, position) {
     // Find the base definition
-    const moduleDef = availableModules.value.find((m) => m.name === moduleName)
 
-    if (moduleDef) {
-      // Create a new *instance* for the workbench
+    let foundModule = null
+    for(const file of availableModules.value) {
+        const match = file.modules?.find(mod => mod.name === moduleName || mod.componentName === moduleName)
+        if(match) {
+            foundModule = match
+            break
+        }
+    }
+
+    if (foundModule) {
       const newModuleInstance = {
-        ...moduleDef, // Copy properties like name, ports
-        id: `instance_${Date.now()}`, // Give it a unique ID
+        ...foundModule, 
+        id: `instance_${Date.now()}`,
         x: position.x,
         y: position.y,
       }
-
       workbenchModules.value.push(newModuleInstance)
     }
   }

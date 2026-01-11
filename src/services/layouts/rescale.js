@@ -1,6 +1,6 @@
+// Used to rescale prescribed positions optionally provided in the vessel array file
 export async function runRescaleLayout(nodes) {
     try {
-
         // Get range of x and y values
         let xMin = Infinity, xMax = -Infinity
         let yMin = Infinity, yMax = -Infinity
@@ -13,7 +13,7 @@ export async function runRescaleLayout(nodes) {
         })
 
         // How spread the nodes should be
-        const TARGET_SPACING = 700
+        const TARGET_SPACING = 1000
 
         // Scale x and y independently due to typical wide aspect ratio
         const xRange = xMax - xMin

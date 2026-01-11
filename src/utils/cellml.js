@@ -1,3 +1,5 @@
+import { ElNotification } from 'element-plus'
+
 let _libcellml = null
 
 export function initLibCellML(instance) {
@@ -129,6 +131,50 @@ export function processUnitsData(content) {
     type: 'success',
     model: unitsModelString,
     units: { count: unitsCount },
+  }
+}
+
+export const loadCellMLModuleData = (content, filename, builderStore) => {
+  const result = processModuleData(content)
+  if (result.type === 'success') {
+    const augmentedData = result.data.map((item) => ({
+      ...item,
+      sourceFile: filename,
+    }))
+    builderStore.addModuleFile({
+      filename: filename,
+      modules: augmentedData,
+      model: result.model,
+    })
+    ElNotification.success({
+      title: 'CellML Modules Loaded',
+      message: `Loaded ${result.data.length} parameters from ${filename}.`,
+    })
+  } else if (result.issues) {
+    ElNotification.error({
+      title: 'Loading Module Error',
+      message: `${result.issues.length} issues found in model file.`,
+    })
+    console.error('Model import issues:', result.issues)
+  }
+}
+
+export const loadCellMLUnitsData = (content, filename, builderStore) => {
+  const result = processUnitsData(content)
+  if (result.type === 'success') {
+    builderStore.addUnitsFile({
+      filename: filename,
+      model: result.model,
+    })
+    ElNotification.success({
+      title: 'CellML Units Loaded',
+      message: `Loaded ${result.units.count} units from ${filename}.`,
+    })
+  } else if (result.issues) {
+    ElNotification.error({
+      title: 'Loading Units Error',
+      message: `${result.issues[0].description}`,
+    })
   }
 }
 
