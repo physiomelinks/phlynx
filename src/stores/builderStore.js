@@ -4,22 +4,13 @@ import { ref } from 'vue'
 // 'builder' is the store's ID
 export const useBuilderStore = defineStore('builder', () => {
   // --- STATE ---
-
-  // Holds the *definitions* loaded from your file
   const availableModules = ref([])
   const availableUnits = ref([])
   const parameterData = ref([])
-  const lastSaveName = ref('ca-model-builder')
-  const lastExportName = ref('ca-model-builder')
-
-  // Holds the *instances* of modules placed on the workbench
-  // We'll add x/y coordinates and a unique ID
+  const lastSaveName = ref('phlynx')
+  const lastExportName = ref('phlynx')
   const workbenchModules = ref([])
-
-  // Holds the connections between module ports
   const connections = ref([])
-
-  // (You'll also add your 'units' data here)
   const units = ref(null)
 
   // --- ACTIONS ---
@@ -48,39 +39,129 @@ export const useBuilderStore = defineStore('builder', () => {
     lastExportName.value = name
   }
 
+  function addOrUpdateFile(collection, payload) {
+    const existingFile = collection.value.find(
+      (f) => f.filename === payload.filename
+    )
+
+    if (existingFile) {
+      // Replace existing file's data
+      Object.assign(existingFile, payload)
+    } else {
+      // Add new file to the list
+      collection.value.push(payload)
+    }
+  }
+
+ /**
+   * Adds configuration(s) to the appropriate module(s)
+   * @param {Array} payload - Array of configs 
+   * @param {string} filename - Optional filename (when first param is array)
+   * 
+   * Usage:
+   *   addConfigFile([{...}], 'config.json')  
+   * 
+   * Structure of availableModules after adding configs:
+   * [
+   *   {
+   *     filename: "module.cellml",
+   *     modules: [
+   *       {
+   *         name: "artery",
+   *         type: "artery",
+   *         configs: [
+   *           { BC_type: "nn", vessel_type: "aorta", ... },
+   *           { BC_type: "qv", vessel_type: "pulmonary", ... }
+   *         ]
+   *       }
+   *     ],
+   *     model: "<?xml..."
+   *   }
+   * ]
+   */
+  function addConfigFile(payload, filename) {
+
+    const configs = payload
+    const configFilename = filename
+
+    configs.forEach((config) => {
+      const moduleFile = availableModules.value.find(
+        (f) => f.filename === config.module_file 
+      )
+
+      if (!moduleFile) {
+        console.warn(`Module file ${config.module_file} not found for config.`)
+        return
+      }
+
+      const module = moduleFile.modules.find(
+        (m) => m.name === config.module_type || 
+               m.type === config.module_type
+      )
+
+      if (!module) {
+        console.warn(`Module type ${config.module_type} not found in file ${config.module_file}.`)
+        return
+      }
+
+      if (!module.configs) {
+        module.configs = []
+      }
+
+      const existingConfigIndex = module.configs.findIndex(
+        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+      )
+
+      const configWithMetadata = {
+        ...config,
+        _sourceFile: configFilename,
+        _loadedAt: new Date().toISOString()
+      }
+
+      if (existingConfigIndex !== -1) {
+        module.configs[existingConfigIndex] = configWithMetadata
+      } else {
+        module.configs.push(configWithMetadata)
+      }
+    })
+  }
+
   /**
    * Adds a new file and its modules to the list.
    * If the file already exists, it will be replaced.
    */
   function addModuleFile(payload) {
-    // payload is { filename: 'moduleFileA.cellml', modules: [...] }
-    const existingFile = this.availableModules.find(
-      (f) => f.filename === payload.filename
-    )
-
-    if (existingFile) {
-      // Replace existing file's modules
-      existingFile.modules = payload.modules
-    } else {
-      // Add new file to the list
-      this.availableModules.push(payload)
-    }
+    addOrUpdateFile(availableModules, payload)
   }
 
   /**
    * Adds a new units file and its model.
    * If the units file already exists it will be replaced.
-   * @param {*} payload
    */
   function addUnitsFile(payload) {
-    const existingFile = this.availableUnits.find(
-      (f) => f.filename === payload.filename
-    )
-    if (existingFile) {
-      existingFile.model = payload.model
-    } else {
-      this.availableUnits.push(payload)
+    addOrUpdateFile(availableUnits, payload)
+  }
+
+  function removeFile(collection, filename) {
+    const index = collection.value.findIndex((f) => f.filename === filename)
+    if (index !== -1) {
+      collection.value.splice(index, 1)
     }
+  }
+
+  /**
+   * Removes all configs associated with a specific config file.
+   */
+  function removeConfigFile(configFilename) {
+    availableModules.value.forEach((file) => {
+      file.modules.forEach((module) => {
+        if (module.configs) {
+          module.configs = module.configs.filter(
+            (config) => config._sourceFile !== configFilename
+          )
+        }
+      })
+    })
   }
 
   /**
@@ -88,13 +169,7 @@ export const useBuilderStore = defineStore('builder', () => {
    * @param {string} filename - The name of the file to remove.
    */
   function removeModuleFile(filename) {
-    const index = this.availableModules.findIndex(
-      (f) => f.filename === filename
-    )
-
-    if (index !== -1) {
-      this.availableModules.splice(index, 1)
-    }
+    removeFile(availableModules, filename)
   }
 
   /**
@@ -102,11 +177,7 @@ export const useBuilderStore = defineStore('builder', () => {
    * @param {string} filename - The name of the file to remove.
    */
   function removeUnitsFile(filename) {
-    const index = this.availableUnits.findIndex((f) => f.filename === filename)
-
-    if (index !== -1) {
-      this.availableUnits.splice(index, 1)
-    }
+    removeFile(availableUnits, filename)
   }
 
   /**
@@ -116,6 +187,80 @@ export const useBuilderStore = defineStore('builder', () => {
    */
   function hasModuleFile(filename) {
     return this.availableModules.some((f) => f.filename === filename)
+  }
+
+  /**
+   * Checks if a config exists for a specific module and BC type
+   * @param {string} moduleType - The module type
+   * @param {string} bcType - The BC type
+   * @returns {boolean}
+   */
+  function hasConfig(moduleType, bcType) {
+    return availableModules.value.some((file) =>
+      file.modules.some((module) =>
+        (module.name === moduleType || module.type === moduleType) &&
+        module.configs?.some((config) => config.BC_type === bcType)
+      )
+    )
+  }
+
+  /**
+   * Gets all configs for a specific module type
+   * @param {string} moduleType - The module type
+   * @returns {Array} Array of configs
+   */
+  function getConfigsForModule(moduleType) {
+    const configs = []
+    availableModules.value.forEach((file) => {
+      file.modules.forEach((module) => {
+        if ((module.name === moduleType || module.type === moduleType) && module.configs) {
+          configs.push(...module.configs)
+        }
+      })
+    })
+    return configs
+  }
+
+  function getConfigForVessel(vesselType, bcType) {
+    for (const file of availableModules.value) {
+      for (const module of file.modules) {
+        if (module.configs) {
+          const config = module.configs.find(
+            (c) => c.vessel_type === vesselType && c.BC_type === bcType
+          )
+          if (config) {
+            return {
+              config: config,
+              module: module,
+              filename: file.filename,
+            }
+          }
+        }
+      }
+    }
+    return null
+  }
+
+  function hasConfigForVessel(vesselType, bcType) {
+    return getConfigForVessel(vesselType, bcType) !== null
+  }
+
+  /**
+   * Gets a specific config for a module type and BC type
+   * @param {string} moduleType - The module type
+   * @param {string} bcType - The BC type
+   * @returns {Object|null} The config object or null
+   */
+  function getConfig(moduleType, bcType) {
+    for (const file of availableModules.value) {
+      for (const module of file.modules) {
+        if (module.name === moduleType || module.type === moduleType) {
+          const config = module.configs?.find((c) => c.BC_type === bcType)
+          if (config) return config
+        }
+      }
+    }
+    return null
   }
 
   /**
@@ -171,10 +316,17 @@ export const useBuilderStore = defineStore('builder', () => {
     addModuleFile,
     addModuleToWorkbench,
     addUnitsFile,
+    addConfigFile,
     hasModuleFile,
+    hasConfig,
+    hasConfigForVessel,
+    getConfigsForModule,
+    getConfig,
+    getConfigForVessel,
     moveModule,
     removeModuleFile,
     removeUnitsFile,
+    removeConfigFile,
     setAvailableModules,
     setLastExportName,
     setLastSaveName,
