@@ -3,7 +3,7 @@
     :model-value="modelValue"
     :title="config.title || 'Import File'"
     width="500px"
-    :before-close="handleBeforeClose"
+    @closed="closeDialog"
     @update:model-value="closeDialog"
   >
     <el-form label-position="top">
@@ -71,7 +71,7 @@
               </li>
               <li v-if="validationStatus.needsConfigFile">
                 <strong>Module Configurations</strong> for vessel_types:bc_types: 
-                {{ validationStatus.missingResources?.configs?.join(', ') }}
+                {{ validationStatus.missingResources?.configs?.join(', ') }} and possibly CellML modules.
               </li>
             </ul>
             <br>
@@ -85,7 +85,7 @@
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">Cancel</el-button>
+        <el-button @click="closeDialog">Cancel</el-button>
         <el-button
           type="primary"
           @click="handleConfirm"
@@ -99,28 +99,13 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, ref, nextTick } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import { ElNotification } from 'element-plus'
-import { Check, Warning } from '@element-plus/icons-vue'
+import { Check } from '@element-plus/icons-vue'
 import { IMPORT_KEYS } from '../utils/constants'
 
 const props = defineProps({
   modelValue: Boolean,
-  /**
-   * config object structure:
-   * {
-   * title: String,
-   * fields: [
-   * {
-   * key: String,       // unique ID for output
-   * label: String,
-   * accept: String,    // e.g. '.json'
-   * parser: Function   // (File, builderStore?) => Promise<Data>
-   * requiresStore: Boolean // whether parser needs builderStore
-   * }
-   * ]
-   * }
-   */
   config: {
     type: Object,
     required: true,
@@ -135,13 +120,15 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'confirm'])
 
 // --- State Management ---
-// We store the state of each field keyed by its 'key'
-// Structure: { [key]: { fileName: string, isValid: boolean, data: any, warnings: array } }
 const formState = reactive({})
 const dynamicFields = ref([])
 const validationStatus = ref(null)
-const addedFiles = ref({moduleFiles: [], configFiles: []})
-const importConfirmed = ref(false)
+
+// Staging area for files - they're added here first, not directly to the store
+const stagedFiles = ref({
+  moduleFiles: [], // { filename: string, payload: object }
+  configFiles: [], // { filename: string, payload: object }
+})
 
 function resetFormState() {
   Object.keys(formState).forEach((key) => {
@@ -161,7 +148,10 @@ function initFormFromConfig(fields = []) {
 
 const resetForm = () => {
   resetFormState()
-  addedFiles.value = {moduleFiles: [], configFiles: []}
+  stagedFiles.value = {
+    moduleFiles: [],
+    configFiles: [],
+  }
 }
 
 // Initialize formState when config changes
@@ -208,8 +198,94 @@ function createEmptyFieldState() {
   }
 }
 
+// Create a temporary store-like object for validation that includes staged files
+const createValidationStore = () => {
+  if (!props.builderStore) return null
+
+  // Create a deep copy of availableModules
+  const availableModules = JSON.parse(JSON.stringify(props.builderStore.availableModules))
+  
+  // Apply staged config files
+  stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
+    const configs = payload
+    
+    configs.forEach((config) => {
+      let moduleFile = availableModules.find(
+        (f) => f.filename === config.module_file 
+      )
+
+      if (!moduleFile) {
+        moduleFile = {
+          filename: config.module_file,
+          modules: [],
+          isStub: true
+        }
+        availableModules.push(moduleFile)
+      }
+
+      let module = moduleFile.modules.find(
+        (m) => m.name === config.module_type || m.type === config.module_type
+      )
+
+      if (!module) {
+        module = {
+          name: config.module_type,
+          componentName: config.module_type,
+          configs: []
+        }
+        moduleFile.modules.push(module)
+      }
+
+      if (!module.configs) {
+        module.configs = []
+      }
+
+      const configWithMetadata = {
+        ...config,
+        _sourceFile: filename,
+        _loadedAt: new Date().toISOString()
+      }
+
+      const existingConfigIndex = module.configs.findIndex(
+        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+      )
+
+      if (existingConfigIndex !== -1) {
+        module.configs[existingConfigIndex] = configWithMetadata
+      } else {
+        module.configs.push(configWithMetadata)
+      }
+    })
+  })
+
+  // Apply staged module files
+  stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
+    const existingFile = availableModules.find((f) => f.filename === filename)
+    
+    if (existingFile) {
+      if (existingFile.isStub) {
+        delete existingFile.isStub
+      }
+      
+      if (existingFile.modules) {
+        payload.modules.forEach(newMod => {
+          const oldMod = existingFile.modules.find(m => m.name === newMod.name)
+          if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
+            newMod.configs = oldMod.configs
+          }
+        })
+      }
+      
+      Object.assign(existingFile, payload)
+    } else {
+      availableModules.push(payload)
+    }
+  })
+
+  return { availableModules }
+}
+
 // --- Computed Validation ---
-// Form is valid only if ALL fields in the config are valid
 const isFormValid = computed(() => {
   if (!displayFields.value || displayFields.value.length === 0) return false
 
@@ -246,7 +322,7 @@ const handleFileChange = async (uploadFile, field) => {
     // Normalize parser output
     const data = parsed?.data ?? parsed
     const warnings = parsed?.warnings ?? []
-    const validation = parsed?.validation ?? null
+    let validation = parsed?.validation ?? null
 
     state.payload = { data, fileName: rawFile.name }
     state.validation = validation
@@ -254,16 +330,16 @@ const handleFileChange = async (uploadFile, field) => {
 
     // Specific logic for Dynamic Files (Configs/Modules)
     if (field.processUpload) {
-      await processPostUpload(field, parsed, rawFile.name)
+      await stageFile(field, parsed, rawFile.name)
       
       // Re-validate vessel if needed
       if (formState[IMPORT_KEYS.VESSEL]?.payload) {
          const { validateVesselData } = await import('../utils/import')
+         const validationStore = createValidationStore()
          const newValidation = validateVesselData(
            formState[IMPORT_KEYS.VESSEL].payload.data,
-           props.builderStore
+           validationStore
          )
-         // Only update status to reflect checks
          validation = newValidation
       }
     }
@@ -288,7 +364,6 @@ const handleFileChange = async (uploadFile, field) => {
     state.payload = null
     state.warnings = []
 
-    // TO-DO: remove the selected file from the builderStore if it's been added
     ElNotification.error({
       title: 'Import Error',
       message: error.message || 'Failed to parse file.',
@@ -313,42 +388,56 @@ async function updateVesselValidation(validation) {
   await addDynamicFields(validation)
 }
 
-async function processPostUpload(field, parsedData, fileName) {
-  if (!field.processUpload || !props.builderStore) return
+async function stageFile(field, parsedData, fileName) {
+  if (!field.processUpload) return
 
-  const { processUploadedFile, validateVesselData } = await import('../utils/import')
+  const data = parsedData.data || parsedData
 
+  // Stage the file instead of adding directly to store
   if (field.processUpload === 'cellml') {
-    addedFiles.value.moduleFiles.push({ filename: fileName })
+    // Parse the module data to get the proper structure
+    const { processModuleData } = await import('../utils/cellml')
+    const result = processModuleData(data)
+    
+    if (result.type === 'success') {
+      const augmentedData = result.data.map((item) => ({
+        ...item,
+        sourceFile: fileName,
+      }))
+      
+      stagedFiles.value.moduleFiles.push({
+        filename: fileName,
+        payload: {
+          filename: fileName,
+          modules: augmentedData,
+          model: result.model,
+        }
+      })
+    }
   } else if (field.processUpload === 'config') {
-    addedFiles.value.configFiles.push({ filename: fileName })
+    stagedFiles.value.configFiles.push({
+      filename: fileName,
+      payload: data
+    })
   }
-
-  // Add the new file to the store
-  const result = await processUploadedFile(
-    field.processUpload,
-    parsedData,
-    fileName,
-    props.builderStore
-  )
 
   formState[field.key].isValid = true
 
-  // Re-validate the Vessel CSV now that the store has new data (Config/CellML)
+  // Re-validate the Vessel CSV with staged files
   const vesselField = formState[IMPORT_KEYS.VESSEL]
   
   if (vesselField?.payload?.data) {
+    const { validateVesselData } = await import('../utils/import')
+    const validationStore = createValidationStore()
     const newValidation = validateVesselData(
       vesselField.payload.data, 
-      props.builderStore
+      validationStore
     )
 
-    // Update the UI state with the fresh result
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
-    await nextTick()
+    //await nextTick()
     updateVesselValidation(newValidation)
 
-    // If valid now, we can clear the error styling/messages
     if (newValidation.isComplete) {
       console.log('Vessel data is now fully valid.')
     }
@@ -356,58 +445,41 @@ async function processPostUpload(field, parsedData, fileName) {
 
   ElNotification.success({
     title: field.processUpload === 'cellml'
-      ? 'CellML File Added'
-      : 'Config Added',
-    message: result.message,
+      ? 'CellML File Staged'
+      : 'Config Staged',
+    message: `${fileName} ready to import`,
     duration: 3000,
   })
 }
 
+const commitStagedFiles = () => {
+  if (!props.builderStore) return
+
+  stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
+    props.builderStore.addModuleFile(payload)
+  })
+
+  stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
+    props.builderStore.addConfigFile(payload, filename)
+  })
+}
+
 const handleConfirm = () => {
-  importConfirmed.value = true
-  // Construct the result object
+  commitStagedFiles()
+
   const result = {}
   displayFields.value.forEach((field) => {
     result[field.key] = formState[field.key].payload
   })
 
-  addedFiles.value = {moduleFiles: [], configFiles: []}
-
   emit('confirm', result)
   closeDialog()
 }
 
-const handleCancel = () => {
-  cleanupAddedFiles()
+const closeDialog = () => {
   resetForm()
-  closeDialog()
+  emit('update:modelValue', false)
 }
-
-const handleBeforeClose = (done) => {
-  if (!importConfirmed.value) {
-    cleanupAddedFiles()
-  } else {
-    importConfirmed.value = false
-  }
-  resetForm()
-  done()
-} 
-
-const cleanupAddedFiles = () => {
-  if (!props.builderStore || importConfirmed.value) {
-    return
-  }
-
-  addedFiles.value.moduleFiles.forEach(({ filename }) => {
-    props.builderStore.removeModuleFile(filename)
-  })
-
-  addedFiles.value.configFiles.forEach(({ filename }) => {
-    props.builderStore.removeConfigFile(filename)
-  })
-}
-
-const closeDialog = () => emit('update:modelValue', false)
 </script>
 
 <style scoped>
