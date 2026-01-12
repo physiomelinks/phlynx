@@ -472,18 +472,18 @@ currentImportMode.value = importOptions.value[0]
 
 const exportOptions = computed(() => [
   {
-    key: EXPORT_KEYS.CA,
-    label: 'Circulatory Autogen',
-    icon: markRaw(IconVessel),
-    disabled: false,
-    suffix: '.zip',
-  },
-  {
     key: EXPORT_KEYS.CELLML,
     label: 'CellML',
     icon: markRaw(IconCellML),
     disabled: libcellml.status !== 'ready',
     suffix: '.cellml',
+  },
+  {
+    key: EXPORT_KEYS.CA,
+    label: 'Circulatory Autogen',
+    icon: markRaw(IconVessel),
+    disabled: false,
+    suffix: '.zip',
   },
 ])
 currentExportMode.value = exportOptions.value[0]
@@ -1033,7 +1033,7 @@ async function onExportConfirm(fileName, handle) {
         builderStore.parameterData
       )
     } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
-      blob = generateFlattenedModel()
+      blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
     }
 
     let finalName = undefined
@@ -1069,6 +1069,7 @@ function createSaveBlob() {
     flow: toObject(),
     store: {
       availableModules: builderStore.availableModules,
+      availableUnits: builderStore.availableUnits,
       parameterData: builderStore.parameterData,
     },
   }
@@ -1092,10 +1093,8 @@ function onSaveConfirm(fileName) {
   ElNotification.success({ message: 'Workflow saved!' })
 }
 
-function mergeModules(newModules) {
-  const moduleMap = new Map(
-    builderStore.availableModules.map((mod) => [mod.filename, mod])
-  )
+function mergeIntoStore(newModules, target) {
+  const moduleMap = new Map(target.map((mod) => [mod.filename, mod]))
 
   if (newModules) {
     for (const newModule of newModules) {
@@ -1106,7 +1105,8 @@ function mergeModules(newModules) {
     }
   }
 
-  builderStore.availableModules = Array.from(moduleMap.values())
+  target.length = 0
+  target.push(...moduleMap.values())
 }
 
 /**
@@ -1144,8 +1144,16 @@ function handleLoadWorkspace(file) {
 
       // Restore Pinia store state.
       builderStore.parameterData = loadedState.store.parameterData
+      // Merge available units.
+      mergeIntoStore(
+        loadedState.store.availableUnits,
+        builderStore.availableUnits
+      )
       // Merge available modules.
-      mergeModules(loadedState.store.availableModules)
+      mergeIntoStore(
+        loadedState.store.availableModules,
+        builderStore.availableModules
+      )
 
       ElNotification.success({
         message: 'Workflow loaded successfully!',

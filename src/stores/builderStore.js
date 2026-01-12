@@ -19,8 +19,15 @@ export const useBuilderStore = defineStore('builder', () => {
   // Holds the connections between module ports
   const connections = ref([])
 
-  // (You'll also add your 'units' data here)
-  const units = ref(null)
+  // --- DEBUG ---
+
+  function listModules() {
+    availableModules.value.forEach((e) => console.log(e.filename))
+  }
+
+  function listUnits() {
+    availableUnits.value.forEach((e) => console.log(e.filename))
+  }
 
   // --- ACTIONS ---
 
@@ -68,22 +75,6 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   /**
-   * Adds a new units file and its model.
-   * If the units file already exists it will be replaced.
-   * @param {*} payload
-   */
-  function addUnitsFile(payload) {
-    const existingFile = this.availableUnits.find(
-      (f) => f.filename === payload.filename
-    )
-    if (existingFile) {
-      existingFile.model = payload.model
-    } else {
-      this.availableUnits.push(payload)
-    }
-  }
-
-  /**
    * Removes a module file and its modules from the list.
    * @param {string} filename - The name of the file to remove.
    */
@@ -94,6 +85,34 @@ export const useBuilderStore = defineStore('builder', () => {
 
     if (index !== -1) {
       this.availableModules.splice(index, 1)
+    }
+  }
+
+  function getModuleContent(filename) {
+    const index = this.availableModules.findIndex(
+      (f) => f.filename === filename
+    )
+
+    if (index !== -1) {
+      return this.availableModules[index].model
+    }
+
+    return ''
+  }
+
+  /**
+   * Adds a new units file and its model.
+   * If the units file already exists it will be replaced.
+   * @param {*} payload
+   */
+  function addUnitsFile(payload) {
+    const existingFile = availableUnits.value.find(
+      (f) => f.filename === payload.filename
+    )
+    if (existingFile) {
+      existingFile.model = payload.model
+    } else {
+      availableUnits.value.push(payload)
     }
   }
 
@@ -154,7 +173,6 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   // --- GETTERS (computed) ---
-  // (We don't need any yet, but they would go here)
 
   return {
     // State
@@ -164,13 +182,13 @@ export const useBuilderStore = defineStore('builder', () => {
     lastExportName,
     lastSaveName,
     parameterData,
-    units,
     workbenchModules,
 
     // Actions
     addModuleFile,
     addModuleToWorkbench,
     addUnitsFile,
+    getModuleContent,
     hasModuleFile,
     moveModule,
     removeModuleFile,
@@ -179,5 +197,9 @@ export const useBuilderStore = defineStore('builder', () => {
     setLastExportName,
     setLastSaveName,
     setParameterData,
+
+    // Debug
+    listModules,
+    listUnits,
   }
 })

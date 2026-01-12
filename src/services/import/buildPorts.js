@@ -49,7 +49,7 @@ function buildPortLabels(moduleData) {
         .map((p) => ({
           portType: type,
           label: p.port_type,
-          option: p.variables[0],
+          option: p.variables.flat(),
           isMultiPortSum: p.multi_port === 'Sum',
         }))
     )
