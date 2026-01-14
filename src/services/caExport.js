@@ -107,14 +107,6 @@ function checkSharedPorts(nodes, edges) {
  */
 export async function generateExportZip(fileName, nodes, edges, parameters) {
   try {
-    const portMismatches = checkSharedPorts(nodes, edges)
-
-    if (portMismatches.length) {
-      const labels = portMismatches.map(
-        (m) => `${m.portLabel} (${m.nodes.join(' - ')})`
-      )
-      throw new Error(`Mismatched port definitions: ${labels.join(', ')}`)
-    }
 
     const zip = new JSZip()
 
