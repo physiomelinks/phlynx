@@ -1,5 +1,6 @@
 <template>
-  <el-container class="about-page">
+  <el-scrollbar native>
+    <el-container class="about-page">
     <el-main>
       <h1>About PhLynx</h1>
 
@@ -71,6 +72,7 @@
       <p>This project is licensed under the Apache License, Version 2.0.</p>
     </el-main>
   </el-container>
+  </el-scrollbar>
 </template>
 
 <style scoped>
