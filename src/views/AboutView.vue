@@ -1,11 +1,14 @@
 <template>
   <el-scrollbar native>
+    <div class="image-container">
+      <img src="../../public/phlynxlogo.svg" alt="PhLynx Logo" class="centred-image"/>
+    </div>
+
     <el-container class="about-page">
     <el-main>
-      <h1>About PhLynx</h1>
-
+      <h1>About Physiome Links</h1>
       <p class="intro-text">
-        <strong>PhLynx</strong> is a specialized tool designed to streamline the creation and management of CellML-based system models.
+        <strong>Physiome Links (or PhLynx)</strong> is a specialised tool to streamline the coupling and editing models written in CellML.
       </p>
 
       <el-divider />
@@ -76,6 +79,18 @@
 </template>
 
 <style scoped>
+.image-container {
+  margin-top: 70px;
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+}
+
+.centred-image {
+  width: 20%;
+  height: auto;
+}
+
 .about-page {
   max-width: 800px;
   margin: 0 auto;
