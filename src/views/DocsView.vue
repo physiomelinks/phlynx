@@ -1,7 +1,9 @@
 <template>
   <el-container class="docs-page">
-    <el-aside width="300px">
-      <h2>Documentation Pages</h2>
+    <el-aside width="200px">
+      <div class="name">
+        <h2>User Guide</h2>
+      </div>
       <el-menu :default-active="currentSlug" router>
         <el-menu-item index="/docs/phlynx-introduction">Introduction</el-menu-item>
         <el-menu-item index="/docs/phlynx-tutorial">Tutorial</el-menu-item>
@@ -50,6 +52,9 @@ const currentPageComponent = computed(() => {
 
 <style>
 @import 'github-markdown-css/github-markdown.css';
+.name {
+  padding-left: 10%;
+}
 
 .markdown-body {
   padding: 40px;
