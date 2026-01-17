@@ -1107,6 +1107,8 @@ function createSaveBlob() {
     store: {
       availableModules: builderStore.availableModules,
       availableUnits: builderStore.availableUnits,
+      lastExportName: builderStore.lastExportName,
+      lastSaveName: builderStore.lastSaveName,
       parameterData: builderStore.parameterData,
     },
   }
@@ -1191,6 +1193,9 @@ function handleLoadWorkspace(file) {
         loadedState.store.availableModules,
         builderStore.availableModules
       )
+
+      builderStore.lastSaveName = loadedState.store.lastSaveName
+      builderStore.lastExportName = loadedState.store.lastExportName
 
       notify.success({
         message: 'Workflow loaded successfully!',

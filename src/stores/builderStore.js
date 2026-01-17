@@ -30,6 +30,10 @@ export const useBuilderStore = defineStore('builder', () => {
     parameterData.value = data
   }
 
+  function addParameterValue(data) {
+
+  }
+
   function setLastSaveName(name) {
     lastSaveName.value = name
   }
@@ -267,6 +271,7 @@ export const useBuilderStore = defineStore('builder', () => {
     // Actions
     addConfigFile,
     addModuleFile,
+    addParameterValue,
     addUnitsFile,
     getConfig,
     getConfigForVessel,
