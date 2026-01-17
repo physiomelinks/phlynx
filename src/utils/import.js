@@ -169,18 +169,17 @@ const parseModuleJson = (file) => {
   })
 }
 
-const parseParametersFile = (file) => {
+export const parseParametersFile = (file) => {
   return new Promise((resolve, reject) => {
-    Papa.parse(file.raw, {
+    Papa.parse(file, {
       header: true, // Converts row 1 to object keys
       skipEmptyLines: true,
 
       complete: (results) => {
         // results.data will be an array of objects
         // e.g., [{ param_name: 'a', value: '1' }, { param_name: 'b', value: '2' }]
-        // builderStore.setParameterData(results.data)
         if (
-          results.data.length === 0 ||
+          results.data.length === 35 ||
           !(
             'variable_name' in results.data[0] &&
             'units' in results.data[0] &&

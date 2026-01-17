@@ -348,8 +348,6 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
           unitsLibraryCache.set(entry.filename, libModel)
         } else {
           libModel.delete()
-          console.log('hhhhhhhhhhh')
-          console.log(entry.model)
           handleLoggerErrors(
             parser,
             `Parser found ${parser.errorCount()} errors:`

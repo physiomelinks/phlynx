@@ -348,7 +348,7 @@ import {
   generateUniqueModuleName,
 } from '../utils/nodes'
 import { getId as getNextEdgeId } from '../utils/edges'
-import { getImportConfig } from '../utils/import'
+import { getImportConfig, parseParametersFile } from '../utils/import'
 import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
 
 // import testModuleBGContent from '../assets/bg_modules.cellml?raw'
@@ -798,67 +798,129 @@ const screenshotDisabled = computed(
 const loadCellMLModuleData = (
   content,
   filename,
-  builderStore,
   broadcaseNotifications = true
 ) => {
-  const result = processModuleData(content)
-  if (result.type === 'success') {
-    const augmentedData = result.data.map((item) => ({
-      ...item,
-      sourceFile: filename,
-    }))
-    builderStore.addModuleFile({
-      filename: filename,
-      modules: augmentedData,
-      model: result.model,
-    })
-    if (broadcaseNotifications) {
-      notify.success({
-        title: 'CellML Modules Loaded',
-        message: `Loaded ${result.data.length} parameters from ${filename}.`,
+  return new Promise((resolve) => {
+    const result = processModuleData(content)
+    if (result.type === 'success') {
+      const augmentedData = result.data.map((item) => ({
+        ...item,
+        sourceFile: filename,
+      }))
+      builderStore.addModuleFile({
+        filename: filename,
+        modules: augmentedData,
+        model: result.model,
       })
+      if (broadcaseNotifications) {
+        notify.success({
+          title: 'CellML Modules Loaded',
+          message: `Loaded ${result.data.length} parameters from ${filename}.`,
+        })
+      }
+    } else if (result.issues) {
+      if (broadcaseNotifications) {
+        notify.error({
+          title: 'Loading Module Error',
+          message: `${result.issues.length} issues found in model file.`,
+        })
+      }
+      console.error('Model import issues:', result.issues)
     }
-  } else if (result.issues) {
-    if (broadcaseNotifications) {
-      notify.error({
-        title: 'Loading Module Error',
-        message: `${result.issues.length} issues found in model file.`,
-      })
-    }
-    console.error('Model import issues:', result.issues)
-  }
 
-  return result.type === 'success'
+    resolve(result.type === 'success')
+  })
 }
 
 const loadCellMLUnitsData = (
   content,
   filename,
-  builderStore,
   broadcaseNotifications = true
 ) => {
-  const result = processUnitsData(content)
-  if (result.type === 'success') {
-    builderStore.addUnitsFile({
-      filename: filename,
-      model: result.model,
-    })
-    if (broadcaseNotifications) {
-      notify.success({
-        title: 'CellML Units Loaded',
-        message: `Loaded ${result.units.count} units from ${filename}.`,
+  return new Promise((resolve) => {
+    const result = processUnitsData(content)
+    if (result.type === 'success') {
+      builderStore.addUnitsFile({
+        filename: filename,
+        model: result.model,
       })
+      if (broadcaseNotifications) {
+        notify.success({
+          title: 'CellML Units Loaded',
+          message: `Loaded ${result.units.count} units from ${filename}.`,
+        })
+      }
+    } else if (result.issues) {
+      if (broadcaseNotifications) {
+        notify.error({
+          title: 'Loading Units Error',
+          message: `${result.issues[0].description}`,
+        })
+      }
     }
-  } else if (result.issues) {
-    if (broadcaseNotifications) {
-      notify.error({
-        title: 'Loading Units Error',
-        message: `${result.issues[0].description}`,
-      })
-    }
-  }
 
-  return result.type === 'success'
+    resolve(result.type === 'success')
+  })
+}
+
+const loadParametersData = async (
+  content,
+  filename,
+  broadcaseNotifications = true
+) => {
+  return new Promise((resolve) => {
+    parseParametersFile(content)
+      .then(() => {
+        console.log(
+          'Do something with data like merge it into the builder store.'
+        )
+        resolve(true)
+      })
+      .catch(() => {
+        console.log('resolving false.')
+        resolve(false)
+      })
+  })
+}
+
+const handleParametersFile = (file, broadcaseNotifications = true) => {
+  return new Promise((resolve) => {
+    if (!file) {
+      if (broadcaseNotifications) {
+        notify.error({ message: 'No file selected.' })
+      }
+      return resolve(false)
+    }
+
+    Papa.parse(file.raw, {
+      header: true, // Converts row 1 to object keys
+      skipEmptyLines: true,
+
+      complete: (results) => {
+        // results.data will be an array of objects
+        // e.g., [{ param_name: 'a', value: '1' }, { param_name: 'b', value: '2' }]
+        builderStore.setParameterData(results.data)
+
+        if (broadcaseNotifications) {
+          notify.success({
+            title: 'Parameters Loaded',
+            message: `Loaded ${results.data.length} parameters from ${file.name}.`,
+          })
+        }
+        resolve(true)
+      },
+
+      error: (err) => {
+        if (broadcaseNotifications) {
+          notify.error({
+            title: 'CSV Parse Error',
+            message: err.message,
+          })
+        }
+        resolve(false)
+      },
+    })
+  })
 }
 
 const performImport = (mode) => {
@@ -887,14 +949,17 @@ async function onImportConfirm(importPayload) {
   } else if (currentImportMode.value.key === IMPORT_KEYS.CELLML_FILE) {
     loadCellMLModuleData(
       importPayload[IMPORT_KEYS.CELLML_FILE]?.data,
-      importPayload[IMPORT_KEYS.CELLML_FILE]?.fileName,
-      builderStore
+      importPayload[IMPORT_KEYS.CELLML_FILE]?.fileName
     )
   } else if (currentImportMode.value.key === IMPORT_KEYS.UNITS) {
     loadCellMLUnitsData(
       importPayload[IMPORT_KEYS.UNITS]?.data,
-      importPayload[IMPORT_KEYS.UNITS]?.fileName,
-      builderStore
+      importPayload[IMPORT_KEYS.UNITS]?.fileName
+    )
+  } else if (currentImportMode.value.key === IMPORT_KEYS.PARAMETER) {
+    loadParametersData(
+      importPayload[IMPORT_KEYS.PARAMETER]?.data,
+      importPayload[IMPORT_KEYS.PARAMETER]?.fileName
     )
   } else {
     console.log('Handle this import:', currentImportMode.value.key)
@@ -943,46 +1008,6 @@ async function onEditConfirm(updatedData) {
   const { updateNodeData } = useVueFlow(targetInstance)
 
   updateNodeData(nodeId, updatedData)
-}
-
-const handleParametersFile = (file, broadcaseNotifications = true) => {
-  return new Promise((resolve) => {
-    if (!file) {
-      if (broadcaseNotifications) {
-        notify.error({ message: 'No file selected.' })
-      }
-      return resolve(false)
-    }
-
-    Papa.parse(file.raw, {
-      header: true, // Converts row 1 to object keys
-      skipEmptyLines: true,
-
-      complete: (results) => {
-        // results.data will be an array of objects
-        // e.g., [{ param_name: 'a', value: '1' }, { param_name: 'b', value: '2' }]
-        builderStore.setParameterData(results.data)
-
-        if (broadcaseNotifications) {
-          notify.success({
-            title: 'Parameters Loaded',
-            message: `Loaded ${results.data.length} parameters from ${file.name}.`,
-          })
-        }
-        resolve(true)
-      },
-
-      error: (err) => {
-        if (broadcaseNotifications) {
-          notify.error({
-            title: 'CSV Parse Error',
-            message: err.message,
-          })
-        }
-        resolve(false)
-      },
-    })
-  })
 }
 
 const nodeRefs = ref({})
@@ -1390,67 +1415,45 @@ onMounted(async () => {
   })
   await libcellmlReadyPromise
 
-  const loadStatuses = []
+  const promises = []
   for (const [path, content] of Object.entries(cellmlModules)) {
-    loadStatuses.push(
-      loadCellMLModuleData(
-        content.default,
-        path.split('/').pop(),
-        builderStore,
-        false
-      )
+    promises.push(
+      loadCellMLModuleData(content.default, path.split('/').pop(), false)
     )
   }
 
   for (const [path, content] of Object.entries(cellmlUnits)) {
-    loadStatuses.push(
-      loadCellMLUnitsData(
-        content.default,
-        path.split('/').pop(),
-        builderStore,
-        false
-      )
+    promises.push(
+      loadCellMLUnitsData(content.default, path.split('/').pop(), false)
     )
   }
 
-  const promises = []
-  Object.values(parameterFiles).forEach((content) => {
-    promises.push(handleParametersFile({ raw: content.default }, false))
-  })
+  for (const [path, content] of Object.entries(parameterFiles)) {
+    promises.push(loadParametersData(content.default, path.split('/').pop()))
+  }
 
   const results = await Promise.all(promises)
-  results.push(...loadStatuses)
-
-  const successCount = results.filter(result => result === true).length
+  const successCount = results.filter((result) => result === true).length
   const failCount = results.length - successCount
 
   if (successCount > 0) {
     notify.success({
-      title: 'Initialisation Complete',
-      message: `Successfully loaded ${successCount} files.`
+      title: 'Internal Resource Loading',
+      message: `Successfully loaded ${successCount} file${successCount > 1 ? 's' : ''}.`,
     })
   }
 
   if (failCount > 0) {
+    if (successCount > 0) await nextTick()
     notify.warning({
-      title: 'Load Warnings',
-      message: `${failCount} files failed to parse or were empty.`
+      title: 'Internal Resource Loading',
+      message: `${failCount} file${failCount > 1 ? 's' : ''} failed to load.`,
     })
   }
 
   for (const [path, content] of Object.entries(moduleConfigs)) {
     builderStore.addConfigFile(content.default, path.split('/').pop())
   }
-
-  // --- Development Test Data ---
-  // import.meta.env.DEV is a Vite variable that is true
-  // only when running 'yarn dev'
-  // if (import.meta.env.DEV) {
-  //   if (!builderStore.hasModuleFile(testData.filename)) {
-  //     handleParametersFile({ raw: testParametersCSV })
-  //     loadCellMLModuleData(testData.content, testData.filename)
-  //   }
-  // }
 })
 
 const onMouseMove = (event) => {
