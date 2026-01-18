@@ -1,15 +1,19 @@
 <template>
   <div class="app-layout">
-    <header class="global-nav">
+    <el-header class="global-nav">
+      <!-- <div class="image-container">
+        
+      </div> -->
       <div class="brand">
-        PhLynx v{{ appVersion }}
+        <img src="/phlynxlogo.svg" alt="PhLynx Logo" class="centred-image" />
+        <strong>PhLynx v{{ appVersion }}</strong>
       </div>
       <nav>
         <router-link to="/">Workbench</router-link>
         <router-link to="/docs/" :class="{ 'force-active': isDocsActive }">User Guide</router-link>
         <router-link to="/about">About</router-link>
       </nav>
-    </header>
+    </el-header>
 
     <div class="view-container">
       <router-view v-slot="{ Component }">
@@ -77,5 +81,17 @@ body {
   flex-grow: 1;
   position: relative;
   overflow: hidden;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  width: 200px;
+}
+
+.centred-image {
+  max-width: 40px;
+  height: auto;
+  padding-right: 10px;
 }
 </style>
