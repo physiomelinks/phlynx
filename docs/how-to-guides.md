@@ -1,1 +1,0 @@
-Each <GlossaryLink term="module" /> exposes an <GlossaryLink term="interface" /> that can be connected using a <GlossaryLink term="link"/>.
