@@ -6,10 +6,10 @@
     :close-on-click-modal="false"
     @close="closeDialog"
   >
-    <span
-      >Assign parameter files to modules to provide variable values during
-      simulation.</span
-    >
+    <span>
+      Assign parameter files to modules to provide variable values during
+      simulation.
+    </span>
     <el-divider></el-divider>
     <el-table :data="associationTable">
       <el-table-column prop="moduleSource" label="Module" />
@@ -56,8 +56,9 @@
             </el-tooltip>
           </div>
         </template>
-      </el-table-column> </el-table
-    ><template #footer>
+      </el-table-column>
+    </el-table>
+    <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog">Cancel</el-button>
         <el-button type="primary" @click="handleConfirm"> Save </el-button>
@@ -67,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick } from 'vue'
+import { computed, nextTick , ref, watch } from 'vue'
 import {
   ElTable,
   ElTableColumn,
@@ -225,7 +226,9 @@ function closeDialog() {
 
 async function handleConfirm() {
   // Validation: Warn if any modules are unassigned.
-  const missing = associationTable.value.filter((row) => !row.matchedParameterFile)
+  const missing = associationTable.value.filter(
+    (row) => !row.matchedParameterFile
+  )
   if (missing.length > 0) {
     notify.warning({
       title: 'Incomplete Configuration',
