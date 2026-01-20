@@ -41,6 +41,7 @@
           <el-menu-item index="/docs/reference/glossary">Glossary</el-menu-item>
           <el-menu-item index="/docs/reference/file-types">File Formats</el-menu-item>
           <el-menu-item index="/docs/reference/cellml-module-format">CellML Module Requirements</el-menu-item>
+          <el-menu-item index="/docs/reference/valid-port-configurations">Valid Port Configurations</el-menu-item>
           <el-menu-item index="/docs/reference/change-log">PhLynx Changelog</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="4">
@@ -48,7 +49,7 @@
             <el-icon>
               <first-aid-kit />
             </el-icon>
-            <span>Support</span>
+            <span>Help</span>
           </template>
           <el-menu-item index="/docs/support/faq">FAQs</el-menu-item>
         </el-sub-menu>
