@@ -7,6 +7,8 @@ export const useBuilderStore = defineStore('builder', () => {
   const availableModules = ref([])
   const availableUnits = ref([])
   const parameterData = ref([])
+  const parameterFiles = ref(new Map())
+  const moduleParameterMap = ref(new Map())
   const lastSaveName = ref('phlynx-project')
   const lastExportName = ref('phlynx-export')
 
@@ -22,16 +24,22 @@ export const useBuilderStore = defineStore('builder', () => {
 
   // --- ACTIONS ---
 
-  /**
-   * Sets the parameter data.
-   * @param {*} data - The parameter data to set.
-   */
-  function setParameterData(data) {
-    parameterData.value = data
+  function addParameterFile(filename, data) {
+    if (!data || !Array.isArray(data)) return false
+
+    parameterFiles.value.set(filename, data)
+
+    return true
   }
 
-  function addParameterValue(data) {
+  function applyParameterLinks(linkMap) {
+    moduleParameterMap.value = linkMap
+  }
 
+  function getParametersForModule(moduleName) {
+    const paramFileName = moduleParameterMap.value.get(moduleName)
+    if (!paramFileName) return []
+    return parameterFiles.value.get(paramFileName) || []
   }
 
   function setLastSaveName(name) {
@@ -57,38 +65,41 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   /**
-    * Adds configuration(s) to the appropriate module(s)
-    * @param {Array} payload - Array of configs 
-    * @param {string} filename - Optional filename (when first param is array)
-    * 
-    * Usage:
-    *   addConfigFile([{...}], 'config.json')  
-    * 
-    * Structure of availableModules after adding configs:
-    * [
-    *   {
-    *     filename: "module.cellml",
-    *     modules: [
-    *       {
-    *         name: "artery",
-    *         type: "artery",
-    *         configs: [
-    *           { BC_type: "nn", vessel_type: "aorta", ... },
-    *           { BC_type: "pv", vessel_type: "pulmonary", ... }
-    *         ]
-    *       }
-    *     ],
-    *     model: "<?xml..."
-    *   }
-    * ]
-    */
+   * Adds configuration(s) to the appropriate module(s)
+   * @param {Array} payload - Array of configs
+   * @param {string} filename - Optional filename (when first param is array)
+   *
+   * Usage:
+   *   addConfigFile([{...}], 'config.json')
+   *
+   * Structure of availableModules after adding configs:
+   * [
+   *   {
+   *     filename: "module.cellml",
+   *     modules: [
+   *       {
+   *         name: "artery",
+   *         type: "artery",
+   *         configs: [
+   *           { BC_type: "nn", vessel_type: "aorta", ... },
+   *           { BC_type: "pv", vessel_type: "pulmonary", ... }
+   *         ]
+   *       }
+   *     ],
+   *     model: "<?xml..."
+   *   }
+   * ]
+   */
   function addConfigFile(payload, filename) {
     const configs = payload
     const configFilename = filename
 
     configs.forEach((config) => {
-      if (!config.module_file || typeof config.module_file !== "string") {
-        console.warn("[builderStore] Skipping config: missing module_file", config)
+      if (!config.module_file || typeof config.module_file !== 'string') {
+        console.warn(
+          '[builderStore] Skipping config: missing module_file',
+          config
+        )
         return
       }
 
@@ -100,21 +111,20 @@ export const useBuilderStore = defineStore('builder', () => {
         moduleFile = {
           filename: config.module_file,
           modules: [],
-          isStub: true // marker to indicate this needs real content later
+          isStub: true, // marker to indicate this needs real content later
         }
         availableModules.value.push(moduleFile)
       }
 
       let module = moduleFile.modules.find(
-        (m) => m.name === config.module_type ||
-          m.type === config.module_type
+        (m) => m.name === config.module_type || m.type === config.module_type
       )
 
       if (!module) {
         module = {
           name: config.module_type,
           componentName: config.module_type,
-          configs: []
+          configs: [],
         }
         moduleFile.modules.push(module)
       }
@@ -124,13 +134,14 @@ export const useBuilderStore = defineStore('builder', () => {
       }
 
       const existingConfigIndex = module.configs.findIndex(
-        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+        (c) =>
+          c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
       )
 
       const configWithMetadata = {
         ...config,
         _sourceFile: configFilename,
-        _loadedAt: new Date().toISOString()
+        _loadedAt: new Date().toISOString(),
       }
 
       if (existingConfigIndex !== -1) {
@@ -152,8 +163,10 @@ export const useBuilderStore = defineStore('builder', () => {
       }
 
       if (existingFile.modules) {
-        payload.modules.forEach(newMod => {
-          const oldMod = existingFile.modules.find(m => m.name === newMod.name)
+        payload.modules.forEach((newMod) => {
+          const oldMod = existingFile.modules.find(
+            (m) => m.name === newMod.name
+          )
           if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
             newMod.configs = oldMod.configs
           }
@@ -266,21 +279,24 @@ export const useBuilderStore = defineStore('builder', () => {
     availableUnits,
     lastExportName,
     lastSaveName,
+    moduleParameterMap,
     parameterData,
+    parameterFiles,
 
     // Actions
     addConfigFile,
     addModuleFile,
-    addParameterValue,
+    addParameterFile,
     addUnitsFile,
+    applyParameterLinks,
     getConfig,
     getConfigForVessel,
     getModuleContent,
+    getParametersForModule,
     hasModuleFile,
     removeModuleFile,
     setLastExportName,
     setLastSaveName,
-    setParameterData,
 
     // Debug
     listModules,

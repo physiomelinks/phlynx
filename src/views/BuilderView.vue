@@ -49,6 +49,15 @@
             Macro Build
           </el-button>
 
+          <el-button
+            type="primary"
+            style="margin-left: 10px"
+            @click="moduleParameterMatchDialogVisible = true"
+            :disabled="builderStore.parameterFiles.length === 0"
+          >
+            Match Parameters
+          </el-button>
+
           <el-divider direction="vertical" style="margin: 0 15px" />
 
           <el-dropdown
@@ -267,6 +276,8 @@
     @edit-node="onOpenEditDialog"
   />
 
+  <ModuleParameterMatchDialog v-model="moduleParameterMatchDialogVisible" />
+
   <ImportDialog
     v-model="importDialogVisible"
     :config="currentImportConfig"
@@ -324,6 +335,7 @@ import ImportDialog from '../components/ImportDialog.vue'
 import ModuleReplacementDialog from '../components/ModuleReplacementDialog.vue'
 import SaveDialog from '../components/SaveDialog.vue'
 import MacroBuilderDialog from '../components/MacroBuilderDialog.vue'
+import ModuleParameterMatchDialog from '../components/ModuleParameterMatchDialog.vue'
 import HelperLines from '../components/HelperLines.vue'
 import { useScreenshot } from '../services/useScreenshot'
 import { generateExportZip } from '../services/caExport'
@@ -350,6 +362,7 @@ import {
 import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig, parseParametersFile } from '../utils/import'
 import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
+import { generateParameterAssociations } from '../utils/parameters'
 
 // import testModuleBGContent from '../assets/bg_modules.cellml?raw'
 // import testModuleColonContent from '../assets/colon_FTU_modules.cellml?raw'
@@ -427,6 +440,7 @@ const importDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
 const replacementDialogVisible = ref(false)
 const macroBuilderDialogVisible = ref(false)
+const moduleParameterMatchDialogVisible = ref(false)
 const currentEditingNode = ref({
   nodeId: '',
   instanceId: '',
@@ -866,21 +880,36 @@ const loadCellMLUnitsData = (
 const loadParametersData = async (
   content,
   filename,
-  broadcaseNotifications = true
+  broadcastNotifications = true
 ) => {
-  return new Promise((resolve) => {
-    parseParametersFile(content)
-      .then(() => {
-        console.log(
-          'Do something with data like merge it into the builder store.'
-        )
-        resolve(true)
+  try {
+    const result = await parseParametersFile(content)
+
+    const added = builderStore.addParameterFile(filename, result)
+
+    if (broadcastNotifications && added) {
+      notify.success({
+        title: 'Parameters Loaded',
+        message: `Loaded ${result.length} parameters from ${filename}.`,
       })
-      .catch(() => {
-        console.log('resolving false.')
-        resolve(false)
+    } else if (broadcastNotifications && !added) {
+      notify.info({
+        title: 'Parameters Not Loaded',
+        message: `No new parameters were added from ${filename}.`,
       })
-  })
+    }
+
+    return added
+  } catch (err) {
+    if (broadcastNotifications) {
+      notify.error({
+        title: 'Loading Parameters Error',
+        message: `Failed to load parameters from ${filename}.`,
+      })
+    }
+
+    return false
+  }
 }
 
 const performImport = (mode) => {
@@ -1394,7 +1423,9 @@ onMounted(async () => {
   }
 
   for (const [path, content] of Object.entries(parameterFiles)) {
-    promises.push(loadParametersData(content.default, path.split('/').pop()))
+    promises.push(
+      loadParametersData(content.default, path.split('/').pop(), false)
+    )
   }
 
   const results = await Promise.all(promises)
@@ -1404,7 +1435,9 @@ onMounted(async () => {
   if (successCount > 0) {
     notify.success({
       title: 'Internal Resource Loading',
-      message: `Successfully loaded ${successCount} file${successCount > 1 ? 's' : ''}.`,
+      message: `Successfully loaded ${successCount} file${
+        successCount > 1 ? 's' : ''
+      }.`,
     })
   }
 
@@ -1419,6 +1452,20 @@ onMounted(async () => {
   for (const [path, content] of Object.entries(moduleConfigs)) {
     builderStore.addConfigFile(content.default, path.split('/').pop())
   }
+
+  const rawSuggestions = generateParameterAssociations(
+    builderStore.availableModules,
+    builderStore.parameterFiles
+  )
+
+  const linkMap = new Map()
+  rawSuggestions.forEach((suggestion) => {
+    if (suggestion.matchedParameterFile) {
+      linkMap.set(suggestion.moduleSource, suggestion.matchedParameterFile)
+    }
+  })
+
+  builderStore.applyParameterLinks(linkMap)
 })
 
 const onMouseMove = (event) => {

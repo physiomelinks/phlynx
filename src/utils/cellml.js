@@ -569,3 +569,29 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     importer.delete()
   }
 }
+
+/**
+ * Extracts unique variable names from a CellML model/component
+ */
+export function extractVariablesFromModule(module) {
+  const names = new Set()
+  if (module.model) {
+    const parser = new _libcellml.Parser(false)
+    const model = parser.parseModel(module.model)
+    // Iterate all components in the model,
+    // assumes flat model hierarchy.
+    for (let c = 0; c < model.componentCount(); c++) {
+      const comp = model.componentByIndex(c)
+      for (let v = 0; v < comp.variableCount(); v++) {
+        const variable = comp.variableByIndex(v)
+        names.add(variable.name())
+        variable.delete()
+      }
+      comp.delete()
+    }
+    model.delete()
+    parser.delete()
+  }
+
+  return names
+}
