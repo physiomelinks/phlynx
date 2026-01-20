@@ -49,7 +49,6 @@
             <span>Support</span>
           </template>
           <el-menu-item index="/docs/faq">FAQs</el-menu-item>
-          <el-menu-item index="/docs/support-getting-help">Getting Help</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -342,7 +341,6 @@ watch(currentSlug, () => {
   white-space: nowrap; /* Prevent text wrapping during animation */
 }
 
-/* Hide TOC on smaller screens with animation */
 @media (max-width: 900px) {
   .toc-sidebar {
     width: 0;
@@ -353,7 +351,7 @@ watch(currentSlug, () => {
   .toc-container {
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0s 0.2s; /* Delay visibility change */
+    transition: opacity 0.2s ease, visibility 0s 0.2s;
   }
 }
 
