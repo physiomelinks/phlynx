@@ -107,7 +107,7 @@ export function processUnitsData(content) {
   }
 
   let unitsModel = new _libcellml.Model()
-  unitsModel.setName('OnlyUnits')
+  unitsModel.setName('OnlyUnitsFrom_' + model.name())
   const unitsCount = model.unitsCount()
 
   let i = 0
@@ -459,6 +459,14 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     // ----------------------------------
     // Process Edges (Create Connections)
     // ----------------------------------
+
+    // HELPER: Strips directionality suffixes for matching
+    const normaliseName = (name) => {
+      if (!name) return ''
+      // Replaces "_in" or "_out" at the end of the string ($) with nothing
+      return name.replace(/(_in|_out)$/, '')
+    }
+
     for (const edge of edges) {
       // Get Node Data
       const sourceNode = edge.sourceNode
@@ -496,7 +504,10 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
             } else {
               // CASE B: Direct Connection (One-to-One)
               for (const srcOption of srcLabel.option) {
-                const tgtOption = tgtLabel.option.find((o) => o === srcOption)
+                const srcBase = normaliseName(srcOption)
+                const tgtOption = tgtLabel.option.find(
+                  (o) => normaliseName(o) === srcBase
+                )
                 if (srcOption && tgtOption) {
                   const v1 = sourceComp.variableByName(srcOption)
                   const v2 = targetComp.variableByName(tgtOption)
