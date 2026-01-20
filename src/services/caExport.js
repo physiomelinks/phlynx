@@ -13,28 +13,29 @@ import { ElNotification } from 'element-plus'
  * @returns {string} - 'global_constant', 'constant', or 'variable'
  */
 function classifyVariable(moduleName, variable, parameters) {
-  const varName = variable.name
-
-  if (!varName || !Array.isArray(parameters)) {
+  if (!variable?.name || !Array.isArray(parameters)) {
     console.error('Invalid input to classifyVariable')
     return 'undefined' // Default or error state
   }
 
+  const varName = variable.name
+  const qualifiedName = `${varName}_${moduleName}`
+
+  let isGlobalConstant = false
+
   for (const param of parameters) {
     const paramName = param.variable_name
 
-    // Check for an exact match first.
-    if (varName === paramName) {
-      return 'global_constant' // Found exact match, classification is done.
+    if (qualifiedName === paramName) {
+      return 'constant'
     }
 
-    // Check for a compound match.
-    if (`${varName}_${moduleName}` === paramName) {
-      return 'constant'
+    if (varName === paramName) {
+      isGlobalConstant = true
     }
   }
 
-  // Neither a globl constant of constant found after checking all parameters.
+  if (isGlobalConstant) return 'global_constant'
   return 'variable'
 }
 
