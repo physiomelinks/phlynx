@@ -1,96 +1,41 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    title="Edit Module"
-    width="500px"
-    teleported
-    @closed="resetForm"
-    @update:model-value="closeDialog"
-    @mousedown.stop
-    @wheel.stop
-  >
-    <el-form
-      :model="editableData"
-      label-position="left"
-      @submit.prevent="handleConfirm"
-    >
+  <el-dialog :model-value="modelValue" title="Edit Module" width="500px" teleported @closed="resetForm"
+    @update:model-value="closeDialog" @mousedown.stop @wheel.stop>
+    <el-form :model="editableData" label-position="left" @submit.prevent="handleConfirm">
       <el-form-item label="Module Name">
         <el-input v-model="editableData.name" placeholder="Enter module name" />
       </el-form-item>
 
       <el-divider />
 
-      <label class="el-form-label">Port Labels:</label>
-      <div v-if="editableData.portLabels.length>0" class="port-header-row">
+      <label class="el-form-label">Ports:</label>
+      <div v-if="editableData.portLabels.length > 0" class="port-header-row">
         <span class="port-type-header">Type</span>
         <span class="port-label-header">Label</span>
-        <span class="port-select-header">Option</span>
+        <span class="port-select-header">Variable(s)</span>
         <span class="port-checkbox-header">Sum?</span>
         <span class="port-action-header"></span>
       </div>
-      <div
-        v-for="(port, index) in editableData.portLabels"
-        :key="index"
-        class="port-label-row"
-      >
-        <el-select
-          v-model="port.portType"
-          class="port-type-select"
-        >
-        <el-option
-            v-for="options in portTypeOptions"
-            :key="options.value"
-            :label="options.label"
-            :value="options.value"
-          />
+      <div v-for="(port, index) in editableData.portLabels" :key="index" class="port-label-row">
+        <el-select v-model="port.portType" class="port-type-select">
+          <el-option v-for="options in portTypeOptions" :key="options.value" :label="options.label"
+            :value="options.value" />
         </el-select>
-        <el-input
-          v-model="port.label"
-          placeholder="Enter Label"
-          class="port-label"
-        />
+        <el-input v-model="port.label" placeholder="Enter Label" class="port-label" />
 
-        <el-select
-          v-model="port.option"
-          multiple
-          collapse-tags
-          collapse-tags-tooltip
-          placeholder="Select Option"
-          class="port-select"
-        >
-          <el-option
-            v-for="optionObj in props.portOptions"
-            :key="optionObj.name"
-            :label="optionObj.name"
-            :value="optionObj.name"
-            :disabled="isOptionDisabled(optionObj.name, port.option)"
-          />
+        <el-select v-model="port.option" multiple collapse-tags collapse-tags-tooltip placeholder="Select Option"
+          class="port-select">
+          <el-option v-for="optionObj in props.portOptions" :key="optionObj.name" :label="optionObj.name"
+            :value="optionObj.name" :disabled="isOptionDisabled(optionObj.name, port.option)" />
         </el-select>
         <div class="port-checkbox">
-          <el-checkbox v-model="port.isMultiPortSum"></el-checkbox>  
+          <el-checkbox v-model="port.isMultiPortSum"></el-checkbox>
         </div>
-        <el-button
-          type="danger"
-          :icon="Delete"
-          circle
-          plain
-          @click="deletePortLabel(index)"
-        />
+        <el-button type="danger" :icon="Delete" circle plain @click="deletePortLabel(index)" />
       </div>
 
-      <el-tooltip
-        content="Add Port Label"
-        placement="bottom"
-        :show-after="1000"
-      >
-        <el-button
-          type="success"
-          :icon="Plus"
-          plain
-          circle
-          @click="addPortLabel"
-          class="add-button"
-        />
+      <el-tooltip content="Add Port Label" placement="bottom" :show-after="1000">
+        <el-button type="success" :icon="Plus" plain circle @click="addPortLabel" class="add-button" />
       </el-tooltip>
     </el-form>
 
@@ -233,52 +178,62 @@ function deletePortLabel(index) {
 
 <style scoped>
 .el-form-item {
-  margin-bottom: 15px; /* More space */
+  margin-bottom: 15px;
+  /* More space */
 }
 
 .el-form-label {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 16px;
   display: block;
 }
+
 .port-header-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
-  font-weight: bold;
+  font-weight: normal;
   font-size: 14px;
 }
+
 .port-label-row {
   display: flex;
   gap: 10px;
   align-items: center;
   margin-bottom: 10px;
 }
+
 .port-label-header,
 .port-label {
   flex: 1;
   min-width: 150px;
 }
+
 .port-type-header,
 .port-type-select {
   flex: 1;
   min-width: 60px;
 }
+
 .port-select-header,
 .port-select {
   flex: 1;
   min-width: 150px;
 }
+
 .port-checkbox-header,
 .port-checkbox {
   width: 50px;
   text-align: center;
   align-items: center;
 }
+
 .port-action-header {
   width: 40px;
 }
+
 .add-button {
   margin-top: 10px;
 }
