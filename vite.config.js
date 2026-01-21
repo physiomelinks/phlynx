@@ -9,10 +9,10 @@ import packageJson from './package.json'
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => {
-  const isDev = command === 'serve'
+  const isGitHub = process.env.GITHUB_ACTIONS === 'true'
 
   return {
-    base: isDev ? '/' : '/phlynx/',
+    base: isGitHub ? '/phlynx/' : '/',
     define: {
       // Create a global constant. Strings must be JSON stringified.
       __APP_VERSION__: JSON.stringify(packageJson.version),

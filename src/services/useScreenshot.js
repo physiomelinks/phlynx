@@ -24,7 +24,7 @@ export function useScreenshot() {
     let data
 
     const readableDate = new Date().toISOString().slice(0, 19).replace('T', '-T').replace(/:/g, '-')
-    const fileName = options.fileName ?? `circulatory-autogen-screenshot-D${readableDate}`
+    const fileName = options.fileName ?? `phylnx-screenshot-D${readableDate}`
 
     switch (options.type) {
       case 'jpeg':
