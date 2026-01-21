@@ -1,333 +1,212 @@
-# User Interface
+# Interface Overview
 
+This page summarizes all user interface elements in the Workbench view of PhLynx.
 
-This page provides a comprehensive reference for all user interface elements in PhLynx. 
+## Workbench Overview
 
-## Main Interface Layout
+The Workbench is the primary interface for building and configuring models. It is divided into three main interaction areas:
 
-### Module List (Left Sidebar)
+* **[Toolbar](../reference/ui-overview#toolbar) (Top):** Tools for file management, importing/exporting, and general workspace operations.
+* **[Module List](../reference/ui-overview#module-list) (Left):** A library of imported <GlossaryLink term="modules"/> available for use.
+* **[Workspace](../reference/ui-overview#workspace) (Centre):** The canvas where you assemble, configure, and connect your model components.
 
-The module list displays all CellML components that have been imported into PhLynx and are available for use in your workspace.
+These areas are highlighted in the image below:
 
-**Features:**
-- **Collapsible sections:** Click on module names to expand/collapse groups of components from the same CellML file
-- **Drag and drop:** Click and drag any module from the list into the workspace area to add it to your model
-- **Visual identification:** Module names are displayed exactly as they appear in the CellML file
-
-**Interactions**
-- Single-click a module name to select it
-- Click and drag to add module to workspace
-- Scroll to view all available modules
+![PhLynx Workbench view with workspace, toolbar, and module list labelled](../assets/images/phlynx_ui.png){.align-center width="600px"}
 
 ---
 
-### Workbench (Centre)
+## Toolbar
 
-The main working area where you assemble your model by placing modules and creating connections.
+The toolbar provides essential controls for managing your project files and workspace state.
 
-**Interactions**
-- **Pan:** Click and drag on empty space to move around the workspace
-- **Zoom:** Use mouse wheel or trackpad to zoom in/out
-- **Select modules:** Click on a module to select it (see Selection Tools below)
-- **Draw connections:** Click and drag from one port node to another
-
-#### Control bar (Lower Left)
-
-A collection of buttons to perform the following quick actions (top to bottom):
-- Zoom in
-- Zoom out
-- Zoom to fit
-- Lock workspace
-- Screenshot 
-
----
-
-### Toolbar (Top)
-
-The toolbar contains buttons for file management and workspace operations. 
-
-#### Load Modules
-
-Imports CellML files containing modules to be used in your model.
-
-**Action:** Opens a file dialog to select one or more .cellml files from your computer
-
-**Supported formats:** .cellml files
-
-**Result:** All components in the selected file(s) are added to the Module List
-
-#### Load Parameters
-
-Imports a parameter file to identify constants and global constants.  (Marked for Deprecation)
-
-**Action:** Opens a file dialog to select a .csv parameter file
-
-**Required format:** Circulatory Autogen parameter file format (see [File Specifications](./reference-file-type.md))
-
-**Result:** Parameters are loaded and used during export to properly categorize variables.
-
-**Important:** Parameter names must follow Circulatory Autogen naming conventions:
-- Constants: [module_name]_[parameter_name]
-- Global constants: [parameter_name]
+### File Management
 
 #### Load Workspace
-
-Loads a previously saved PhLynx workspace.
-
-**Action:** Opens a file dialog to select a .json workspace file
-
-**Result:** The workspace is restored to its saved state, including:
-- Module positions
-- Port definitions
-- Connections between modules
-- Module names and keys (colors)
+Restores a previously saved PhLynx workspace.
+* **Action:** Opens a file dialog to select a `.json` workspace file.
+* **Result:** Restores module positions, definitions, connections, and visual customizations (colors/names).
 
 #### Save Workspace
+Saves the current state of your project.
+* **Action:** Downloads a `.json` file to your browser's default download folder.
+* **Result:** Preserves the current workspace state for later restoration.
 
-Saves the current workspace to a JSON file.
+### Edit Operations
 
-**Action:** Downloads a .json file representing the current workspace state
-**File location:** Your browser's configured download folder (typically Downloads)
-**Contents:** Complete workspace configuration for later restoration
+* **Undo (`Ctrl+Z`):** Reverses the last action.
+* **Redo (`Ctrl+Shift+Z`):** Reapplies the last undone action.
+* **Macro Build:** Enters the Macro Build component. See the [Macro Build Guide](../guides/macro-build-guide) for details.
 
-#### Import
+### Import
 
-Import using a vessel array file or json file.
+The Import menu allows you to bring various file types into PhLynx.
 
-#### Export 
-
-Export Circulatory Autogen configuration files or a flattened CellML file.
-
-**Action:** Downloads a ZIP archive containing:
-
-- vessel_array.csv - Defines connections between modules
-- module_config.json - Defines parameters and ports for each module
-
-**Requirements before export:**
-- At least one module placed in workspace
-- Parameter file loaded (for proper variable categorization)
-- Ports defined for connected modules
-
-**File location:** Your browser's configured download folder
+#### 1. Vessel Array
+Populates the workspace using a [vessel array](./file-types#vessel-array) file.
+* **Supported Format:** `.csv`
+* **Result:** Automatically populates the workspace with configured and connected modules based on the array definition.
 
 > [!NOTE]
-> When using Chrome, you will be prompted to select the save location at the time of export.
+> If PhLynx does not recognize vessel types within the array, you may be prompted to provide additional module files.
 
+#### 2. Modules
+Imports [CellML](./cellml-module-format) components to the Module List.
+* **Supported Format:** `.cellml`
+* **Result:** Adds all components found in the file to the **Module List** panel, making them available for placement.
 
-- **Module List (Left)**: Collapsible list of available CellML modules that can be dragged and dropped into the workspace area.
-- **Workspace Area**: The main area for users to place modules, draw connections, and edit ports (shared variables)
-- **File Management Buttons**: (Upper-right-hand side) Buttons for importing CellML files, loading parameters, saving/loading workspaces, and exporting CA configuration files.
+#### 3. Module Configurations
+Imports [Module Configuration](./file-types#module-configuration) files to update internal definitions.
+* **Supported Format:** `.json`
+* **Result:** Updates the configuration parameters of modules in the internal store.
 
-## Core Elements & Interactions
+#### 4. Parameters
+Imports a parameter file to identify constants and global constants. *(Marked for Deprecation)*
+* **Supported Format:** `.csv` (Circulatory Autogen parameter format)
+* **Result:** Categorizes variables properly during export.
+* **Naming Convention:**
+    * Constants: `[module_name]_[parameter_name]`
+    * Global Constants: `[parameter_name]`
 
+#### 5. Units
+Imports a [Units](./cellml-units-file) definition file.
+* **Supported Format:** `.cellml`
+* **Result:** Updates unit definitions in the internal store.
 
-###### Module Node
+### Export
 
-Each module node represents a CellML module that has been imported and placed into the workspace area.
-The module node displays an editable module name (equivalent to the vessel_name in Circulatory Autogen) and the CellML component and file of origin.
-Users can drag and drop these nodes onto the workspace area from the module list.
-Each module node contains three icons that enable users to edit the colour (key), add port nodes, and edit the module configuration.
-
-![Labelled module node](./assets/images/module-elements.png){.align-center width="600px"}
-
-###### Key
-
-The key icon on each module node allows users to assign a colour to the module for visual identification.
-Clicking the key icon opens a colour selection menu with preset colours and labels.
-
-![Expanded Key menu](./assets/images/key.png){.align-center width="600px"}
-
-###### Add Port Node
-
-The pin icon on each module node allows users to add port nodes, which are nodes that enable users to draw arrows between modules to indicate the existence of shared parameters.
-Clicking the pin icon adds a new port node to the module either on the top, left, right, or bottom of the selected module node.
-
-![Expanded Add Port Node menu](./assets/images/add-port-node.png){.align-center width="600px"}
-
-###### Edit Module
-
-The pencil icon on each module node opens a dialogue that allows users to edit the module name and create ports by selecting variables from the CellML module.
-Port names are manually editable and variables are selectable from a dropdown list populated with variables from the CellML module.
-
-![Expanded Add Port Node menu](./assets/images/edit-module-detail.png){.align-center width="600px"}
+Generates output files for Circulatory Autogen or standard CellML.
 
 > [!NOTE]
-> Module name (vessel_name) can also be edited by double-clicking on a module node in the Workspace Area view.
+> Chrome users will be prompted to select a save location upon export. Other browsers may default to the Downloads folder.
 
-###### Selecting Multiple Modules
+| Export Type | Output Content | Requirements |
+| :--- | :--- | :--- |
+| **Configuration Files** | A `.zip` archive containing:<br>• `vessel_array.csv` (connections)<br>• `module_config.json` (parameters/ports) | • At least one module in workspace<br>• Parameter file loaded<br>• Ports defined for connections |
+| **CellML Model** | A flattened CellML 2.0 model file. | • At least one module in workspace<br>• Ports defined for connections<br>• All units defined |
 
-Users can select multiple modules by holding down the Control (or Command on Mac) key and clicking on the desired modules.
-Alternatively, users can hold the Shift key to click and drag to easily select multiple modules.
-Once selected, users can move or delete selected modules as a group.
+---
 
-Module Node Controls
-Each module node in the workspace has three interactive icons for configuration and management.
-Key Icon (Color Selector)
-Location: Left icon on module node
-Purpose: Assigns a color to the module for visual organization and identification
-Action: Click to open color selection menu
-Options:
+## Module List
 
-Predefined color palette with labels
-Colors are purely for visual identification
-No effect on exported model functionality
+The Module List panel (left) displays all CellML components available for your model.
 
-Use case: Group related modules by color (e.g., all cardiac modules in red, all renal modules in blue)
+**Features:**
+* **Collapsible Sections:** Click module headers to expand or collapse groups of components from the same source file.
+* **Drag and Drop:** Click and drag any item from the list onto the **Workspace** to add it to your model.
+* **Visual ID:** Components maintain the names defined in their source CellML files.
 
-Pin Icon (Add Port Node)
-Location: Center icon on module node
-Purpose: Adds port nodes to the module for creating connections
-Action: Click to reveal directional menu, then click desired position
-Options:
+---
 
-Top
-Right
-Bottom
-Left
+## Workspace
 
-Result: A new port node appears at the selected position on the module
-Multiple ports: You can add multiple port nodes to the same module, in any configuration
+The central canvas where model assembly takes place.
 
-Pencil Icon (Edit Module)
-Location: Right icon on module node
-Purpose: Opens the Edit Module dialog for configuring module properties
-Action: Click to open dialog
-Configurable properties:
+**Navigation & Interaction:**
+* **Pan:** Click and drag on empty space to move the view.
+* **Zoom:** Use the mouse wheel or trackpad to zoom in/out.
+* **Select:** Click a module to select it; hold `Ctrl` (or `Cmd`) to select multiple.
+* **Area Select:** Hold `Shift` and drag to create a selection box.
+* **Connect:** Click and drag from a module's **Port Node** to another module to create a connection.
 
-Module name (vessel_name)
-Port definitions (port name and associated variables)
+### Control Bar
+Located in the bottom-left corner, the Control Bar offers quick access to view settings:
+1.  **Zoom In**
+2.  **Zoom Out**
+3.  **Zoom to Fit:** Centers all modules in the view.
+4.  **Lock Workspace:** Prevents accidental movement of modules.
+5.  **Screenshot:** Captures an image of the current view.
 
+---
 
-Edit Module Dialog
-The Edit Module dialog allows detailed configuration of module properties.
-Module Name Field
-Purpose: Sets the module's name as it will appear in exported configuration files (equivalent to vessel_name in Circulatory Autogen)
-Interactions:
+## Module Nodes
 
-Type directly into the text field
-Press Enter or click outside to save
-Also editable by double-clicking the module name in the workspace
+A Module Node is the visual representation of a CellML module within the workspace. It displays the editable module name (exported as `vessel_name`) and its origin component.
 
-Requirements:
+Each node features three interactive tools for configuration:
 
-Must match naming used in parameter file
-Should be descriptive and unique
+![Labelled module node](../assets/images/module-elements.png){.align-center width="600px"}
 
+### 1. Key (Colour Selector)
+* **Icon:** Key (Left)
+* **Purpose:** Assigns a color category to the module for visual organization. These colors do not affect export functionality.
+* **Options:** Membrane (Pink), Process (Blue), Compartment (Orange), Protein (Green).
 
-Port Definition Section
-Purpose: Maps CellML variables to ports that can be shared between modules
-Components:
-Port Name Field
+![Expanded Key menu](../assets/images/key.png){.align-center width="300px"}
 
-User-assigned name for the shared variable
-Think of this as the "common language" name used across modules
-Can be edited freely
+### 2. Add Port Node
+* **Icon:** Pin (Centre)
+* **Purpose:** Adds a connection point (Port Node) to the edge of the module.
+* **Usage:** Click the icon, then select a direction (Top, Right, Bottom, Left) from the menu. You can add multiple ports to a single module.
 
-Variable Dropdown
+![Expanded Add Port Node menu](../assets/images/add-port-node.png){.align-center width="600px"}
 
-Lists all variables available in the CellML module
-Select the variable(s) to expose through this port
-Multiple variables can be selected for a single port
+### 3. Edit Module
+* **Icon:** Pencil (Right)
+* **Purpose:** Opens the **Edit Module Dialog** to rename the module and configure port variables.
 
-Add Port Button
+---
 
-Adds a new port definition row
-Each port can have its own name and variable selection
+### Edit Module Dialog
 
-Delete Port Button
+This dialog allows for detailed configuration of the module's properties and data mappings.
 
-Removes a port definition
-Appears next to each port row
+![Expanded Edit Module dialog](../assets/images/edit-module-detail.png){.align-center width="600px"}
 
-Best practice: Port names should clearly indicate what the shared variable represents (e.g., "sodium_concentration", "membrane_voltage")
+#### Module Name
+Sets the unique identifier for the module in exported files.
+* **Requirement:** Must be unique within the workspace.
 
-Dialog Controls
-Save Button: Applies changes and closes dialog
-Cancel Button: Discards changes and closes dialog
+#### Port Definitions
+Maps specific CellML variables to the visual ports created on the module node.
 
-Port Node Controls
-Port nodes are the connection points on modules where arrows can be drawn.
-Port Node Display
-Visual elements:
+1.  **Port Name:** Enter a custom name for the shared variable (e.g., `sodium_concentration`). This acts as the "common language" between connected modules.
+2.  **Variable Selection:** Use the dropdown to select one or more internal CellML variables to expose through this port.
+3.  **Manage Ports:**
+    * **Add Port:** Adds a new definition row.
+    * **Delete:** Removes a definition row.
 
-Small circular node on module edge
-Position determined when created (top/right/bottom/left)
-Highlights on hover
+**Controls:**
+* **Save:** Applies changes and closes the dialog (`Enter`).
+* **Cancel:** Discards changes.
 
+---
 
-Port Node Actions
-Creating Connections
-Action: Click and drag from one port node to another
-Visual feedback:
+## Connections
 
-Arrow follows cursor while dragging
-Valid drop targets highlight
-Arrow snaps to target when released
+Connections define how data is shared between modules.
 
-Result: Creates a directed connection (arrow) indicating shared variables
+### Port Nodes
+Small circular nodes added to the edge of a module.
+* **Create:** Use the **Add Port Node** (Pin) tool on a module.
+* **Delete:** Hover over a port node and click the **Trash** icon.
+    > [!WARNING]
+    > Deleting a port node will also delete all arrows connected to it.
 
-Deleting Port Nodes
-Action: Hover over port node and click the trash icon that appears
-Result: Port node and any connected arrows are removed
-Warning: Deleting a port node removes all connections to/from that node
+### Connection Arrows
+Lines indicating a shared variable relationship between two modules.
+* **Create:** Click and drag from one Port Node to another. The target node will highlight when a valid connection can be made.
+* **Direction:** The arrow points to the "destination" module. This directionality is used specifically for vessel array file exports.
+* **Delete:** Click the arrow to select it, then press `Delete`.
 
-Connection Arrows
-Arrows represent shared variables between modules.
-Arrow Properties
-Direction: Indicates the flow of information (if directional)
-Visual style:
+---
 
-Solid line
-Arrowhead points to destination module
+## Shortcuts & Selection
 
+### Selection Tools
 
-Arrow Interactions
-Delete connection: Click on the arrow and press Delete key, or right-click and select delete (if context menu available)
-Multiple connections: Multiple arrows can connect to the same port node
+| Action | Command | Result |
+| :--- | :--- | :--- |
+| **Single Select** | Click Module | Selects one module. |
+| **Multi-Select (Click)** | `Ctrl` + Click (Win/Linux)<br>`Cmd` + Click (Mac) | Adds module to current selection. |
+| **Multi-Select (Area)** | `Shift` + Drag | Selects all modules within the drawn box. |
 
-Selection Tools
-Single Selection
-Action: Click on a module node
-Result: Module is selected (highlighted)
-Use: Move, delete, or edit individual modules
+### Keyboard Shortcuts
 
-Multi-Selection (Click)
-Action: Hold Ctrl (Windows/Linux) or Cmd (Mac) and click multiple modules
-Result: All clicked modules are selected
-Use: Perform actions on multiple modules simultaneously
-
-Multi-Selection (Drag)
-Action: Hold Shift and click-drag to create a selection box
-Result: All modules within the box are selected
-Use: Quickly select groups of modules
-
-Moving Selected Modules
-Action: Click and drag any selected module
-Result: All selected modules move together, maintaining their relative positions
-
-Deleting Selected Modules
-Action: Press Delete or Backspace key while modules are selected
-Result: All selected modules and their connections are removed
-
-Keyboard Shortcuts
-ActionShortcutDelete selected modulesDelete or BackspaceMulti-select modulesCtrl + Click (Windows/Linux)Cmd + Click (Mac)Box select modulesShift + DragRename moduleDouble-click module nameSave changes in Edit dialogEnter
-
-Visual Feedback
-Hover States
-
-Port nodes highlight when hovering
-Delete icons appear when hovering over port nodes
-Connection arrows highlight when hovering
-
-
-Selection States
-
-Selected modules have highlighted borders
-Selected modules can be moved as a group
-
-
-Connection Drawing
-
-Temporary arrow follows cursor during drag
-Valid drop targets are highlighted
-Connection snaps into place when released
+| Action | Shortcut |
+| :--- | :--- |
+| **Delete Selection** | `Delete` or `Backspace` |
+| **Undo** | `Ctrl` + `Z` |
+| **Redo** | `Ctrl` + `Shift` + `Z` |
+| **Rename Module** | Double-click module name |
+| **Save Dialog Changes** | `Enter` |
