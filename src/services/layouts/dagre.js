@@ -14,12 +14,12 @@ export function runPortGranularLayout(nodes, edges) {
   g.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 80 })
   g.setDefaultEdgeLabel(() => ({}))
 
-  // 2. Create "Port" Nodes & Store Lookup Map
+  // Create "Port" Nodes & Store Lookup Map
   // We map the port's unique UID to its Dagre Node ID to avoid the "changing ID" bug.
   const portToDagreId = new Map()
   const nodeToSpacerId = new Map()
 
-  // 1. Create "Cluster" Nodes (The actual Module Nodes)
+  // Create "Cluster" Nodes (The actual Module Nodes)
   nodes.forEach((node) => {
     g.setNode(node.id, {
       label: node.id,
@@ -61,7 +61,7 @@ export function runPortGranularLayout(nodes, edges) {
     })
   })
 
-  // 3. Create Edges
+  // Create Edges
   edges.forEach((edge) => {
     // We have to reconstruct the IDs here manually or look them up if we had edge objects mapped
     // But since we know the logic:
@@ -180,7 +180,7 @@ export function runPortGranularLayout(nodes, edges) {
     backdropFilter: 'blur(2px)',
   })
 
-  // 1. Calculate Bounding Box of the Graph
+  // Calculate Bounding Box of the Graph
   let minX = Infinity,
     maxX = -Infinity,
     minY = Infinity,
@@ -209,7 +209,7 @@ export function runPortGranularLayout(nodes, edges) {
     }
   })
 
-  // 2. Calculate Scale Factors to fit screen
+  // Calculate Scale Factors to fit screen
   const padding = 50
   const graphW = maxX - minX || 100
   const graphH = maxY - minY || 100
@@ -255,7 +255,7 @@ export function runPortGranularLayout(nodes, edges) {
     debugContainer.appendChild(box)
   }
 
-  // 3. Draw Nodes
+  // Draw Nodes
   g.nodes().forEach((v) => {
     const node = g.node(v)
     if (!node) return

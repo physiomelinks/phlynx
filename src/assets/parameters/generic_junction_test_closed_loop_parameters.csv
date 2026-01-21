@@ -56,11 +56,7 @@ nu,dimensionless,0.5,known
 SMvolfrac_art,dimensionless,0.1,Toro_2021
 E_K_tube_ascending_aorta_A,J_per_m3,100000,23_02_2025_identified
 u_ext_ascending_aorta_A,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_ascending_aorta_A,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_ascending_aorta_A,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_ascending_aorta_A,dimensionless,0,defined_by_user
 l_ascending_aorta_A,metre,0.0153234,ADAN_86
 r_0_ascending_aorta_A,metre,0.015642,ADAN_86
@@ -70,11 +66,7 @@ I_scale_ascending_aorta_A,dimensionless,1,defined_by_user
 K_m_K_tube_ascending_aorta_A,Js_per_m3,30000,Toro_2021
 E_K_tube_ascending_aorta_B,J_per_m3,100000,23_02_2025_identified
 u_ext_ascending_aorta_B,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_ascending_aorta_B,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_ascending_aorta_B,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_ascending_aorta_B,dimensionless,0,defined_by_user
 l_ascending_aorta_B,metre,0.014796,ADAN_86
 r_0_ascending_aorta_B,metre,0.01508,ADAN_86
@@ -84,11 +76,7 @@ I_scale_ascending_aorta_B,dimensionless,1,defined_by_user
 K_m_K_tube_ascending_aorta_B,Js_per_m3,30000,Toro_2021
 E_K_tube_ascending_aorta_C,J_per_m3,100000,23_02_2025_identified
 u_ext_ascending_aorta_C,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_ascending_aorta_C,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_ascending_aorta_C,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_ascending_aorta_C,dimensionless,0,defined_by_user
 l_ascending_aorta_C,metre,0.014796,ADAN_86
 r_0_ascending_aorta_C,metre,0.0145305,ADAN_86
@@ -98,11 +86,7 @@ I_scale_ascending_aorta_C,dimensionless,1,defined_by_user
 K_m_K_tube_ascending_aorta_C,Js_per_m3,30000,Toro_2021
 E_K_tube_ascending_aorta_D,J_per_m3,100000,23_02_2025_identified
 u_ext_ascending_aorta_D,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_ascending_aorta_D,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_ascending_aorta_D,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_ascending_aorta_D,dimensionless,0,defined_by_user
 l_ascending_aorta_D,metre,0.014796,ADAN_86
 r_0_ascending_aorta_D,metre,0.013914,ADAN_86
@@ -112,11 +96,7 @@ I_scale_ascending_aorta_D,dimensionless,1,defined_by_user
 K_m_K_tube_ascending_aorta_D,Js_per_m3,30000,Toro_2021
 E_K_tube_aortic_arch_C2,J_per_m3,100000,23_02_2025_identified
 u_ext_aortic_arch_C2,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_aortic_arch_C2,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_aortic_arch_C2,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_aortic_arch_C2,dimensionless,0,defined_by_user
 l_aortic_arch_C2,metre,0.014796,ADAN_86
 r_0_aortic_arch_C2,metre,0.0133364,ADAN_86
@@ -126,11 +106,7 @@ I_scale_aortic_arch_C2,dimensionless,1,defined_by_user
 K_m_K_tube_aortic_arch_C2,Js_per_m3,30000,Toro_2021
 E_K_tube_aortic_arch_C46,J_per_m3,400000,ADAN_86
 u_ext_aortic_arch_C46,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_aortic_arch_C46,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_aortic_arch_C46,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_aortic_arch_C46,dimensionless,0,defined_by_user
 l_aortic_arch_C46,metre,0.00960849,ADAN_86
 r_0_aortic_arch_C46,metre,0.0127671,ADAN_86
@@ -140,11 +116,7 @@ I_scale_aortic_arch_C46,dimensionless,1,defined_by_user
 K_m_K_tube_aortic_arch_C46,Js_per_m3,30000,Toro_2021
 E_K_tube_aortic_arch_C64,J_per_m3,400000,ADAN_86
 u_ext_aortic_arch_C64,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_aortic_arch_C64,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_aortic_arch_C64,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_aortic_arch_C64,dimensionless,0,defined_by_user
 l_aortic_arch_C64,metre,0.00697955,ADAN_86
 r_0_aortic_arch_C64,metre,0.0124288,ADAN_86
@@ -154,11 +126,7 @@ I_scale_aortic_arch_C64,dimensionless,1,defined_by_user
 K_m_K_tube_aortic_arch_C64,Js_per_m3,30000,Toro_2021
 E_K_tube_brachiocephalic_trunk_C4,J_per_m3,400000,ADAN_86
 u_ext_brachiocephalic_trunk_C4,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_brachiocephalic_trunk_C4,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_brachiocephalic_trunk_C4,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_brachiocephalic_trunk_C4,dimensionless,0,defined_by_user
 l_brachiocephalic_trunk_C4,metre,0.0473822,ADAN_86
 r_0_brachiocephalic_trunk_C4,metre,0.00641887,ADAN_86
@@ -168,11 +136,7 @@ I_scale_brachiocephalic_trunk_C4,dimensionless,1,defined_by_user
 K_m_K_tube_brachiocephalic_trunk_C4,Js_per_m3,30000,Toro_2021
 E_K_tube_common_carotid_L48_A,J_per_m3,400000,ADAN_86
 u_ext_common_carotid_L48_A,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_common_carotid_L48_A,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_common_carotid_L48_A,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_common_carotid_L48_A,dimensionless,0,defined_by_user
 l_common_carotid_L48_A,metre,0.030339,ADAN_86
 r_0_common_carotid_L48_A,metre,0.00436635,ADAN_86
@@ -182,11 +146,7 @@ I_scale_common_carotid_L48_A,dimensionless,1,defined_by_user
 K_m_K_tube_common_carotid_L48_A,Js_per_m3,30000,Toro_2021
 E_K_tube_common_carotid_R6_A,J_per_m3,400000,ADAN_86
 u_ext_common_carotid_R6_A,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_common_carotid_R6_A,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_common_carotid_R6_A,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_common_carotid_R6_A,dimensionless,0,defined_by_user
 l_common_carotid_R6_A,metre,0.0270844,ADAN_86
 r_0_common_carotid_R6_A,metre,0.00443053,ADAN_86
@@ -196,11 +156,7 @@ I_scale_common_carotid_R6_A,dimensionless,1,defined_by_user
 K_m_K_tube_common_carotid_R6_A,Js_per_m3,30000,Toro_2021
 E_K_tube_subclavian_L66,J_per_m3,400000,ADAN_86
 u_ext_subclavian_L66,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_subclavian_L66,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_subclavian_L66,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_subclavian_L66,dimensionless,0,defined_by_user
 l_subclavian_L66,metre,0.0494669,ADAN_86
 r_0_subclavian_L66,metre,0.00399235,ADAN_86
@@ -210,11 +166,7 @@ I_scale_subclavian_L66,dimensionless,1,defined_by_user
 K_m_K_tube_subclavian_L66,Js_per_m3,30000,Toro_2021
 E_K_tube_subclavian_R28,J_per_m3,400000,ADAN_86
 u_ext_subclavian_R28,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_subclavian_R28,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_subclavian_R28,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_subclavian_R28,dimensionless,0,defined_by_user
 l_subclavian_R28,metre,0.0157469,ADAN_86
 r_0_subclavian_R28,metre,0.00452027,ADAN_86
@@ -225,20 +177,6 @@ K_m_K_tube_subclavian_R28,Js_per_m3,30000,Toro_2021
 R_T_head_L_T,Js_per_m6,1270000000,calculated_from_assumptions
 C_T_head_L_T,m6_per_J,4E-11,to_be_identified
 u_ext_head_L_T,J_per_m3,0,user_defined
-<<<<<<< HEAD
-R_T_head_R_T,Js_per_m6,1270000000,calculated_from_assumptions
-C_T_head_R_T,m6_per_J,4E-11,to_be_identified
-u_ext_head_R_T,J_per_m3,0,user_defined
-R_T_arm_L_T,Js_per_m6,3240000000,calculated_from_assumptions
-C_T_arm_L_T,m6_per_J,1E-10,to_be_identified
-u_ext_arm_L_T,J_per_m3,0,user_defined
-R_T_arm_R_T,Js_per_m6,3240000000,calculated_from_assumptions
-C_T_arm_R_T,m6_per_J,1E-10,to_be_identified
-u_ext_arm_R_T,J_per_m3,0,user_defined
-E_K_tube_aortic_arch_C94,J_per_m3,400000,ADAN_86
-u_ext_aortic_arch_C94,J_per_m3,0,user_defined
-u_0_aortic_arch_C94,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
 q_us_head_L_T,m3,0,user_defined_TO_DO
 q_init_head_L_T,m3,0,user_defined_TO_DO
 R_T_head_R_T,Js_per_m6,1270000000,calculated_from_assumptions
@@ -259,7 +197,6 @@ q_init_arm_R_T,m3,0,user_defined_TO_DO
 E_K_tube_aortic_arch_C94,J_per_m3,400000,ADAN_86
 u_ext_aortic_arch_C94,J_per_m3,0,user_defined
 u_0_aortic_arch_C94,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_aortic_arch_C94,dimensionless,0,defined_by_user
 l_aortic_arch_C94,metre,0.0432111,ADAN_86
 r_0_aortic_arch_C94,metre,0.0117401,ADAN_86
@@ -269,11 +206,7 @@ I_scale_aortic_arch_C94,dimensionless,1,defined_by_user
 K_m_K_tube_aortic_arch_C94,Js_per_m3,30000,Toro_2021
 E_K_tube_thoracic_aorta_C96,J_per_m3,400000,ADAN_86
 u_ext_thoracic_aorta_C96,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_thoracic_aorta_C96,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_thoracic_aorta_C96,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_thoracic_aorta_C96,dimensionless,0,defined_by_user
 l_thoracic_aorta_C96,metre,0.00989803,ADAN_86
 r_0_thoracic_aorta_C96,metre,0.0104579,ADAN_86
@@ -283,11 +216,7 @@ I_scale_thoracic_aorta_C96,dimensionless,1,defined_by_user
 K_m_K_tube_thoracic_aorta_C96,Js_per_m3,30000,Toro_2021
 E_K_tube_thoracic_aorta_C100,J_per_m3,400000,ADAN_86
 u_ext_thoracic_aorta_C100,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_thoracic_aorta_C100,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_thoracic_aorta_C100,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_thoracic_aorta_C100,dimensionless,0,defined_by_user
 l_thoracic_aorta_C100,metre,0.00788038,ADAN_86
 r_0_thoracic_aorta_C100,metre,0.0102897,ADAN_86
@@ -297,11 +226,7 @@ I_scale_thoracic_aorta_C100,dimensionless,1,defined_by_user
 K_m_K_tube_thoracic_aorta_C100,Js_per_m3,30000,Toro_2021
 E_K_tube_thoracic_aorta_C104,J_per_m3,400000,ADAN_86
 u_ext_thoracic_aorta_C104,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_thoracic_aorta_C104,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_thoracic_aorta_C104,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_thoracic_aorta_C104,dimensionless,0,defined_by_user
 l_thoracic_aorta_C104,metre,0.0155561,ADAN_86
 r_0_thoracic_aorta_C104,metre,0.0100681,ADAN_86
@@ -311,11 +236,7 @@ I_scale_thoracic_aorta_C104,dimensionless,1,defined_by_user
 K_m_K_tube_thoracic_aorta_C104,Js_per_m3,30000,Toro_2021
 E_K_tube_thoracic_aorta_C108,J_per_m3,400000,ADAN_86
 u_ext_thoracic_aorta_C108,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_thoracic_aorta_C108,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_thoracic_aorta_C108,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_thoracic_aorta_C108,dimensionless,0,defined_by_user
 l_thoracic_aorta_C108,metre,0.00532705,ADAN_86
 r_0_thoracic_aorta_C108,metre,0.00987279,ADAN_86
@@ -325,11 +246,7 @@ I_scale_thoracic_aorta_C108,dimensionless,1,defined_by_user
 K_m_K_tube_thoracic_aorta_C108,Js_per_m3,30000,Toro_2021
 E_K_tube_thoracic_aorta_C112,J_per_m3,400000,ADAN_86
 u_ext_thoracic_aorta_C112,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_thoracic_aorta_C112,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_thoracic_aorta_C112,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_thoracic_aorta_C112,dimensionless,0,defined_by_user
 l_thoracic_aorta_C112,metre,0.121566,ADAN_86
 r_0_thoracic_aorta_C112,metre,0.00847543,ADAN_86
@@ -339,11 +256,7 @@ I_scale_thoracic_aorta_C112,dimensionless,1,defined_by_user
 K_m_K_tube_thoracic_aorta_C112,Js_per_m3,30000,Toro_2021
 E_K_tube_abdominal_aorta_C114,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C114,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_abdominal_aorta_C114,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_abdominal_aorta_C114,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C114,dimensionless,0,defined_by_user
 l_abdominal_aorta_C114,metre,0.00324767,ADAN_86
 r_0_abdominal_aorta_C114,metre,0.00751533,ADAN_86
@@ -354,17 +267,11 @@ K_m_K_tube_abdominal_aorta_C114,Js_per_m3,30000,Toro_2021
 R_T_trunk_C_T,Js_per_m6,201000000,calculated_from_assumptions
 C_T_trunk_C_T,m6_per_J,0.000000004,to_be_identified
 u_ext_trunk_C_T,J_per_m3,0,user_defined
-<<<<<<< HEAD
-E_K_tube_abdominal_aorta_C136,J_per_m3,400000,ADAN_86
-u_ext_abdominal_aorta_C136,J_per_m3,0,user_defined
-u_0_abdominal_aorta_C136,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
 q_us_trunk_C_T,m3,0,user_defined_TO_DO
 q_init_trunk_C_T,m3,0,user_defined_TO_DO
 E_K_tube_abdominal_aorta_C136,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C136,J_per_m3,0,user_defined
 u_0_abdominal_aorta_C136,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C136,dimensionless,0,defined_by_user
 l_abdominal_aorta_C136,metre,0.0139886,ADAN_86
 r_0_abdominal_aorta_C136,metre,0.00742666,ADAN_86
@@ -374,11 +281,7 @@ I_scale_abdominal_aorta_C136,dimensionless,1,defined_by_user
 K_m_K_tube_abdominal_aorta_C136,Js_per_m3,30000,Toro_2021
 E_K_tube_abdominal_aorta_C164,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C164,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_abdominal_aorta_C164,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_abdominal_aorta_C164,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C164,dimensionless,0,defined_by_user
 l_abdominal_aorta_C164,metre,0.00431913,ADAN_86
 r_0_abdominal_aorta_C164,metre,0.00729199,ADAN_86
@@ -388,11 +291,7 @@ I_scale_abdominal_aorta_C164,dimensionless,1,defined_by_user
 K_m_K_tube_abdominal_aorta_C164,Js_per_m3,30000,Toro_2021
 E_K_tube_abdominal_aorta_C176,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C176,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_abdominal_aorta_C176,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_abdominal_aorta_C176,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C176,dimensionless,0,defined_by_user
 l_abdominal_aorta_C176,metre,0.0119773,ADAN_86
 r_0_abdominal_aorta_C176,metre,0.00718902,ADAN_86
@@ -402,11 +301,7 @@ I_scale_abdominal_aorta_C176,dimensionless,1,defined_by_user
 K_m_K_tube_abdominal_aorta_C176,Js_per_m3,30000,Toro_2021
 E_K_tube_abdominal_aorta_C188,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C188,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_abdominal_aorta_C188,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_abdominal_aorta_C188,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C188,dimensionless,0,defined_by_user
 l_abdominal_aorta_C188,metre,0.0540907,ADAN_86
 r_0_abdominal_aorta_C188,metre,0.00679934,ADAN_86
@@ -416,11 +311,7 @@ I_scale_abdominal_aorta_C188,dimensionless,1,defined_by_user
 K_m_K_tube_abdominal_aorta_C188,Js_per_m3,30000,Toro_2021
 E_K_tube_abdominal_aorta_C192,J_per_m3,400000,ADAN_86
 u_ext_abdominal_aorta_C192,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_abdominal_aorta_C192,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_abdominal_aorta_C192,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_abdominal_aorta_C192,dimensionless,0,defined_by_user
 l_abdominal_aorta_C192,metre,0.042231,ADAN_86
 r_0_abdominal_aorta_C192,metre,0.00612422,ADAN_86
@@ -430,11 +321,7 @@ I_scale_abdominal_aorta_C192,dimensionless,1,defined_by_user
 K_m_K_tube_abdominal_aorta_C192,Js_per_m3,30000,Toro_2021
 E_K_tube_common_iliac_L194,J_per_m3,400000,ADAN_86
 u_ext_common_iliac_L194,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_common_iliac_L194,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_common_iliac_L194,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_common_iliac_L194,dimensionless,0,defined_by_user
 l_common_iliac_L194,metre,0.0740524,ADAN_86
 r_0_common_iliac_L194,metre,0.00428142,ADAN_86
@@ -444,11 +331,7 @@ I_scale_common_iliac_L194,dimensionless,1,defined_by_user
 K_m_K_tube_common_iliac_L194,Js_per_m3,30000,Toro_2021
 E_K_tube_external_iliac_L198,J_per_m3,800000,ADAN_86
 u_ext_external_iliac_L198,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_external_iliac_L198,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_external_iliac_L198,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_external_iliac_L198,dimensionless,0,defined_by_user
 l_external_iliac_L198,metre,0.102358,ADAN_86
 r_0_external_iliac_L198,metre,0.00328821,ADAN_86
@@ -458,11 +341,7 @@ I_scale_external_iliac_L198,dimensionless,1,defined_by_user
 K_m_K_tube_external_iliac_L198,Js_per_m3,30000,Toro_2021
 E_K_tube_common_iliac_R216,J_per_m3,400000,ADAN_86
 u_ext_common_iliac_R216,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_common_iliac_R216,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_common_iliac_R216,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_common_iliac_R216,dimensionless,180,defined_by_user
 l_common_iliac_R216,metre,0.0764393,ADAN_86
 r_0_common_iliac_R216,metre,0.00430633,ADAN_86
@@ -472,11 +351,7 @@ I_scale_common_iliac_R216,dimensionless,1,defined_by_user
 K_m_K_tube_common_iliac_R216,Js_per_m3,30000,Toro_2021
 E_K_tube_external_iliac_R220,J_per_m3,800000,ADAN_86
 u_ext_external_iliac_R220,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_external_iliac_R220,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_external_iliac_R220,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_external_iliac_R220,dimensionless,0,defined_by_user
 l_external_iliac_R220,metre,0.102358,ADAN_86
 r_0_external_iliac_R220,metre,0.00328821,ADAN_86
@@ -486,11 +361,7 @@ I_scale_external_iliac_R220,dimensionless,1,defined_by_user
 K_m_K_tube_external_iliac_R220,Js_per_m3,30000,Toro_2021
 E_K_tube_femoral_L200,J_per_m3,800000,ADAN_86
 u_ext_femoral_L200,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_femoral_L200,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_femoral_L200,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_femoral_L200,dimensionless,0,defined_by_user
 l_femoral_L200,metre,0.0315982,ADAN_86
 r_0_femoral_L200,metre,0.00317347,ADAN_86
@@ -500,11 +371,7 @@ I_scale_femoral_L200,dimensionless,1,defined_by_user
 K_m_K_tube_femoral_L200,Js_per_m3,30000,Toro_2021
 E_K_tube_femoral_R222,J_per_m3,800000,ADAN_86
 u_ext_femoral_R222,J_per_m3,0,user_defined
-<<<<<<< HEAD
 u_0_femoral_R222,J_per_m3,1.06E+04,assumedRefOf80mmHg
-=======
-u_0_femoral_R222,J_per_m3,10600,assumedRefOf80mmHg
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 theta_femoral_R222,dimensionless,0,defined_by_user
 l_femoral_R222,metre,0.0315982,ADAN_86
 r_0_femoral_R222,metre,0.00317347,ADAN_86
@@ -515,11 +382,6 @@ K_m_K_tube_femoral_R222,Js_per_m3,30000,Toro_2021
 R_T_leg_L_T,Js_per_m6,1200000000,calculated_from_assumptions
 C_T_leg_L_T,m6_per_J,4E-10,to_be_identified
 u_ext_leg_L_T,J_per_m3,0,user_defined
-<<<<<<< HEAD
-R_T_leg_R_T,Js_per_m6,1200000000,calculated_from_assumptions
-C_T_leg_R_T,m6_per_J,4E-10,to_be_identified
-u_ext_leg_R_T,J_per_m3,0,user_defined
-=======
 q_us_leg_L_T,m3,0,user_defined_TO_DO
 q_init_leg_L_T,m3,0,user_defined_TO_DO
 R_T_leg_R_T,Js_per_m6,1200000000,calculated_from_assumptions
@@ -527,7 +389,6 @@ C_T_leg_R_T,m6_per_J,4E-10,to_be_identified
 u_ext_leg_R_T,J_per_m3,0,user_defined
 q_us_leg_R_T,m3,0,user_defined_TO_DO
 q_init_leg_R_T,m3,0,user_defined_TO_DO
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 R_venous_lb,Js_per_m6,0.0000001,small_chosen
 C_venous_lb,m6_per_J,0.0000003,to_be_identified
 u_ext_venous_lb,J_per_m3,0,user_defined
@@ -564,21 +425,15 @@ R_par,Js_per_m6,10664000,Blanco_2013_Table_8
 C_par,m6_per_J,3.09077E-10,to_be_identified
 u_ext_par,J_per_m3,0,user_defined
 I_par,Js2_per_m6,0.000001,Blanco_2013_Table_8
-<<<<<<< HEAD
-=======
 u_0_par,J_per_m3,1463,Mynard&Smolich_2015_assumedRefOf11mmHg
 q_0_par,m3,0,user_defined_TO_DO
 r_0_par,metre,0.0135,Mynard&Smolich_2015_mainPA_NOT_USED
 l_par,metre,0.043,Mynard&Smolich_2015_mainPA_NOT_USED
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb
 R_pvn,Js_per_m6,1333000,Blanco_2013_Table_8
 C_pvn,m6_per_J,0.0000000060015,to_be_identified
 u_ext_pvn,J_per_m3,0,user_defined
 I_pvn,Js2_per_m6,0.000001,Blanco_2013_Table_8
-<<<<<<< HEAD
-=======
 u_0_pvn,J_per_m3,1330,Mynard&Smolich_2015_assumedRefOf10mmHg
 q_0_pvn,m3,0,user_defined_TO_DO
 r_0_pvn,metre,0.00864,Mynard&Smolich_2015_rightInfPV_NOT_USED
 l_pvn,metre,0.0235237,Mynard&Smolich_2015_rightInfPV_NOT_USED
->>>>>>> b3c5f87d55a67a9cbeada02094fa2bda0a5633fb

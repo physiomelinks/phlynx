@@ -65,9 +65,9 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, ref, nextTick } from 'vue'
-import { ElNotification } from 'element-plus'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { Check } from '@element-plus/icons-vue'
+import { notify } from '../utils/notify'
 import { IMPORT_KEYS } from '../utils/constants'
 import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
 
@@ -156,7 +156,7 @@ const addDynamicFields = async (validation) => {
       }
     })
   } catch (error) {
-    console.error("Failed to create dynamic fields:", error)
+    console.error('Failed to create dynamic fields:', error)
   }
 }
 
@@ -190,20 +190,18 @@ const createValidationStore = () => {
         moduleFile = {
           filename: config.module_file,
           modules: [],
-          isStub: true
+          isStub: true,
         }
         availableModules.push(moduleFile)
       }
 
-      let module = moduleFile.modules.find(
-        (m) => m.name === config.module_type || m.type === config.module_type
-      )
+      let module = moduleFile.modules.find((m) => m.name === config.module_type || m.type === config.module_type)
 
       if (!module) {
         module = {
           name: config.module_type,
           componentName: config.module_type,
-          configs: []
+          configs: [],
         }
         moduleFile.modules.push(module)
       }
@@ -215,7 +213,7 @@ const createValidationStore = () => {
       const configWithMetadata = {
         ...config,
         _sourceFile: filename,
-        _loadedAt: new Date().toISOString()
+        _loadedAt: new Date().toISOString(),
       }
 
       const existingConfigIndex = module.configs.findIndex(
@@ -234,19 +232,22 @@ const createValidationStore = () => {
   stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
     const existingFile = availableModules.find((f) => f.filename === filename)
 
+
     if (existingFile) {
       if (existingFile.isStub) {
         delete existingFile.isStub
       }
 
+
       if (existingFile.modules) {
-        payload.modules.forEach(newMod => {
-          const oldMod = existingFile.modules.find(m => m.name === newMod.name)
+        payload.modules.forEach((newMod) => {
+          const oldMod = existingFile.modules.find((m) => m.name === newMod.name)
           if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
             newMod.configs = oldMod.configs
           }
         })
       }
+
 
       Object.assign(existingFile, payload)
     } else {
@@ -322,11 +323,11 @@ const handleFileChange = async (uploadFile, field) => {
     }
 
     // Surface warnings (notifications only once)
-    state.warnings.forEach((w) => {
-      ElNotification.warning({
+    state.warnings.forEach(async (w) => {
+      await nextTick()
+      notify.warning({
         title: 'Import Warning',
         message: w,
-        duration: 5000,
       })
     })
 
@@ -336,10 +337,9 @@ const handleFileChange = async (uploadFile, field) => {
     state.payload = null
     state.warnings = []
 
-    ElNotification.error({
+    notify.error({
       title: 'Import Error',
       message: error.message || 'Failed to parse file.',
-      duration: 6000,
     })
   }
 }
@@ -348,11 +348,12 @@ async function updateVesselValidation(validation) {
   validationStatus.value = validation
 
   if (validation.isComplete) {
-    ElNotification.success({
-      title: 'All Resources Available',
-      message: 'All required modules and configurations are now loaded!',
-      duration: 3000,
-    })
+    // No need to notify again.
+    // notify.success({
+    //   title: 'All Resources Available',
+    //   message: 'All required modules and configurations are now loaded!',
+    //   duration: 3000,
+    // })
     return
   }
 
@@ -370,11 +371,13 @@ async function stageFile(field, parsedData, fileName) {
     const { processModuleData } = await import('../utils/cellml')
     const result = processModuleData(data)
 
+
     if (result.type === 'success') {
       const augmentedData = result.data.map((item) => ({
         ...item,
         sourceFile: fileName,
       }))
+
 
       stagedFiles.value.moduleFiles.push({
         filename: fileName,
@@ -382,13 +385,13 @@ async function stageFile(field, parsedData, fileName) {
           filename: fileName,
           modules: augmentedData,
           model: result.model,
-        }
+        },
       })
     }
   } else if (field.processUpload === 'config') {
     stagedFiles.value.configFiles.push({
       filename: fileName,
-      payload: data
+      payload: data,
     })
   }
 
@@ -413,10 +416,8 @@ async function stageFile(field, parsedData, fileName) {
     }
   }
 
-  ElNotification.success({
-    title: field.processUpload === 'cellml'
-      ? 'CellML File Staged'
-      : 'Config Staged',
+  notify.success({
+    title: field.processUpload === 'cellml' ? 'CellML File Staged' : 'Config Staged',
     message: `${fileName} ready to import`,
     duration: 3000,
   })
@@ -479,7 +480,7 @@ defineExpose({
 
 .warning-text {
   font-size: 12px;
-  color: #E6A23C;
+  color: #e6a23c;
   margin-top: 4px;
   display: flex;
   align-items: flex-start;

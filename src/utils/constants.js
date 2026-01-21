@@ -14,18 +14,45 @@ export const edgeLineOptions = {
 }
 export const FLOW_IDS = {
   MAIN: 'main-flow-editor',
-  MACRO: 'macro-builder-editor'
+  MACRO: 'macro-builder-editor',
 }
 
 export const GHOST_NODE_TYPE = 'ghostNode'
 export const GHOST_MODULE_FILENAME = 'ghostModule.cellml'
-export const GHOST_MODULE_DEFINITION = { filename: GHOST_MODULE_FILENAME, modules: [{name: 'Ghost', componentName: 'ghost', sourceFile: GHOST_MODULE_FILENAME}] }
+export const GHOST_MODULE_DEFINITION = {
+  filename: GHOST_MODULE_FILENAME,
+  modules: [
+    {
+      name: 'Ghost',
+      componentName: 'ghost',
+      sourceFile: GHOST_MODULE_FILENAME,
+    },
+  ],
+}
 
 export const IMPORT_KEYS = {
   VESSEL: 'vessel',
   MODULE_CONFIG: 'moduleConfig',
   CELLML_FILE: 'cellMLFile',
   PARAMETER: 'parameter',
-  UNITS: 'units'
+  UNITS: 'units',
 }
 
+export const EXPORT_KEYS = {
+  CA: 'circulatoryAutogen',
+  CELLML: 'cellml',
+}
+
+export const CELLML_FILE_TYPES = [
+  {
+    description: 'CellML File',
+    accept: { 'application/xml': ['.cellml', '.xml'] },
+  },
+]
+
+export const JSON_FILE_TYPES = [
+  {
+    description: 'JSON File',
+    accept: { 'application/json': ['.json'] },
+  },
+]

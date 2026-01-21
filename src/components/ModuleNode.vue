@@ -10,6 +10,16 @@
     <NodeResizer min-width="180" min-height="105" :is-visible="selected" />
 
     <el-card :class="[domainTypeClass, 'module-card']" shadow="hover">
+      <div v-if="isMissingParameters" class="status-indicator">
+        <el-tooltip
+          content="No parameter file assigned"
+          placement="top"
+          effect="light"
+        >
+          <el-icon class="warning-icon"><WarningFilled /></el-icon>
+        </el-tooltip>
+      </div>
+
       <div class="module-name" @dblclick="startEditing">
         <span v-if="!isEditing">
           {{ data.name }}
@@ -119,7 +129,14 @@
 import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import { Handle, useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
-import { Delete, Edit, Key, Place } from '@element-plus/icons-vue'
+import {
+  Delete,
+  Edit,
+  Key,
+  Place,
+  WarningFilled,
+} from '@element-plus/icons-vue'
+import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
 import { getHandleId, getHandleStyle, portPosition } from '../utils/ports'
 
@@ -128,6 +145,7 @@ import '../assets/vueflownode.css'
 const { addEdges, edges, removeEdges, updateNodeData, updateNodeInternals } =
   useVueFlow()
 const historyStore = useFlowHistoryStore()
+const builderStore = useBuilderStore()
 
 const props = defineProps({
   data: {
@@ -162,6 +180,10 @@ const domainTypeClass = computed(() => {
   return props.data.domainType
     ? `domain-type-${props.data.domainType}`
     : 'domain-type-default'
+})
+
+const isMissingParameters = computed(() => {
+  return !builderStore.moduleParameterMap.get(props.data.sourceFile)
 })
 
 function handleSetDomainType(typeCommand) {
@@ -384,5 +406,38 @@ function handleDocumentContextmenu(e) {
 </script>
 
 <style lang="scss" scoped>
-@import "../assets/vueflowhandle.css";
+@import '../assets/vueflowhandle.css';
+
+.module-card {
+  position: relative;
+}
+
+.status-indicator {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  z-index: 10; /* Ensure it sits above other card content */
+
+  /* Optional: Add a white background circle so the icon pops 
+     if it overlaps a border or busy background */
+  background-color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.warning-icon {
+  color: var(--el-color-warning); /* Standard Element Plus Orange */
+  font-size: 18px;
+  cursor: help;
+
+  /* Optional: specific Hover effect */
+  &:hover {
+    color: var(--el-color-warning-dark-2);
+  }
+}
 </style>
