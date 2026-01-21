@@ -33,7 +33,8 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { ElNotification, ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
+import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
+import { notify} from '../utils/notify'
 
 const props = defineProps({
   modelValue: {
@@ -71,7 +72,7 @@ function closeDialog() {
 
 function handleConfirm() {
   if (!fileName.value || !fileName.value.trim()) {
-    ElNotification.error("Filename cannot be empty.")
+    notify.error({message: "Filename cannot be empty."})
     return
   }
   

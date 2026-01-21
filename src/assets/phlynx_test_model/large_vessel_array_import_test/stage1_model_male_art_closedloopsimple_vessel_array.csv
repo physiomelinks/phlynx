@@ -1,0 +1,248 @@
+name,BC_type,vessel_type,inp_vessels,out_vessels,fma_id,graph_id,x,y,z
+A_aorta_1_a,vv_nonlinear_visco,Nout_junction,heart,A_aorta_1_b sink_heart_arterial sink_trunk_arterial K_tube_A_aorta_1_a,3734,50010931_69316,0.0,0.0,-1.0
+A_brachiocephalic,pv_nonlinear_visco,Nout_junction,A_aorta_1_b,A_common_carotid_R A_subclavian_1_R K_tube_A_brachiocephalic,3932,69316,3.0,4.0,0.0
+A_common_carotid_R,pv_nonlinear_visco,Nout_junction,A_brachiocephalic,A_external_carotid_R A_internal_carotid_1_a_R K_tube_A_common_carotid_R,3941,69325,2.0,10.0,1.0
+A_external_carotid_R,pv_nonlinear_visco,arterial,A_common_carotid_R,A_external_carotid_R_T K_tube_A_external_carotid_R,3945,66531,3.0,17.0,-1.0
+A_internal_carotid_1_a_R,pv_nonlinear_visco,Nout_junction,A_common_carotid_R,A_internal_carotid_1_b_R sink_head_arterial_R K_tube_A_internal_carotid_1_a_R,3949,75866_100000562,1.0,15.0,1.0
+A_posterior_communicating_R,pv_nonlinear_visco,Nout_junction,A_internal_carotid_1_b_R,A_posterior_cerebral_postcommunicating_part_R K_tube_A_posterior_communicating_R,50085,100000562,1.0,21.0,2.0
+A_internal_carotid_2_R,pv_nonlinear_visco,Nout_junction,A_internal_carotid_1_b_R,A_anterior_cerebral_precommunicating_part_R A_middle_cerebral_R K_tube_A_internal_carotid_2_R,3949,75866_100000589,1.0,18.0,1.0
+A_anterior_communicating,pv_nonlinear_visco,Nout_junction,A_anterior_cerebral_precommunicating_part_L,A_anterior_cerebral_postcommunicating_part_R K_tube_A_anterior_communicating,50169,76068,0.0,23.0,0.0
+A_anterior_cerebral_precommunicating_part_R,pp_nonlinear_visco,arterial,A_internal_carotid_2_R,A_anterior_cerebral_postcommunicating_part_R K_tube_A_anterior_cerebral_precommunicating_part_R,50075,100000589_100000707,0.8,21.0,1.0
+A_anterior_cerebral_postcommunicating_part_R,pv_nonlinear_visco,arterial,A_anterior_communicating A_anterior_cerebral_precommunicating_part_R,A_anterior_cerebral_postcommunicating_part_R_T K_tube_A_anterior_cerebral_postcommunicating_part_R,50077,100000707,0.8,23.0,1.0
+A_middle_cerebral_R,pv_nonlinear_visco,arterial,A_internal_carotid_2_R,A_middle_cerebral_R_T K_tube_A_middle_cerebral_R,50082,61991,2.0,20.0,0.0
+A_subclavian_1_R,pv_nonlinear_visco,Nout_junction,A_brachiocephalic,A_vertebral_1_R A_subclavian_2_R K_tube_A_subclavian_1_R,3953,69318_76261,6.0,2.0,1.0
+A_vertebral_1_R,pv_nonlinear_visco,Nout_junction,A_subclavian_1_R,A_posterior_inferior_cerebellar_R A_vertebral_2_R K_tube_A_vertebral_1_R,3958,76261_86070,3.0,5.0,2.0
+A_posterior_inferior_cerebellar_R,pv_nonlinear_visco,arterial,A_vertebral_1_R,A_posterior_inferior_cerebellar_R_T K_tube_A_posterior_inferior_cerebellar_R,50519,86070,2.0,19.0,2.0
+A_vertebral_2_R,pv_nonlinear_visco,Nout_junction,A_vertebral_1_R,A_basilar_1 K_tube_A_vertebral_2_R,3958,76261_76647,2.0,9.0,2.0
+A_basilar_1,pv_nonlinear_visco,Nout_junction,A_vertebral_2_R A_vertebral_2_L,A_anterior_inferior_cerebellar_R A_basilar_2 K_tube_A_basilar_1,50542,76647_100000503,0.0,18.0,2.0
+A_anterior_inferior_cerebellar_R,pv_nonlinear_visco,arterial,A_basilar_1,A_anterior_inferior_cerebellar_R_T K_tube_A_anterior_inferior_cerebellar_R,50545,100000503,0.5,18.0,2.0
+A_basilar_2,pv_nonlinear_visco,Nout_junction,A_basilar_1,A_anterior_inferior_cerebellar_L A_basilar_3 K_tube_A_basilar_2,50542,76647_100000504,0.0,19.0,2.0
+A_anterior_inferior_cerebellar_L,pv_nonlinear_visco,arterial,A_basilar_2,A_anterior_inferior_cerebellar_L_T K_tube_A_anterior_inferior_cerebellar_L,50546,100000504,-0.5,18.0,2.0
+A_basilar_3,pv_nonlinear_visco,Nout_junction,A_basilar_2,A_superior_cerebellar_L A_basilar_4 K_tube_A_basilar_3,50542,76647_86077,0.0,20.0,2.0
+A_superior_cerebellar_L,pv_nonlinear_visco,arterial,A_basilar_3,A_superior_cerebellar_L_T K_tube_A_superior_cerebellar_L,50575,86077,-0.5,21.0,2.0
+A_basilar_4,pv_nonlinear_visco,Nout_junction,A_basilar_3,A_superior_cerebellar_R A_basilar_5 K_tube_A_basilar_4,50542,76647_86076,0.0,21.0,2.0
+A_superior_cerebellar_R,pv_nonlinear_visco,arterial,A_basilar_4,A_superior_cerebellar_R_T K_tube_A_superior_cerebellar_R,50574,86076,0.5,21.0,2.0
+A_basilar_5,pv_nonlinear_visco,Nout_junction,A_basilar_4,A_posterior_cerebral_precommunicating_part_L A_posterior_cerebral_precommunicating_part_R K_tube_A_basilar_5,50542,76647_100000600,0.0,22.0,2.0
+A_posterior_cerebral_precommunicating_part_L,pv_nonlinear_visco,Nout_junction,A_basilar_5,A_posterior_cerebral_postcommunicating_part_L K_tube_A_posterior_cerebral_precommunicating_part_L,50640,100000600_100000715,-1.0,22.0,2.0
+A_posterior_cerebral_postcommunicating_part_L,pv_nonlinear_visco,arterial,A_posterior_cerebral_precommunicating_part_L A_posterior_communicating_L,A_posterior_cerebral_postcommunicating_part_L_T K_tube_A_posterior_cerebral_postcommunicating_part_L,50642,100000715,-1.0,23.0,2.0
+A_posterior_cerebral_precommunicating_part_R,pp_nonlinear_visco,arterial,A_basilar_5,A_posterior_cerebral_postcommunicating_part_R K_tube_A_posterior_cerebral_precommunicating_part_R,50639,100000595_100000758,1.0,22.0,2.0
+A_posterior_cerebral_postcommunicating_part_R,pv_nonlinear_visco,arterial,A_posterior_cerebral_precommunicating_part_R A_posterior_communicating_R,A_posterior_cerebral_postcommunicating_part_R_T K_tube_A_posterior_cerebral_postcommunicating_part_R,50641,100000758,1.0,23.0,2.0
+A_subclavian_2_R,pv_nonlinear_visco,arterial,A_subclavian_1_R,A_axillary_a_R K_tube_A_subclavian_2_R,3953,69318_78260,7.0,1.0,1.0
+A_axillary_a_R,pv_nonlinear_visco,Nout_junction,A_subclavian_2_R,A_axillary_b_R sink_arm_arterial_R K_tube_A_axillary_a_R,22655,78260_82598,8.0,0.0,1.0
+A_brachial_R,pv_nonlinear_visco,Nout_junction,A_axillary_b_R,A_radial_R A_ulnar_R K_tube_A_brachial_R,22691,82598,9.0,-5.0,1.0
+A_radial_R,pv_nonlinear_visco,arterial,A_brachial_R,A_radial_R_T K_tube_A_radial_R,22733,66625,10.0,-12.0,1.5
+A_ulnar_R,pv_nonlinear_visco,arterial,A_brachial_R,A_ulnar_R_T K_tube_A_ulnar_R,22797,66623,8.0,-12.0,0.5
+A_aorta_2,pv_nonlinear_visco,Nout_junction,A_aorta_1_b,A_common_carotid_L A_aorta_3 K_tube_A_aorta_2,3734,50010931_69326,1.0,-1.0,2.0
+A_common_carotid_L,pv_nonlinear_visco,Nout_junction,A_aorta_2,A_external_carotid_L A_internal_carotid_1_a_L K_tube_A_common_carotid_L,4058,69326,-2.0,10.0,1.0
+A_external_carotid_L,pv_nonlinear_visco,arterial,A_common_carotid_L,A_external_carotid_L_T K_tube_A_external_carotid_L,4060,66532,-3.0,17.0,-1.0
+A_internal_carotid_1_a_L,pv_nonlinear_visco,Nout_junction,A_common_carotid_L,A_internal_carotid_1_b_L sink_head_arterial_L K_tube_A_internal_carotid_1_a_L,4062,75867_100000591,-1.0,15.0,1.0
+A_posterior_communicating_L,pp_nonlinear_visco,arterial,A_internal_carotid_1_b_L,A_posterior_cerebral_postcommunicating_part_L K_tube_A_posterior_communicating_L,50086,100000591,-1.0,21.0,2.0
+A_internal_carotid_2_L,pv_nonlinear_visco,Nout_junction,A_internal_carotid_1_b_L,A_anterior_cerebral_precommunicating_part_L A_middle_cerebral_L K_tube_A_internal_carotid_2_L,4062,75867_100000590,-1.0,18.0,1.0
+A_anterior_cerebral_precommunicating_part_L,pv_nonlinear_visco,Nout_junction,A_internal_carotid_2_L,A_anterior_communicating A_anterior_cerebral_postcommunicating_part_L K_tube_A_anterior_cerebral_precommunicating_part_L,50076,100000590,-0.8,21.0,1.0
+A_anterior_cerebral_postcommunicating_part_L,pv_nonlinear_visco,arterial,A_anterior_cerebral_precommunicating_part_L,A_anterior_cerebral_postcommunicating_part_L_T K_tube_A_anterior_cerebral_postcommunicating_part_L,50078,100000706,-0.8,23.0,1.0
+A_middle_cerebral_L,pv_nonlinear_visco,arterial,A_internal_carotid_2_L,A_middle_cerebral_L_T K_tube_A_middle_cerebral_L,50083,67684,-2.0,20.0,0.0
+A_aorta_3,pv_nonlinear_visco,Nout_junction,A_aorta_2,A_subclavian_1_L A_aorta_4 K_tube_A_aorta_3,3734,50010931_69319,1.0,-4.0,2.0
+A_subclavian_1_L,pv_nonlinear_visco,Nout_junction,A_aorta_3,A_vertebral_1_L A_subclavian_2_L K_tube_A_subclavian_1_L,4694,69319_76262,-6.0,2.0,1.0
+A_vertebral_1_L,pv_nonlinear_visco,Nout_junction,A_subclavian_1_L,A_posterior_inferior_cerebellar_L A_vertebral_2_L K_tube_A_vertebral_1_L,4066,76262_86071,-3.0,5.0,2.0
+A_posterior_inferior_cerebellar_L,pv_nonlinear_visco,arterial,A_vertebral_1_L,A_posterior_inferior_cerebellar_L_T K_tube_A_posterior_inferior_cerebellar_L,50520,86071,-2.0,19.0,2.0
+A_vertebral_2_L,pp_nonlinear_visco,arterial,A_vertebral_1_L,A_basilar_1 K_tube_A_vertebral_2_L,4066,76262_76647,-2.0,9.0,2.0
+A_subclavian_2_L,pv_nonlinear_visco,arterial,A_subclavian_1_L,A_axillary_a_L K_tube_A_subclavian_2_L,4694,69319_78261,-7.0,1.0,1.0
+A_axillary_a_L,pv_nonlinear_visco,Nout_junction,A_subclavian_2_L,A_axillary_b_L sink_arm_arterial_L K_tube_A_axillary_a_L,22656,78261_82599,-8.0,0.0,1.0
+A_brachial_L,pv_nonlinear_visco,Nout_junction,A_axillary_b_L,A_radial_L A_ulnar_L K_tube_A_brachial_L,22692,82599,-9.0,-5.0,1.0
+A_radial_L,pv_nonlinear_visco,arterial,A_brachial_L,A_radial_L_T K_tube_A_radial_L,22734,66626,-10.0,-12.0,1.5
+A_ulnar_L,pv_nonlinear_visco,arterial,A_brachial_L,A_ulnar_L_T K_tube_A_ulnar_L,22798,66624,-8.0,-12.0,0.5
+A_aorta_4,pv_nonlinear_visco,Nout_junction,A_aorta_3,A_inferior_phrenic_R A_aorta_5 K_tube_A_aorta_4,3734,50010931_66484,1.0,-7.0,2.0
+A_inferior_phrenic_R,pv_nonlinear_visco,arterial,A_aorta_4,A_inferior_phrenic_R_T K_tube_A_inferior_phrenic_R,14746,66484,2.0,-11.0,2.0
+A_aorta_5,pv_nonlinear_visco,Nout_junction,A_aorta_4,A_inferior_phrenic_L A_aorta_6 K_tube_A_aorta_5,3734,50010931_66485,1.0,-10.0,2.0
+A_inferior_phrenic_L,pv_nonlinear_visco,arterial,A_aorta_5,A_inferior_phrenic_L_T K_tube_A_inferior_phrenic_L,14747,66485,-2.0,-11.0,2.0
+A_aorta_6,pv_nonlinear_visco,Nout_junction,A_aorta_5,A_celiac A_aorta_7 K_tube_A_aorta_6,3734,50010931_100000177,1.0,-13.0,2.0
+A_celiac,pv_nonlinear_visco,arterial,A_aorta_6,A_celiac_T K_tube_A_celiac,50737,100000177,0.0,-13.0,2.0
+A_aorta_7,pv_nonlinear_visco,Nout_junction,A_aorta_6,A_superior_mesenteric A_aorta_8 K_tube_A_aorta_7,3734,50010931_66358,1.0,-16.0,2.0
+A_superior_mesenteric,pv_nonlinear_visco,arterial,A_aorta_7,A_superior_mesenteric_T K_tube_A_superior_mesenteric,14749,66358,0.0,-16.0,2.0
+A_aorta_8,pv_nonlinear_visco,Nout_junction,A_aorta_7,A_renal_L A_aorta_9 K_tube_A_aorta_8,3734,50010931_66364,1.0,-19.0,2.0
+A_renal_L,pv_nonlinear_visco,arterial,A_aorta_8,A_renal_L_T K_tube_A_renal_L,14753,66364,-4.0,-19.0,2.0
+A_aorta_9,pv_nonlinear_visco,Nout_junction,A_aorta_8,A_renal_R A_aorta_10 K_tube_A_aorta_9,3734,50010931_66363,1.0,-22.0,2.0
+A_renal_R,pv_nonlinear_visco,arterial,A_aorta_9,A_renal_R_T K_tube_A_renal_R,14752,66363,4.0,-22.0,2.0
+A_aorta_10,pv_nonlinear_visco,Nout_junction,A_aorta_9,A_inferior_mesenteric A_aorta_11 K_tube_A_aorta_10,3734,50010931_66359,1.0,-25.0,2.0
+A_inferior_mesenteric,pv_nonlinear_visco,arterial,A_aorta_10,A_inferior_mesenteric_T K_tube_A_inferior_mesenteric,14750,66359,0.0,-25.0,2.0
+A_aorta_11,pv_nonlinear_visco,Nout_junction,A_aorta_10,A_common_iliac_a_L A_common_iliac_a_R K_tube_A_aorta_11,3734,50010931_69383,1.0,-28.0,2.0
+A_common_iliac_a_R,pv_nonlinear_visco,Nout_junction,A_aorta_11,A_common_iliac_b_R sink_leg_arterial_R K_tube_A_common_iliac_a_R,14765,69383,3.0,-30.0,2.0
+A_external_iliac_R,pv_nonlinear_visco,arterial,A_common_iliac_b_R,A_femoral_1_R K_tube_A_external_iliac_R,18806,70184_20731,4.0,-36.0,2.0
+A_femoral_1_R,pv_nonlinear_visco,Nout_junction,A_external_iliac_R,A_deep_femoral_R A_femoral_2_R K_tube_A_femoral_1_R,70249,20731_69396,4.0,-45.0,2.0
+A_deep_femoral_R,pv_nonlinear_visco,arterial,A_femoral_1_R,A_deep_femoral_R_T K_tube_A_deep_femoral_R,20796,69396,3.0,-48.0,2.0
+A_femoral_2_R,pv_nonlinear_visco,arterial,A_femoral_1_R,A_popliteal_R K_tube_A_femoral_2_R,70249,20731_22529,4.0,-55.0,2.0
+A_popliteal_R,pv_nonlinear_visco,Nout_junction,A_femoral_2_R,A_tibiofibular_trunk_R A_anterior_tibial_R K_tube_A_popliteal_R,77380,22529,4.0,-65.0,2.0
+A_tibiofibular_trunk_R,pv_nonlinear_visco,Nout_junction,A_popliteal_R,A_posterior_tibial_R A_peroneal_R K_tube_A_tibiofibular_trunk_R,66426,100002040,4.0,-75.0,2.0
+A_posterior_tibial_R,pv_nonlinear_visco,arterial,A_tibiofibular_trunk_R,A_posterior_tibial_R_T K_tube_A_posterior_tibial_R,43898,66426,3.0,-90.0,2.0
+A_peroneal_R,pv_nonlinear_visco,arterial,A_tibiofibular_trunk_R,A_peroneal_R_T K_tube_A_peroneal_R,43922,66540,5.0,-90.0,2.0
+A_anterior_tibial_R,pv_nonlinear_visco,arterial,A_popliteal_R,A_anterior_tibial_R_T K_tube_A_anterior_tibial_R,43896,66424,4.0,-85.0,2.0
+A_internal_iliac_R,pv_nonlinear_visco,arterial,A_common_iliac_b_R,A_internal_iliac_R_T K_tube_A_internal_iliac_R,18809,70186,5.0,-32.0,2.0
+A_common_iliac_a_L,pv_nonlinear_visco,Nout_junction,A_aorta_11,A_common_iliac_b_L sink_leg_arterial_L K_tube_A_common_iliac_a_L,14766,69384,-3.0,-30.0,2.0
+A_external_iliac_L,pv_nonlinear_visco,arterial,A_common_iliac_b_L,A_femoral_1_L K_tube_A_external_iliac_L,18807,70185_20732,-4.0,-36.0,2.0
+A_femoral_1_L,pv_nonlinear_visco,Nout_junction,A_external_iliac_L,A_deep_femoral_L A_femoral_2_L K_tube_A_femoral_1_L,70250,20732_69397,-4.0,-45.0,2.0
+A_deep_femoral_L,pv_nonlinear_visco,arterial,A_femoral_1_L,A_deep_femoral_L_T K_tube_A_deep_femoral_L,20797,69397,-3.0,-48.0,2.0
+A_femoral_2_L,pv_nonlinear_visco,arterial,A_femoral_1_L,A_popliteal_L K_tube_A_femoral_2_L,70250,20732_22530,-4.0,-55.0,2.0
+A_popliteal_L,pv_nonlinear_visco,Nout_junction,A_femoral_2_L,A_tibiofibular_trunk_L A_anterior_tibial_L K_tube_A_popliteal_L,77381,22530,-4.0,-65.0,2.0
+A_tibiofibular_trunk_L,pv_nonlinear_visco,Nout_junction,A_popliteal_L,A_posterior_tibial_L A_peroneal_L K_tube_A_tibiofibular_trunk_L,66427,100002039,-4.0,-75.0,2.0
+A_posterior_tibial_L,pv_nonlinear_visco,arterial,A_tibiofibular_trunk_L,A_posterior_tibial_L_T K_tube_A_posterior_tibial_L,43899,66427,-3.0,-90.0,2.0
+A_peroneal_L,pv_nonlinear_visco,arterial,A_tibiofibular_trunk_L,A_peroneal_L_T K_tube_A_peroneal_L,43923,66541,-5.0,-90.0,2.0
+A_anterior_tibial_L,pv_nonlinear_visco,arterial,A_popliteal_L,A_anterior_tibial_L_T K_tube_A_anterior_tibial_L,43897,66425,-4.0,-85.0,2.0
+A_internal_iliac_L,pv_nonlinear_visco,arterial,A_common_iliac_b_L,A_internal_iliac_L_T K_tube_A_internal_iliac_L,18810,70187,-5.0,-32.0,2.0
+heart,vp,heart,venous_ivc venous_svc pvn,A_aorta_1_a par,,,0.0,0.0,0.0
+par,vp,arterial_simple,heart,pvn,,,0.0,0.0,-1.5
+pvn,vp,venous,par,heart,,,0.0,-1.0,1.5
+A_external_carotid_R_T,pp,arterial_simple,A_external_carotid_R,venous_head_R,,,3.0,17.0,-1.0
+A_anterior_cerebral_postcommunicating_part_R_T,pp,arterial_simple,A_anterior_cerebral_postcommunicating_part_R,venous_head_R,,,0.8,23.0,1.0
+A_middle_cerebral_R_T,pp,arterial_simple,A_middle_cerebral_R,venous_head_R,,,2.0,20.0,0.0
+A_posterior_inferior_cerebellar_R_T,pp,arterial_simple,A_posterior_inferior_cerebellar_R,venous_head_R,,,2.0,19.0,2.0
+A_anterior_inferior_cerebellar_R_T,pp,arterial_simple,A_anterior_inferior_cerebellar_R,venous_head_R,,,0.5,18.0,2.0
+A_anterior_inferior_cerebellar_L_T,pp,arterial_simple,A_anterior_inferior_cerebellar_L,venous_head_L,,,-0.5,18.0,2.0
+A_superior_cerebellar_L_T,pp,arterial_simple,A_superior_cerebellar_L,venous_head_L,,,-0.5,21.0,2.0
+A_superior_cerebellar_R_T,pp,arterial_simple,A_superior_cerebellar_R,venous_head_R,,,0.5,21.0,2.0
+A_posterior_cerebral_postcommunicating_part_L_T,pp,arterial_simple,A_posterior_cerebral_postcommunicating_part_L,venous_head_L,,,-1.0,23.0,2.0
+A_posterior_cerebral_postcommunicating_part_R_T,pp,arterial_simple,A_posterior_cerebral_postcommunicating_part_R,venous_head_R,,,1.0,23.0,2.0
+A_radial_R_T,pp,arterial_simple,A_radial_R,venous_arm_R,,,10.0,-12.0,1.5
+A_ulnar_R_T,pp,arterial_simple,A_ulnar_R,venous_arm_R,,,8.0,-12.0,0.5
+A_external_carotid_L_T,pp,arterial_simple,A_external_carotid_L,venous_head_L,,,-3.0,17.0,-1.0
+A_anterior_cerebral_postcommunicating_part_L_T,pp,arterial_simple,A_anterior_cerebral_postcommunicating_part_L,venous_head_L,,,-0.8,23.0,1.0
+A_middle_cerebral_L_T,pp,arterial_simple,A_middle_cerebral_L,venous_head_L,,,-2.0,20.0,0.0
+A_posterior_inferior_cerebellar_L_T,pp,arterial_simple,A_posterior_inferior_cerebellar_L,venous_head_L,,,-2.0,19.0,2.0
+A_radial_L_T,pp,arterial_simple,A_radial_L,venous_arm_L,,,-10.0,-12.0,1.5
+A_ulnar_L_T,pp,arterial_simple,A_ulnar_L,venous_arm_L,,,-8.0,-12.0,0.5
+A_inferior_phrenic_R_T,pp,arterial_simple,A_inferior_phrenic_R,venous_trunk,,,2.0,-11.0,2.0
+A_inferior_phrenic_L_T,pp,arterial_simple,A_inferior_phrenic_L,venous_trunk,,,-2.0,-11.0,2.0
+A_celiac_T,pp,arterial_simple,A_celiac,venous_trunk,,,0.0,-13.0,2.0
+A_superior_mesenteric_T,pp,arterial_simple,A_superior_mesenteric,venous_trunk,,,0.0,-16.0,2.0
+A_renal_L_T,pp,arterial_simple,A_renal_L,venous_trunk,,,-4.0,-19.0,2.0
+A_renal_R_T,pp,arterial_simple,A_renal_R,venous_trunk,,,4.0,-22.0,2.0
+A_inferior_mesenteric_T,pp,arterial_simple,A_inferior_mesenteric,venous_trunk,,,0.0,-25.0,2.0
+A_deep_femoral_R_T,pp,arterial_simple,A_deep_femoral_R,venous_leg_R,,,3.0,-48.0,2.0
+A_posterior_tibial_R_T,pp,arterial_simple,A_posterior_tibial_R,venous_leg_R,,,3.0,-90.0,2.0
+A_peroneal_R_T,pp,arterial_simple,A_peroneal_R,venous_leg_R,,,5.0,-90.0,2.0
+A_anterior_tibial_R_T,pp,arterial_simple,A_anterior_tibial_R,venous_leg_R,,,4.0,-85.0,2.0
+A_internal_iliac_R_T,pp,arterial_simple,A_internal_iliac_R,venous_leg_R,,,5.0,-32.0,2.0
+A_deep_femoral_L_T,pp,arterial_simple,A_deep_femoral_L,venous_leg_L,,,-3.0,-48.0,2.0
+A_posterior_tibial_L_T,pp,arterial_simple,A_posterior_tibial_L,venous_leg_L,,,-3.0,-90.0,2.0
+A_peroneal_L_T,pp,arterial_simple,A_peroneal_L,venous_leg_L,,,-5.0,-90.0,2.0
+A_anterior_tibial_L_T,pp,arterial_simple,A_anterior_tibial_L,venous_leg_L,,,-4.0,-85.0,2.0
+A_internal_iliac_L_T,pp,arterial_simple,A_internal_iliac_L,venous_leg_L,,,-5.0,-32.0,2.0
+A_internal_carotid_1_b_L,pv_nonlinear_visco,Nout_junction,A_internal_carotid_1_a_L,A_posterior_communicating_L A_internal_carotid_2_L K_tube_A_internal_carotid_1_b_L,4062,75867_100000591,-1.0,17.0,1.0
+sink_head_arterial_L,pp,arterial_simple,A_internal_carotid_1_a_L,venous_head_L,,,-1.0,15.0,1.0
+A_internal_carotid_1_b_R,pv_nonlinear_visco,Nout_junction,A_internal_carotid_1_a_R,A_posterior_communicating_R A_internal_carotid_2_R K_tube_A_internal_carotid_1_b_R,3949,75866_100000562,1.0,17.0,1.0
+sink_head_arterial_R,pp,arterial_simple,A_internal_carotid_1_a_R,venous_head_R,,,1.0,15.0,1.0
+A_aorta_1_b,pv_nonlinear_visco,Nout_junction,A_aorta_1_a,A_brachiocephalic A_aorta_2 K_tube_A_aorta_1_b,3734,50010931_69316,1.0,3.0,0.0
+sink_heart_arterial,pp,arterial_simple,A_aorta_1_a,venous_trunk,,,0.0,0.0,-2.0
+sink_trunk_arterial,pp,arterial_simple,A_aorta_1_a,venous_trunk,,,0.0,-12.0,-2.0
+A_axillary_b_L,pv_nonlinear_visco,arterial,A_axillary_a_L,A_brachial_L K_tube_A_axillary_b_L,22656,78261_82599,-8.0,-2.0,1.0
+sink_arm_arterial_L,pp,arterial_simple,A_axillary_a_L,venous_arm_L,,,-8.0,0.0,1.0
+A_axillary_b_R,pv_nonlinear_visco,arterial,A_axillary_a_R,A_brachial_R K_tube_A_axillary_b_R,22655,78260_82598,8.0,-2.0,1.0
+sink_arm_arterial_R,pp,arterial_simple,A_axillary_a_R,venous_arm_R,,,8.0,0.0,1.0
+A_common_iliac_b_L,pv_nonlinear_visco,Nout_junction,A_common_iliac_a_L,A_external_iliac_L A_internal_iliac_L K_tube_A_common_iliac_b_L,14766,69384,-3.0,-33.0,2.0
+sink_leg_arterial_L,pp,arterial_simple,A_common_iliac_a_L,venous_leg_L,,,-3.0,-30.0,2.0
+A_common_iliac_b_R,pv_nonlinear_visco,Nout_junction,A_common_iliac_a_R,A_external_iliac_R A_internal_iliac_R K_tube_A_common_iliac_b_R,14765,69383,3.0,-33.0,2.0
+sink_leg_arterial_R,pp,arterial_simple,A_common_iliac_a_R,venous_leg_R,,,3.0,-30.0,2.0
+K_tube_A_aorta_1_a,nn,material_prop_visco_const,A_aorta_1_a, ,,,0.0,0.0,-1.0
+K_tube_A_brachiocephalic,nn,material_prop_visco_const,A_brachiocephalic, ,,,3.0,4.0,0.0
+K_tube_A_common_carotid_R,nn,material_prop_visco_const,A_common_carotid_R, ,,,2.0,10.0,1.0
+K_tube_A_external_carotid_R,nn,material_prop_visco_const,A_external_carotid_R, ,,,3.0,17.0,-1.0
+K_tube_A_internal_carotid_1_a_R,nn,material_prop_visco_const,A_internal_carotid_1_a_R, ,,,1.0,15.0,1.0
+K_tube_A_posterior_communicating_R,nn,material_prop_visco_const,A_posterior_communicating_R, ,,,1.0,21.0,2.0
+K_tube_A_internal_carotid_2_R,nn,material_prop_visco_const,A_internal_carotid_2_R, ,,,1.0,18.0,1.0
+K_tube_A_anterior_communicating,nn,material_prop_visco_const,A_anterior_communicating, ,,,0.0,23.0,0.0
+K_tube_A_anterior_cerebral_precommunicating_part_R,nn,material_prop_visco_const,A_anterior_cerebral_precommunicating_part_R, ,,,0.8,21.0,1.0
+K_tube_A_anterior_cerebral_postcommunicating_part_R,nn,material_prop_visco_const,A_anterior_cerebral_postcommunicating_part_R, ,,,0.8,23.0,1.0
+K_tube_A_middle_cerebral_R,nn,material_prop_visco_const,A_middle_cerebral_R, ,,,2.0,20.0,0.0
+K_tube_A_subclavian_1_R,nn,material_prop_visco_const,A_subclavian_1_R, ,,,6.0,2.0,1.0
+K_tube_A_vertebral_1_R,nn,material_prop_visco_const,A_vertebral_1_R, ,,,3.0,5.0,2.0
+K_tube_A_posterior_inferior_cerebellar_R,nn,material_prop_visco_const,A_posterior_inferior_cerebellar_R, ,,,2.0,19.0,2.0
+K_tube_A_vertebral_2_R,nn,material_prop_visco_const,A_vertebral_2_R, ,,,2.0,9.0,2.0
+K_tube_A_basilar_1,nn,material_prop_visco_const,A_basilar_1, ,,,0.0,18.0,2.0
+K_tube_A_anterior_inferior_cerebellar_R,nn,material_prop_visco_const,A_anterior_inferior_cerebellar_R, ,,,0.5,18.0,2.0
+K_tube_A_basilar_2,nn,material_prop_visco_const,A_basilar_2, ,,,0.0,19.0,2.0
+K_tube_A_anterior_inferior_cerebellar_L,nn,material_prop_visco_const,A_anterior_inferior_cerebellar_L, ,,,-0.5,18.0,2.0
+K_tube_A_basilar_3,nn,material_prop_visco_const,A_basilar_3, ,,,0.0,20.0,2.0
+K_tube_A_superior_cerebellar_L,nn,material_prop_visco_const,A_superior_cerebellar_L, ,,,-0.5,21.0,2.0
+K_tube_A_basilar_4,nn,material_prop_visco_const,A_basilar_4, ,,,0.0,21.0,2.0
+K_tube_A_superior_cerebellar_R,nn,material_prop_visco_const,A_superior_cerebellar_R, ,,,0.5,21.0,2.0
+K_tube_A_basilar_5,nn,material_prop_visco_const,A_basilar_5, ,,,0.0,22.0,2.0
+K_tube_A_posterior_cerebral_precommunicating_part_L,nn,material_prop_visco_const,A_posterior_cerebral_precommunicating_part_L, ,,,-1.0,22.0,2.0
+K_tube_A_posterior_cerebral_postcommunicating_part_L,nn,material_prop_visco_const,A_posterior_cerebral_postcommunicating_part_L, ,,,-1.0,23.0,2.0
+K_tube_A_posterior_cerebral_precommunicating_part_R,nn,material_prop_visco_const,A_posterior_cerebral_precommunicating_part_R, ,,,1.0,22.0,2.0
+K_tube_A_posterior_cerebral_postcommunicating_part_R,nn,material_prop_visco_const,A_posterior_cerebral_postcommunicating_part_R, ,,,1.0,23.0,2.0
+K_tube_A_subclavian_2_R,nn,material_prop_visco_const,A_subclavian_2_R, ,,,7.0,1.0,1.0
+K_tube_A_axillary_a_R,nn,material_prop_visco_const,A_axillary_a_R, ,,,8.0,0.0,1.0
+K_tube_A_brachial_R,nn,material_prop_visco_const,A_brachial_R, ,,,9.0,-5.0,1.0
+K_tube_A_radial_R,nn,material_prop_visco_const,A_radial_R, ,,,10.0,-12.0,1.5
+K_tube_A_ulnar_R,nn,material_prop_visco_const,A_ulnar_R, ,,,8.0,-12.0,0.5
+K_tube_A_aorta_2,nn,material_prop_visco_const,A_aorta_2, ,,,1.0,-1.0,2.0
+K_tube_A_common_carotid_L,nn,material_prop_visco_const,A_common_carotid_L, ,,,-2.0,10.0,1.0
+K_tube_A_external_carotid_L,nn,material_prop_visco_const,A_external_carotid_L, ,,,-3.0,17.0,-1.0
+K_tube_A_internal_carotid_1_a_L,nn,material_prop_visco_const,A_internal_carotid_1_a_L, ,,,-1.0,15.0,1.0
+K_tube_A_posterior_communicating_L,nn,material_prop_visco_const,A_posterior_communicating_L, ,,,-1.0,21.0,2.0
+K_tube_A_internal_carotid_2_L,nn,material_prop_visco_const,A_internal_carotid_2_L, ,,,-1.0,18.0,1.0
+K_tube_A_anterior_cerebral_precommunicating_part_L,nn,material_prop_visco_const,A_anterior_cerebral_precommunicating_part_L, ,,,-0.8,21.0,1.0
+K_tube_A_anterior_cerebral_postcommunicating_part_L,nn,material_prop_visco_const,A_anterior_cerebral_postcommunicating_part_L, ,,,-0.8,23.0,1.0
+K_tube_A_middle_cerebral_L,nn,material_prop_visco_const,A_middle_cerebral_L, ,,,-2.0,20.0,0.0
+K_tube_A_aorta_3,nn,material_prop_visco_const,A_aorta_3, ,,,1.0,-4.0,2.0
+K_tube_A_subclavian_1_L,nn,material_prop_visco_const,A_subclavian_1_L, ,,,-6.0,2.0,1.0
+K_tube_A_vertebral_1_L,nn,material_prop_visco_const,A_vertebral_1_L, ,,,-3.0,5.0,2.0
+K_tube_A_posterior_inferior_cerebellar_L,nn,material_prop_visco_const,A_posterior_inferior_cerebellar_L, ,,,-2.0,19.0,2.0
+K_tube_A_vertebral_2_L,nn,material_prop_visco_const,A_vertebral_2_L, ,,,-2.0,9.0,2.0
+K_tube_A_subclavian_2_L,nn,material_prop_visco_const,A_subclavian_2_L, ,,,-7.0,1.0,1.0
+K_tube_A_axillary_a_L,nn,material_prop_visco_const,A_axillary_a_L, ,,,-8.0,0.0,1.0
+K_tube_A_brachial_L,nn,material_prop_visco_const,A_brachial_L, ,,,-9.0,-5.0,1.0
+K_tube_A_radial_L,nn,material_prop_visco_const,A_radial_L, ,,,-10.0,-12.0,1.5
+K_tube_A_ulnar_L,nn,material_prop_visco_const,A_ulnar_L, ,,,-8.0,-12.0,0.5
+K_tube_A_aorta_4,nn,material_prop_visco_const,A_aorta_4, ,,,1.0,-7.0,2.0
+K_tube_A_inferior_phrenic_R,nn,material_prop_visco_const,A_inferior_phrenic_R, ,,,2.0,-11.0,2.0
+K_tube_A_aorta_5,nn,material_prop_visco_const,A_aorta_5, ,,,1.0,-10.0,2.0
+K_tube_A_inferior_phrenic_L,nn,material_prop_visco_const,A_inferior_phrenic_L, ,,,-2.0,-11.0,2.0
+K_tube_A_aorta_6,nn,material_prop_visco_const,A_aorta_6, ,,,1.0,-13.0,2.0
+K_tube_A_celiac,nn,material_prop_visco_const,A_celiac, ,,,0.0,-13.0,2.0
+K_tube_A_aorta_7,nn,material_prop_visco_const,A_aorta_7, ,,,1.0,-16.0,2.0
+K_tube_A_superior_mesenteric,nn,material_prop_visco_const,A_superior_mesenteric, ,,,0.0,-16.0,2.0
+K_tube_A_aorta_8,nn,material_prop_visco_const,A_aorta_8, ,,,1.0,-19.0,2.0
+K_tube_A_renal_L,nn,material_prop_visco_const,A_renal_L, ,,,-4.0,-19.0,2.0
+K_tube_A_aorta_9,nn,material_prop_visco_const,A_aorta_9, ,,,1.0,-22.0,2.0
+K_tube_A_renal_R,nn,material_prop_visco_const,A_renal_R, ,,,4.0,-22.0,2.0
+K_tube_A_aorta_10,nn,material_prop_visco_const,A_aorta_10, ,,,1.0,-25.0,2.0
+K_tube_A_inferior_mesenteric,nn,material_prop_visco_const,A_inferior_mesenteric, ,,,0.0,-25.0,2.0
+K_tube_A_aorta_11,nn,material_prop_visco_const,A_aorta_11, ,,,1.0,-28.0,2.0
+K_tube_A_common_iliac_a_R,nn,material_prop_visco_const,A_common_iliac_a_R, ,,,3.0,-30.0,2.0
+K_tube_A_external_iliac_R,nn,material_prop_visco_const,A_external_iliac_R, ,,,4.0,-36.0,2.0
+K_tube_A_femoral_1_R,nn,material_prop_visco_const,A_femoral_1_R, ,,,4.0,-45.0,2.0
+K_tube_A_deep_femoral_R,nn,material_prop_visco_const,A_deep_femoral_R, ,,,3.0,-48.0,2.0
+K_tube_A_femoral_2_R,nn,material_prop_visco_const,A_femoral_2_R, ,,,4.0,-55.0,2.0
+K_tube_A_popliteal_R,nn,material_prop_visco_const,A_popliteal_R, ,,,4.0,-65.0,2.0
+K_tube_A_tibiofibular_trunk_R,nn,material_prop_visco_const,A_tibiofibular_trunk_R, ,,,4.0,-75.0,2.0
+K_tube_A_posterior_tibial_R,nn,material_prop_visco_const,A_posterior_tibial_R, ,,,3.0,-90.0,2.0
+K_tube_A_peroneal_R,nn,material_prop_visco_const,A_peroneal_R, ,,,5.0,-90.0,2.0
+K_tube_A_anterior_tibial_R,nn,material_prop_visco_const,A_anterior_tibial_R, ,,,4.0,-85.0,2.0
+K_tube_A_internal_iliac_R,nn,material_prop_visco_const,A_internal_iliac_R, ,,,5.0,-32.0,2.0
+K_tube_A_common_iliac_a_L,nn,material_prop_visco_const,A_common_iliac_a_L, ,,,-3.0,-30.0,2.0
+K_tube_A_external_iliac_L,nn,material_prop_visco_const,A_external_iliac_L, ,,,-4.0,-36.0,2.0
+K_tube_A_femoral_1_L,nn,material_prop_visco_const,A_femoral_1_L, ,,,-4.0,-45.0,2.0
+K_tube_A_deep_femoral_L,nn,material_prop_visco_const,A_deep_femoral_L, ,,,-3.0,-48.0,2.0
+K_tube_A_femoral_2_L,nn,material_prop_visco_const,A_femoral_2_L, ,,,-4.0,-55.0,2.0
+K_tube_A_popliteal_L,nn,material_prop_visco_const,A_popliteal_L, ,,,-4.0,-65.0,2.0
+K_tube_A_tibiofibular_trunk_L,nn,material_prop_visco_const,A_tibiofibular_trunk_L, ,,,-4.0,-75.0,2.0
+K_tube_A_posterior_tibial_L,nn,material_prop_visco_const,A_posterior_tibial_L, ,,,-3.0,-90.0,2.0
+K_tube_A_peroneal_L,nn,material_prop_visco_const,A_peroneal_L, ,,,-5.0,-90.0,2.0
+K_tube_A_anterior_tibial_L,nn,material_prop_visco_const,A_anterior_tibial_L, ,,,-4.0,-85.0,2.0
+K_tube_A_internal_iliac_L,nn,material_prop_visco_const,A_internal_iliac_L, ,,,-5.0,-32.0,2.0
+K_tube_A_internal_carotid_1_b_L,nn,material_prop_visco_const,A_internal_carotid_1_b_L, ,,,-1.0,17.0,1.0
+K_tube_A_internal_carotid_1_b_R,nn,material_prop_visco_const,A_internal_carotid_1_b_R, ,,,1.0,17.0,1.0
+K_tube_A_aorta_1_b,nn,material_prop_visco_const,A_aorta_1_b, ,,,1.0,3.0,0.0
+K_tube_A_axillary_b_L,nn,material_prop_visco_const,A_axillary_b_L, ,,,-8.0,-2.0,1.0
+K_tube_A_axillary_b_R,nn,material_prop_visco_const,A_axillary_b_R, ,,,8.0,-2.0,1.0
+K_tube_A_common_iliac_b_L,nn,material_prop_visco_const,A_common_iliac_b_L, ,,,-3.0,-33.0,2.0
+K_tube_A_common_iliac_b_R,nn,material_prop_visco_const,A_common_iliac_b_R, ,,,3.0,-33.0,2.0
+venous_head_L,vp_simple,Min_junction,A_external_carotid_L_T A_anterior_cerebral_postcommunicating_part_L_T A_middle_cerebral_L_T A_posterior_inferior_cerebellar_L_T A_anterior_inferior_cerebellar_L_T A_superior_cerebellar_L_T A_posterior_cerebral_postcommunicating_part_L_T sink_head_arterial_L,venous_svc,,,-2.0,17.0,1.0
+venous_head_R,vp_simple,Min_junction,A_external_carotid_R_T A_anterior_cerebral_postcommunicating_part_R_T A_middle_cerebral_R_T A_posterior_inferior_cerebellar_R_T A_anterior_inferior_cerebellar_R_T A_superior_cerebellar_R_T A_posterior_cerebral_postcommunicating_part_R_T sink_head_arterial_R,venous_svc,,,2.0,17.0,1.0
+venous_arm_L,vp_simple,Min_junction,A_radial_L_T A_ulnar_L_T sink_arm_arterial_L,venous_svc,,,-8.0,-8.0,1.0
+venous_arm_R,vp_simple,Min_junction,A_radial_R_T A_ulnar_R_T sink_arm_arterial_R,venous_svc,,,8.0,-8.0,1.0
+venous_trunk,vp_simple,Min_junction,A_inferior_phrenic_R_T A_inferior_phrenic_L_T A_celiac_T A_superior_mesenteric_T A_renal_L_T A_renal_R_T A_inferior_mesenteric_T sink_heart_arterial sink_trunk_arterial,venous_ivc,,,0.0,-15.0,2.0
+venous_leg_L,vp_simple,Min_junction,A_deep_femoral_L_T A_posterior_tibial_L_T A_peroneal_L_T A_anterior_tibial_L_T A_internal_iliac_L_T sink_leg_arterial_L,venous_ivc,,,-4.0,-80.0,2.0
+venous_leg_R,vp_simple,Min_junction,A_deep_femoral_R_T A_posterior_tibial_R_T A_peroneal_R_T A_anterior_tibial_R_T A_internal_iliac_R_T sink_leg_arterial_R,venous_ivc,,,4.0,-80.0,2.0
+venous_svc,vp_simple,Min_junction,venous_head_L venous_head_R venous_arm_L venous_arm_R,heart,,,0.0,8.0,2.0
+venous_ivc,vp_simple,Min_junction,venous_trunk venous_leg_L venous_leg_R,heart,,,0.0,-12.0,2.0

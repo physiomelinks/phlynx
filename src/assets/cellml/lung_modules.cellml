@@ -1,0 +1,1267 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////// Bond graph lung model //////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="simple_lung_bond_graph_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <!-- ______  Pressures _________
+ atmospheric/mouth pressure-->
+        <variable name="P_m" public_interface="in" units="J_per_m3"/>
+        <!-- larynx pressure-->
+        <variable name="P_l" public_interface="out" units="J_per_m3"/>
+        <!-- trachea pressure-->
+        <variable name="P_t" public_interface="out" units="J_per_m3"/>
+        <!-- bronchea pressure-->
+        <variable name="P_b" public_interface="out" units="J_per_m3"/>
+        <!-- Alveolar pressure-->
+        <variable name="P_A" public_interface="out" units="J_per_m3"/>
+        <!-- Pleural pressure-->
+        <variable name="P_pl" public_interface="out" units="J_per_m3"/>
+        <!-- resp muscle pressure-->
+        <variable name="P_mus" public_interface="out" units="J_per_m3"/>
+        <variable name="P_mus_min" public_interface="in" units="J_per_m3"/>
+        <variable name="P_mus_min_wCont" public_interface="out" units="J_per_m3"/>
+        <variable name="P_plEE" public_interface="in" units="J_per_m3"/>
+        <variable name="Delta_P_mus" public_interface="in" units="J_per_m3"/>
+        <!-- ______  volumes_________
+ larynx volume-->
+        <variable initial_value="1.0e-2" name="q_l" public_interface="out" units="m3"/>
+        <variable initial_value="1.0e-3" name="q_t" public_interface="out" units="m3"/>
+        <variable initial_value="1.0e-3" name="q_b" public_interface="out" units="m3"/>
+        <variable initial_value="0.0" name="q_A_stressed" public_interface="out" units="m3"/>
+        <variable name="q_A" public_interface="out" units="m3"/>
+        <variable initial_value="0.0" name="q_pl" public_interface="out" units="m3"/>
+        <variable name="q_D" public_interface="out" units="m3"/>
+        <variable name="q_str" public_interface="out" units="m3"/>
+        <!-- ______  flows _________-->
+        <variable name="v_ml" public_interface="out" units="m3_per_s"/>
+        <variable name="v_lt" public_interface="out" units="m3_per_s"/>
+        <variable name="v_tb" public_interface="out" units="m3_per_s"/>
+        <variable name="v_bA" public_interface="out" units="m3_per_s"/>
+        <variable name="v_twall" public_interface="out" units="m3_per_s"/>
+        <variable name="v_bwall" public_interface="out" units="m3_per_s"/>
+        <variable name="v_plwall" public_interface="out" units="m3_per_s"/>
+        <!-- ______  Resistances_________-->
+        <variable name="R_ml" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_lt" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_tb" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_bA" public_interface="in" units="Js_per_m6"/>
+        <variable name="alpha_LR" public_interface="in" units="dimensionless"/>
+        <variable name="R_plwall" public_interface="in" units="Js_per_m6"/>
+        <!-- ______  Compliances_________-->
+        <variable name="C_l" public_interface="in" units="m6_per_J"/>
+        <variable name="C_t" public_interface="in" units="m6_per_J"/>
+        <variable name="C_b" public_interface="in" units="m6_per_J"/>
+        <variable name="C_A" public_interface="in" units="m6_per_J"/>
+        <variable name="C_pl" public_interface="in" units="m6_per_J"/>
+        <!-- periods/times-->
+        <variable name="t_floor" public_interface="out" units="second"/>
+        <variable name="T_resp" public_interface="in" units="second"/>
+        <variable name="Delta_RR_resp" public_interface="in" units="per_s"/>
+        <variable name="T_resp_wCont" public_interface="out" units="second"/>
+        <variable name="T_I" public_interface="out" units="second"/>
+        <variable name="T_E" public_interface="out" units="second"/>
+        <variable name="tau" public_interface="out" units="second"/>
+        <variable name="IE_ratio" public_interface="in" units="dimensionless"/>
+        <!-- unstressed volumes-->
+        <variable name="q_l_us" public_interface="in" units="m3"/>
+        <variable name="q_t_us" public_interface="in" units="m3"/>
+        <variable name="q_b_us" public_interface="in" units="m3"/>
+        <variable name="q_A_us" public_interface="in" units="m3"/>
+        <!-- flags to turn control on and off-->
+        <variable name="flag_RR_control" public_interface="in" units="dimensionless"/>
+        <variable name="flag_P_mus_control" public_interface="in" units="dimensionless"/>
+        <!-- TODO check this doesn't cause issues. -->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>T_resp_wCont</ci>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">1</cn>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <divide/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <ci>T_resp</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>flag_RR_control</ci>
+                            <ci>Delta_RR_resp</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- We keep T_E and T_I based on T_resp, not T_resp control, then move through t_floor faster or slower
+ as calculated below.-->
+            <apply>
+                <eq/>
+                <ci>T_E</ci>
+                <apply>
+                    <divide/>
+                    <ci>T_resp</ci>
+                    <apply>
+                        <plus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>IE_ratio</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>T_I</ci>
+                <apply>
+                    <times/>
+                    <ci>T_E</ci>
+                    <ci>IE_ratio</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>tau</ci>
+                <apply>
+                    <divide/>
+                    <ci>T_E</ci>
+                    <cn cellml:units="dimensionless">5</cn>
+                </apply>
+            </apply>
+            <!-- TODO split this into submodules-->
+            <apply>
+                <eq/>
+                <ci>v_ml</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_m</ci>
+                        <ci>P_l</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>R_ml</ci>
+                        <ci>alpha_LR</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_l</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_ml</ci>
+                    <ci>v_lt</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_l</ci>
+                <apply>
+                    <divide/>
+                    <ci>q_l</ci>
+                    <ci>C_l</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_lt</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_l</ci>
+                        <ci>P_t</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>R_lt</ci>
+                        <ci>alpha_LR</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_twall</ci>
+                <apply>
+                    <minus/>
+                    <ci>v_lt</ci>
+                    <ci>v_tb</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_t</ci>
+                </apply>
+                <ci>v_twall</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_t</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <ci>q_t</ci>
+                        <ci>C_t</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_tb</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_t</ci>
+                        <ci>P_b</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>R_tb</ci>
+                        <ci>alpha_LR</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_bwall</ci>
+                <apply>
+                    <minus/>
+                    <ci>v_tb</ci>
+                    <ci>v_bA</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_b</ci>
+                </apply>
+                <ci>v_bwall</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_b</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <ci>q_b</ci>
+                        <ci>C_b</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <!-- removing pleural pressure from bronchioles
+ allows us to use q_b for a volume for stretch. This makes it varies about zero, 
+ meaning we don't need a threshold, or the threshold can be zero.
+ However, it's not physiological, so I am trying to fix it here.
+ calculate the amount of stretched volume above baseline level.
+ assuming a quater of the way from end expiratory pressure to min is baseline.-->
+            <apply>
+                <eq/>
+                <ci>q_str</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_b</ci>
+                    <apply>
+                        <times/>
+                        <ci>C_b</ci>
+                        <apply>
+                            <plus/>
+                            <ci>P_plEE</ci>
+                            <apply>
+                                <divide/>
+                                <apply>
+                                    <minus/>
+                                    <ci>P_mus_min</ci>
+                                    <ci>P_plEE</ci>
+                                </apply>
+                                <cn cellml:units="dimensionless">4</cn>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- TODO change lung diagram.-->
+            <apply>
+                <eq/>
+                <ci>v_bA</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_b</ci>
+                        <ci>P_A</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>R_bA</ci>
+                        <ci>alpha_LR</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- v_Awall = v_bA-->
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_A_stressed</ci>
+                </apply>
+                <ci>v_bA</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_A</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <ci>q_A_stressed</ci>
+                        <ci>C_A</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_pl</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <minus/>
+                            <ci>v_plwall</ci>
+                            <ci>v_twall</ci>
+                        </apply>
+                        <ci>v_bwall</ci>
+                    </apply>
+                    <ci>v_bA</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_pl</ci>
+                <apply>
+                    <divide/>
+                    <ci>q_pl</ci>
+                    <ci>C_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_plwall</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_mus</ci>
+                        <ci>P_pl</ci>
+                    </apply>
+                    <ci>R_plwall</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- Dead space volume
+ it shouldn't reach q_D_min but we have this here so the model doesn't crash if it does
+ should include more realistic tube laws that allow collapse instead.-->
+        <variable name="q_D_min" public_interface="in" units="m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q_D</ci>
+                <apply>
+                    <max/>
+                    <apply>
+                        <plus/>
+                        <ci>q_l</ci>
+                        <ci>q_t</ci>
+                        <ci>q_b</ci>
+                        <ci>q_l_us</ci>
+                        <ci>q_t_us</ci>
+                        <ci>q_b_us</ci>
+                    </apply>
+                    <ci>q_D_min</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>q_A</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_A_stressed</ci>
+                    <ci>q_A_us</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- TODO + unstressed volume-->
+        <variable initial_value="0.0" name="s" public_interface="out" units="dimensionless"/>
+        <variable name="s_floor" public_interface="out" units="dimensionless"/>
+        <!-- calculate normalised time through this period-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>s</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">1</cn>
+                    <ci>T_resp_wCont</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>s_floor</ci>
+                <apply>
+                    <minus/>
+                    <ci>s</ci>
+                    <apply>
+                        <floor/>
+                        <ci>s</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- unnormalise (t_floor goes from 0 to T_resp, not T_resp_wCont) -->
+            <apply>
+                <eq/>
+                <ci>t_floor</ci>
+                <apply>
+                    <times/>
+                    <ci>s_floor</ci>
+                    <ci>T_resp</ci>
+                </apply>
+            </apply>
+            <!-- TODO swap this muscle model for the one used in ben tal and smith 2008-->
+            <apply>
+                <eq/>
+                <ci>P_mus_min_wCont</ci>
+                <apply>
+                    <plus/>
+                    <ci>P_mus_min</ci>
+                    <apply>
+                        <times/>
+                        <ci>flag_P_mus_control</ci>
+                        <ci>Delta_P_mus</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- This is the controlled end expiratiory pressure-->
+        <variable name="P_mus_max_wCont" public_interface="out" units="J_per_m3"/>
+        <!-- the unit of the 0 should be J_per_m3 instead of dimensionless-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_mus_max_wCont</ci>
+                <apply>
+                    <plus/>
+                    <ci>P_plEE</ci>
+                    <apply>
+                        <max/>
+                        <apply>
+                            <times/>
+                            <apply>
+                                <minus/>
+                                <ci>flag_P_mus_control</ci>
+                            </apply>
+                            <ci>Delta_P_mus</ci>
+                        </apply>
+                        <cn cellml:units="J_per_m3">0</cn>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_mus</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <minus/>
+                                <ci>P_mus_max_wCont</ci>
+                                <apply>
+                                    <times/>
+                                    <apply>
+                                        <divide/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>P_mus_min_wCont</ci>
+                                            <ci>P_mus_max_wCont</ci>
+                                        </apply>
+                                        <apply>
+                                            <times/>
+                                            <ci>T_I</ci>
+                                            <ci>T_E</ci>
+                                        </apply>
+                                    </apply>
+                                    <apply>
+                                        <power/>
+                                        <ci>t_floor</ci>
+                                        <cn cellml:units="dimensionless">2</cn>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>P_mus_min_wCont</ci>
+                                            <ci>P_mus_max_wCont</ci>
+                                        </apply>
+                                        <ci>T_resp</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <ci>T_I</ci>
+                                        <ci>T_E</ci>
+                                    </apply>
+                                </apply>
+                                <ci>t_floor</ci>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>t_floor</ci>
+                            <ci>T_I</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <apply>
+                            <plus/>
+                            <ci>P_mus_max_wCont</ci>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <minus/>
+                                        <ci>P_mus_min_wCont</ci>
+                                        <ci>P_mus_max_wCont</ci>
+                                    </apply>
+                                    <apply>
+                                        <minus/>
+                                        <cn cellml:units="dimensionless">1</cn>
+                                        <apply>
+                                            <exp/>
+                                            <apply>
+                                                <divide/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>T_E</ci>
+                                                </apply>
+                                                <ci>tau</ci>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <exp/>
+                                        <apply>
+                                            <divide/>
+                                            <apply>
+                                                <minus/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>t_floor</ci>
+                                                    <ci>T_I</ci>
+                                                </apply>
+                                            </apply>
+                                            <ci>tau</ci>
+                                        </apply>
+                                    </apply>
+                                    <apply>
+                                        <exp/>
+                                        <apply>
+                                            <divide/>
+                                            <apply>
+                                                <minus/>
+                                                <ci>T_E</ci>
+                                            </apply>
+                                            <ci>tau</ci>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                        </apply>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+    </component>
+    <component name="lung_bond_graph_Argus_Chase_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <!-- ______  Pressures _________
+ atmospheric/mouth pressure-->
+        <variable name="P_m" public_interface="in" units="J_per_m3"/>
+        <!-- larynx pressure-->
+        <variable name="P_l" public_interface="out" units="J_per_m3"/>
+        <!-- trachea pressure-->
+        <variable name="P_t" public_interface="out" units="J_per_m3"/>
+        <!-- bronchea pressure-->
+        <variable name="P_b" public_interface="out" units="J_per_m3"/>
+        <!-- Alveolar pressure-->
+        <variable name="P_A" public_interface="out" units="J_per_m3"/>
+        <!-- Pleural pressure-->
+        <variable name="P_pl" public_interface="out" units="J_per_m3"/>
+        <!-- resp muscle pressure-->
+        <variable name="P_mus" public_interface="out" units="J_per_m3"/>
+        <variable name="P_mus_min" public_interface="in" units="J_per_m3"/>
+        <variable name="P_mus_min_wCont" public_interface="out" units="J_per_m3"/>
+        <variable name="P_plEE" public_interface="in" units="J_per_m3"/>
+        <variable name="Delta_P_mus" public_interface="in" units="J_per_m3"/>
+        <!-- ______  volumes_________
+ larynx volume-->
+        <variable initial_value="1.0e-2" name="q_l" public_interface="out" units="m3"/>
+        <variable initial_value="1.0e-3" name="q_t" public_interface="out" units="m3"/>
+        <variable initial_value="1.0e-3" name="q_b" public_interface="out" units="m3"/>
+        <variable initial_value="0.0" name="q_A_stressed" public_interface="out" units="m3"/>
+        <variable name="q_A" public_interface="out" units="m3"/>
+        <variable initial_value="0.0" name="q_pl" public_interface="out" units="m3"/>
+        <variable name="q_D" public_interface="out" units="m3"/>
+        <variable name="q_str" public_interface="out" units="m3"/>
+        <!-- ______  flows _________-->
+        <variable name="v_ml" public_interface="out" units="m3_per_s"/>
+        <variable name="v_lt" public_interface="out" units="m3_per_s"/>
+        <variable name="v_tb" public_interface="out" units="m3_per_s"/>
+        <variable name="v_bA" public_interface="out" units="m3_per_s"/>
+        <variable name="v_twall" public_interface="out" units="m3_per_s"/>
+        <variable name="v_bwall" public_interface="out" units="m3_per_s"/>
+        <variable name="v_plwall" public_interface="out" units="m3_per_s"/>
+        <!-- ______  Resistances_________-->
+        <variable name="R_ml" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_lt" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_tb" public_interface="in" units="Js_per_m6"/>
+        <variable name="R_bA" public_interface="in" units="Js_per_m6"/>
+        <variable name="alpha_LR" public_interface="out" units="dimensionless"/>
+        <variable name="R_plwall" public_interface="in" units="Js_per_m6"/>
+        <!-- ______  Compliances_________-->
+        <variable name="C_l" public_interface="in" units="m6_per_J"/>
+        <variable name="C_t" public_interface="in" units="m6_per_J"/>
+        <variable name="C_b" public_interface="in" units="m6_per_J"/>
+        <variable name="C_A" public_interface="in" units="m6_per_J"/>
+        <variable name="C_pl" public_interface="in" units="m6_per_J"/>
+        <!-- periods/times-->
+        <variable name="t_floor" public_interface="out" units="second"/>
+        <variable name="T_resp" public_interface="in" units="second"/>
+        <variable name="Delta_RR_resp" public_interface="in" units="per_s"/>
+        <variable name="T_resp_wCont" public_interface="out" units="second"/>
+        <variable name="T_I" public_interface="out" units="second"/>
+        <variable name="T_E" public_interface="out" units="second"/>
+        <variable name="tau" public_interface="out" units="second"/>
+        <variable name="IE_ratio" public_interface="in" units="dimensionless"/>
+        <!-- unstressed volumes-->
+        <variable name="q_l_us" public_interface="in" units="m3"/>
+        <variable name="q_t_us" public_interface="in" units="m3"/>
+        <variable name="q_b_us" public_interface="in" units="m3"/>
+        <variable name="q_A_us" public_interface="in" units="m3"/>
+        <!-- flags to turn control on and off-->
+        <variable name="flag_RR_control" public_interface="in" units="dimensionless"/>
+        <variable name="flag_P_mus_control" public_interface="in" units="dimensionless"/>
+        <!-- TODO check this doesn't cause issues. -->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>T_resp_wCont</ci>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">1</cn>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <divide/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <ci>T_resp</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>flag_RR_control</ci>
+                            <ci>Delta_RR_resp</ci>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- We keep T_E and T_I based on T_resp, not T_resp control, then move through t_floor faster or slower
+ as calculated below.-->
+            <apply>
+                <eq/>
+                <ci>T_E</ci>
+                <apply>
+                    <divide/>
+                    <ci>T_resp</ci>
+                    <apply>
+                        <plus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>IE_ratio</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>T_I</ci>
+                <apply>
+                    <times/>
+                    <ci>T_E</ci>
+                    <ci>IE_ratio</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>tau</ci>
+                <apply>
+                    <divide/>
+                    <ci>T_E</ci>
+                    <cn cellml:units="dimensionless">5</cn>
+                </apply>
+            </apply>
+            <!-- TODO split this into submodules-->
+            <apply>
+                <eq/>
+                <ci>v_ml</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_m</ci>
+                        <ci>P_l</ci>
+                    </apply>
+                    <ci>R_ml</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_l</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>v_ml</ci>
+                    <ci>v_lt</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_l</ci>
+                <apply>
+                    <divide/>
+                    <ci>q_l</ci>
+                    <ci>C_l</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_lt</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_l</ci>
+                        <ci>P_t</ci>
+                    </apply>
+                    <ci>R_lt</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_twall</ci>
+                <apply>
+                    <minus/>
+                    <ci>v_lt</ci>
+                    <ci>v_tb</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_t</ci>
+                </apply>
+                <ci>v_twall</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_t</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <ci>q_t</ci>
+                        <ci>C_t</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_tb</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_t</ci>
+                        <ci>P_b</ci>
+                    </apply>
+                    <ci>R_tb</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_bwall</ci>
+                <apply>
+                    <minus/>
+                    <ci>v_tb</ci>
+                    <ci>v_bA</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_b</ci>
+                </apply>
+                <ci>v_bwall</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_b</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <ci>q_b</ci>
+                        <ci>C_b</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <!-- removing pleural pressure from bronchioles
+ allows us to use q_b for a volume for stretch. This makes it varies about zero, 
+ meaning we don't need a threshold, or the threshold can be zero.
+ However, it's not physiological, so I am trying to fix it here.
+ calculate the amount of stretched volume above baseline level.
+ assuming a quater of the way from end expiratory pressure to min is baseline.-->
+            <apply>
+                <eq/>
+                <ci>q_str</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_b</ci>
+                    <apply>
+                        <times/>
+                        <ci>C_b</ci>
+                        <apply>
+                            <plus/>
+                            <ci>P_plEE</ci>
+                            <apply>
+                                <divide/>
+                                <apply>
+                                    <minus/>
+                                    <ci>P_mus_min</ci>
+                                    <ci>P_plEE</ci>
+                                </apply>
+                                <cn cellml:units="dimensionless">4</cn>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- TODO change lung diagram.-->
+            <apply>
+                <eq/>
+                <ci>v_bA</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_b</ci>
+                        <ci>P_A</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>R_bA</ci>
+                        <ci>alpha_LR</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- v_Awall = v_bA-->
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_A_stressed</ci>
+                </apply>
+                <ci>v_bA</ci>
+            </apply>
+            <!-- The square below comes from Morton2020Prediction-->
+            <apply>
+                <eq/>
+                <ci>P_A</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <power/>
+                            <ci>q_A_stressed</ci>
+                            <cn cellml:units="dimensionless">2</cn>
+                        </apply>
+                        <ci>C_A</ci>
+                    </apply>
+                    <ci>P_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_pl</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <minus/>
+                            <ci>v_plwall</ci>
+                            <ci>v_twall</ci>
+                        </apply>
+                        <ci>v_bwall</ci>
+                    </apply>
+                    <ci>v_bA</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_pl</ci>
+                <apply>
+                    <divide/>
+                    <ci>q_pl</ci>
+                    <ci>C_pl</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>v_plwall</ci>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_mus</ci>
+                        <ci>P_pl</ci>
+                    </apply>
+                    <ci>R_plwall</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- Dead space volume
+ it shouldn't reach q_D_min but we have this here so the model doesn't crash if it does
+ should include more realistic tube laws that allow collapse instead.-->
+        <variable name="q_D_min" public_interface="in" units="m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>q_D</ci>
+                <apply>
+                    <max/>
+                    <apply>
+                        <plus/>
+                        <ci>q_l</ci>
+                        <ci>q_t</ci>
+                        <ci>q_b</ci>
+                        <ci>q_l_us</ci>
+                        <ci>q_t_us</ci>
+                        <ci>q_b_us</ci>
+                    </apply>
+                    <ci>q_D_min</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>q_A</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_A_stressed</ci>
+                    <ci>q_A_us</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- TODO + unstressed volume-->
+        <variable initial_value="0.0" name="s" public_interface="out" units="dimensionless"/>
+        <variable name="s_floor" public_interface="out" units="dimensionless"/>
+        <!-- calculate normalised time through this period-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>s</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">1</cn>
+                    <ci>T_resp_wCont</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>s_floor</ci>
+                <apply>
+                    <minus/>
+                    <ci>s</ci>
+                    <apply>
+                        <floor/>
+                        <ci>s</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <!-- unnormalise (t_floor goes from 0 to T_resp, not T_resp_wCont) -->
+            <apply>
+                <eq/>
+                <ci>t_floor</ci>
+                <apply>
+                    <times/>
+                    <ci>s_floor</ci>
+                    <ci>T_resp</ci>
+                </apply>
+            </apply>
+            <!-- TODO swap this muscle model for the one used in ben tal and smith 2008-->
+            <apply>
+                <eq/>
+                <ci>P_mus_min_wCont</ci>
+                <apply>
+                    <plus/>
+                    <ci>P_mus_min</ci>
+                    <apply>
+                        <times/>
+                        <ci>flag_P_mus_control</ci>
+                        <ci>Delta_P_mus</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- This is the controlled end expiratiory pressure-->
+        <variable name="P_mus_max_wCont" public_interface="out" units="J_per_m3"/>
+        <!-- the unit of the 0 should be J_per_m3 instead of dimensionless-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_mus_max_wCont</ci>
+                <apply>
+                    <plus/>
+                    <ci>P_plEE</ci>
+                    <apply>
+                        <max/>
+                        <apply>
+                            <times/>
+                            <apply>
+                                <minus/>
+                                <ci>flag_P_mus_control</ci>
+                            </apply>
+                            <ci>Delta_P_mus</ci>
+                        </apply>
+                        <cn cellml:units="J_per_m3">0</cn>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>P_mus</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <minus/>
+                                <ci>P_mus_max_wCont</ci>
+                                <apply>
+                                    <times/>
+                                    <apply>
+                                        <divide/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>P_mus_min_wCont</ci>
+                                            <ci>P_mus_max_wCont</ci>
+                                        </apply>
+                                        <apply>
+                                            <times/>
+                                            <ci>T_I</ci>
+                                            <ci>T_E</ci>
+                                        </apply>
+                                    </apply>
+                                    <apply>
+                                        <power/>
+                                        <ci>t_floor</ci>
+                                        <cn cellml:units="dimensionless">2</cn>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>P_mus_min_wCont</ci>
+                                            <ci>P_mus_max_wCont</ci>
+                                        </apply>
+                                        <ci>T_resp</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <ci>T_I</ci>
+                                        <ci>T_E</ci>
+                                    </apply>
+                                </apply>
+                                <ci>t_floor</ci>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <ci>t_floor</ci>
+                            <ci>T_I</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <apply>
+                            <plus/>
+                            <ci>P_mus_max_wCont</ci>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <minus/>
+                                        <ci>P_mus_min_wCont</ci>
+                                        <ci>P_mus_max_wCont</ci>
+                                    </apply>
+                                    <apply>
+                                        <minus/>
+                                        <cn cellml:units="dimensionless">1</cn>
+                                        <apply>
+                                            <exp/>
+                                            <apply>
+                                                <divide/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>T_E</ci>
+                                                </apply>
+                                                <ci>tau</ci>
+                                            </apply>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <exp/>
+                                        <apply>
+                                            <divide/>
+                                            <apply>
+                                                <minus/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>t_floor</ci>
+                                                    <ci>T_I</ci>
+                                                </apply>
+                                            </apply>
+                                            <ci>tau</ci>
+                                        </apply>
+                                    </apply>
+                                    <apply>
+                                        <exp/>
+                                        <apply>
+                                            <divide/>
+                                            <apply>
+                                                <minus/>
+                                                <ci>T_E</ci>
+                                            </apply>
+                                            <ci>tau</ci>
+                                        </apply>
+                                    </apply>
+                                </apply>
+                            </apply>
+                        </apply>
+                    </otherwise>
+                </piecewise>
+            </apply>
+            <!-- Here we add the nonlinear control law for alpha TODO should this be dependednt on each vessels volume? probably-->
+            <apply>
+                <eq/>
+                <ci>alpha_LR</ci>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="m3" type="e-notation">1.0<sep/>-4</cn>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <abs/>
+                            <ci>q_b</ci>
+                        </apply>
+                        <cn cellml:units="m3" type="e-notation">1<sep/>-12</cn>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- this could be the square of volume, to explore.-->
+    </component>
+</model>

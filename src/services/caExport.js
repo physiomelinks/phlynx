@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import Papa from 'papaparse'
-import { ElNotification } from 'element-plus'
+import { notify} from '../utils/notify'
+
 
 /**
  * Classifies a variable based on a list of parameters.
@@ -13,107 +14,91 @@ import { ElNotification } from 'element-plus'
  * @returns {string} - 'global_constant', 'constant', or 'variable'
  */
 function classifyVariable(moduleName, variable, parameters) {
-  const varName = variable.name
-
-  if (!varName || !Array.isArray(parameters)) {
+  if (!variable?.name || !Array.isArray(parameters)) {
     console.error('Invalid input to classifyVariable')
     return 'undefined' // Default or error state
   }
 
+  const varName = variable.name
+  const qualifiedName = `${varName}_${moduleName}`
+
+  let isGlobalConstant = false
+
   for (const param of parameters) {
     const paramName = param.variable_name
 
-    // Check for an exact match first.
-    if (varName === paramName) {
-      return 'global_constant' // Found exact match, classification is done.
+    if (qualifiedName === paramName) {
+      return 'constant'
     }
 
-    // Check for a compound match.
-    if (`${varName}_${moduleName}` === paramName) {
-      return 'constant'
+    if (varName === paramName) {
+      isGlobalConstant = true
     }
   }
 
-  // Neither a globl constant of constant found after checking all parameters.
+  if (isGlobalConstant) return 'global_constant'
   return 'variable'
 }
 
 function checkSharedPorts(nodes, edges) {
-  // Map nodeId → { entrance: [...labels], exit: [...labels] }
-  const nodePortsMap = new Map()
+  const nodePortMap = new Map()
+
   for (const node of nodes) {
-    nodePortsMap.set(node.id, {
-      name: node.data.name,
-      entrance: (node.data.portLabels || [])
-        .filter((p) => p.portType === 'entrance_ports')
-        .map((p) => p.label.trim().toLowerCase()),
-      exit: (node.data.portLabels || [])
-        .filter((p) => p.portType === 'exit_ports')
-        .map((p) => p.label.trim().toLowerCase()),
-      general: (node.data.portLabels || [])
-        .filter((p) => p.portType === 'general_ports')
-        .map((p) => p.label.trim().toLowerCase()),
-    })
+    const map = {}
+    for (const p of node.data.portLabels || []) {
+      const label = p.label.trim().toLowerCase()
+      const type =
+        p.portType === 'exit_ports'
+          ? 'exit'
+          : p.portType === 'entrance_ports'
+            ? 'entrance'
+            : p.portType === 'general_ports'
+              ? 'general'
+              : null
+      if (!type) continue
+      if (!map[label]) map[label] = []
+      if (!map[label].includes(type)) map[label].push(type)
+    }
+    nodePortMap.set(node.id, { name: node.data.name, portTypes: map })
   }
 
-  const mismatches = []
-
+  const invalidConnections = []
   for (const edge of edges) {
-    const sourcePorts = nodePortsMap.get(edge.source)
-    const targetPorts = nodePortsMap.get(edge.target)
-    if (!sourcePorts || !targetPorts) continue
+    const source = nodePortMap.get(edge.source)
+    const target = nodePortMap.get(edge.target)
 
-    // --- Exit - Exit ---
-    const sharedExits = sourcePorts.exit.filter((label) =>
-      targetPorts.exit.includes(label)
-    )
-    for (const label of sharedExits) {
-      mismatches.push({
-        portLabel: label,
-        type: 'shared_exit_ports',
-        nodes: [sourcePorts.name, targetPorts.name],
-      })
-    }
+    if (!source || !target) continue
 
-    // --- Entrance - Entrance ---
-    const sharedEntrances = sourcePorts.entrance.filter((label) =>
-      targetPorts.entrance.includes(label)
+    const allLabels = Array.from(
+      new Set([...Object.keys(source.portTypes), ...Object.keys(target.portTypes)])
     )
-    for (const label of sharedEntrances) {
-      mismatches.push({
-        portLabel: label,
-        type: 'shared_entrance_ports',
-        nodes: [sourcePorts.name, targetPorts.name],
-      })
-    }
 
-    // --- Exit - General ---
-    const exitToGeneral = sourcePorts.exit.filter((label) =>
-      targetPorts.general.includes(label)
-    )
-    for (const label of exitToGeneral) {
-      mismatches.push({
-        portLabel: label,
-        type: 'exit_connected_to_general',
-        nodes: [sourcePorts.name, targetPorts.name],
-      })
-    }
+    for (const label of allLabels) {
 
-    // --- Entrance - General ---
-    const entranceToGeneral = sourcePorts.entrance.filter((label) =>
-      targetPorts.general.includes(label)
-    )
-    for (const label of entranceToGeneral) {
-      mismatches.push({
-        portLabel: label,
-        type: 'entrance_connected_to_general',
-        nodes: [sourcePorts.name, targetPorts.name],
-      })
+      const srcTypes = source.portTypes[label] || []
+      const tgtTypes = target.portTypes[label] || []
+
+      if (srcTypes.length === 0 || tgtTypes.length === 0) continue // unknown label
+
+        const isValid = srcTypes.some(srcType =>
+        tgtTypes.some(tgtType =>
+          (srcType === 'exit' && tgtType === 'entrance') ||
+          (srcType === 'entrance' && tgtType === 'exit') ||
+          (srcType === 'general' && tgtType === 'general')
+        )
+      )
+      if (!isValid) {
+        invalidConnections.push({
+          portLabel: label,
+          type: `${srcTypes.join('|')}_to_${tgtTypes.join('|')}`,
+          nodes: [source.name, target.name],
+        })
+      }
     }
   }
-
-  return mismatches
+  return invalidConnections
 }
+
 
 /**
  * Generates a zip blob for the Circulatory Autogen export.
@@ -124,14 +109,6 @@ function checkSharedPorts(nodes, edges) {
  */
 export async function generateExportZip(fileName, nodes, edges, parameters) {
   try {
-    const portMismatches = checkSharedPorts(nodes, edges)
-
-    if (portMismatches.length) {
-      const labels = portMismatches.map(
-        (m) => `${m.portLabel} (${m.nodes.join(' - ')})`
-      )
-      throw new Error(`Mismatched port definitions: ${labels.join(', ')}`)
-    }
 
     const zip = new JSZip()
 
@@ -259,7 +236,7 @@ export async function generateExportZip(fileName, nodes, edges, parameters) {
 
     return zipBlob
   } catch (error) {
-    ElNotification.error(`Failed to export config files: ${error.message}`)
+    notify.error({message: `Failed to export config files: ${error.message}`})
     throw error
   }
 }

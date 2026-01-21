@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="my_model" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <component name="pv_0D_1D_coupler_type">
+        <variable name="t" public_interface="in" units="second"/>
+        <!-- Constants-->
+        <variable name="rho" public_interface="in" units="Js2_per_m5"/>
+        <variable name="I" public_interface="in" units="Js2_per_m6"/>
+        <!-- Inputs-->
+        <variable name="P_t_star" public_interface="in" units="J_per_m3"/>
+        <variable name="A_star" public_interface="in" units="m3"/>
+        <variable name="P_s_0D" public_interface="in" units="J_per_m3"/>
+        <!-- Latent variables-->
+        <variable name="P_s_star" public_interface="out" units="J_per_m3"/>
+        <variable initial_value="0.0" name="q_star" public_interface="out" units="m3_per_s"/>
+        <!-- Outputs-->
+        <variable initial_value="0.0" name="flux" public_interface="out" units="m3_per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_s_star</ci>
+                <apply>
+                    <minus/>
+                    <ci>P_t_star</ci>
+                    <apply>
+                        <times/>
+                        <cn cellml:units="dimensionless">0.5</cn>
+                        <ci>rho</ci>
+                        <apply>
+                            <power/>
+                            <apply>
+                                <divide/>
+                                <ci>q_star</ci>
+                                <ci>A_star</ci>
+                            </apply>
+                            <cn cellml:units="dimensionless">2</cn>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>q_star</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>P_s_star</ci>
+                        <ci>P_s_0D</ci>
+                    </apply>
+                    <ci>I</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>flux</ci>
+                </apply>
+                <apply>
+                    <times/>
+                    <ci>rho</ci>
+                    <ci>q_star</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="imposter_1D">
+        <variable name="t" public_interface="in" units="second"/>
+        <!-- Inputs-->
+        <variable name="P_t_star" private_interface="in" public_interface="out" units="J_per_m3"/>
+        <variable name="A_star" private_interface="in" public_interface="out" units="m3"/>
+        <variable name="flux" public_interface="in" units="m3_per_s"/>
+    </component>
+    <component name="volume_sum">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="q" public_interface="in" units="m3"/>
+    </component>
+</model>

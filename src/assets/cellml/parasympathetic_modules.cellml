@@ -1,0 +1,1444 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////// ///////// modules for the parasympathetic and ICN model from Gee et al. ////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <!-- lung stretch receptor ////////////////////////////////////////////////////////////////////////-->
+    <!-- step fxn for testing, replace w/ valid data  ********************************************-->
+    <component name="lung_stretch_receptor_Gee2023">
+        <variable name="q_str" public_interface="in" units="m3"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <!--V_lung = sel
+    case t > 50{second}:
+        0.6{m3};
+    otherwise:
+        0{m3};
+endsel;-->
+        <!-- s.43 (lr firing frequency)-->
+        <variable initial_value="0" name="f_ls" public_interface="out" units="Hz"/>
+        <!-- change to 2 from 0.5 as I changed tau to correct unit of second-->
+        <variable name="tau_lung" public_interface="in" units="second"/>
+        <variable name="G_al" public_interface="in" units="per_m3_s"/>
+        <!-- ode(f_ls, t) = tau_lung*(-f_ls+G_al*V_lung);
+ changed so that tau has correct units of seconds. tau should be a time constant
+ Finbar has modified this to measure bronchiole stressed volume, and only increase frequency when this 
+ stressed volume is above zero.-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>f_ls</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <minus/>
+                            <ci>f_ls</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>G_al</ci>
+                            <ci>q_str</ci>
+                        </apply>
+                    </apply>
+                    <ci>tau_lung</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="lung_stretch_receptor_with_threshold">
+        <variable name="q_A" public_interface="in" units="m3"/>
+        <variable name="q_b" public_interface="in" units="m3"/>
+        <variable name="V_lung" public_interface="out" units="m3"/>
+        <variable name="V_lung_stretch_thresh" public_interface="in" units="m3"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>V_lung</ci>
+                <apply>
+                    <plus/>
+                    <ci>q_A</ci>
+                    <ci>q_b</ci>
+                </apply>
+            </apply>
+        </math>
+        <!--V_lung = sel
+    case t > 50{second}:
+        0.6{m3};
+    otherwise:
+        0{m3};
+endsel;-->
+        <!-- s.43 (lr firing frequency)-->
+        <variable initial_value="0" name="f_ls" public_interface="out" units="Hz"/>
+        <!-- change to 2 from 0.5 as I changed tau to correct unit of second-->
+        <variable name="tau_lung" public_interface="in" units="second"/>
+        <variable name="G_al" public_interface="in" units="per_m3_s"/>
+        <!-- ode(f_ls, t) = tau_lung*(-f_ls+G_al*V_lung);
+ changed so that tau has correct units of seconds. tau should be a time constant-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>f_ls</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <minus/>
+                            <ci>f_ls</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>G_al</ci>
+                            <apply>
+                                <max/>
+                                <apply>
+                                    <minus/>
+                                    <ci>V_lung</ci>
+                                    <ci>V_lung_stretch_thresh</ci>
+                                </apply>
+                                <cn cellml:units="m3">0.0</cn>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>tau_lung</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- baroreceptors //////////////////////////////////////////////////////////////////////////////////-->
+    <!-- step fxn for testing, replace w/ valid data  ********************************************-->
+    <!--cardiopulmonary receptors ///////////////////////////////////////////////////////////////-->
+    <!--step fxn for testing, replace w/ valid data  ********************************************-->
+    <component name="cardiopulmonary_receptor_Gee2023">
+        <variable name="P_pvn" public_interface="in" units="J_per_m3"/>
+        <variable name="P_mus" public_interface="in" units="J_per_m3"/>
+        <variable name="P_pv_P_thor" public_interface="out" units="J_per_m3"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <!-- P_mus is closest equivalent to P_thor in Finbar's lung model-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_pv_P_thor</ci>
+                <apply>
+                    <minus/>
+                    <ci>P_pvn</ci>
+                    <ci>P_mus</ci>
+                </apply>
+            </apply>
+        </math>
+        <!--P_pv_P_thor = sel
+    case t >= 50{second}:
+        13{mmHg};
+    otherwise:
+        6{mmHg};
+endsel;-->
+        <!-- s.41-->
+        <variable name="tau_cp" public_interface="in" units="second"/>
+        <variable name="P_l_init" public_interface="in" units="J_per_m3"/>
+        <variable initial_value="P_l_init" name="P_l" public_interface="out" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>P_l</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <minus/>
+                            <ci>P_l</ci>
+                        </apply>
+                        <ci>P_pv_P_thor</ci>
+                    </apply>
+                    <ci>tau_cp</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- s.42 (cp firing frequency)-->
+        <variable name="f_cp" public_interface="out" units="Hz"/>
+        <variable name="f_maxl" public_interface="in" units="Hz"/>
+        <variable name="P_tn" public_interface="in" units="J_per_m3"/>
+        <variable name="k_l" public_interface="in" units="J_per_m3"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_cp</ci>
+                <apply>
+                    <divide/>
+                    <ci>f_maxl</ci>
+                    <apply>
+                        <plus/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <apply>
+                            <exp/>
+                            <apply>
+                                <divide/>
+                                <apply>
+                                    <minus/>
+                                    <ci>P_tn</ci>
+                                    <ci>P_l</ci>
+                                </apply>
+                                <ci>k_l</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- efferent sympatetic outflow /////////////////////////////////////////////////////////-->
+    <!-- afferent input signals &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <!-- s.46 (heart)-->
+    <component name="sympathetic_afferent_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_ash" public_interface="out" units="Hz"/>
+        <variable name="G_abh" public_interface="in" units="dimensionless"/>
+        <variable name="f_br" public_interface="in" units="Hz"/>
+        <variable name="G_alh" public_interface="in" units="dimensionless"/>
+        <variable name="f_ls" public_interface="in" units="Hz"/>
+        <variable name="G_ach" public_interface="in" units="dimensionless"/>
+        <variable name="f_cp" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_ash</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <times/>
+                            <ci>G_abh</ci>
+                            <ci>f_br</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>G_alh</ci>
+                            <ci>f_ls</ci>
+                        </apply>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>G_ach</ci>
+                        <apply>
+                            <minus/>
+                            <ci>f_cp</ci>
+                            <cn cellml:units="Hz">10</cn>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- s.47 (peripheral circulation)-->
+        <variable name="f_asp" public_interface="out" units="Hz"/>
+        <variable name="G_abp" public_interface="in" units="dimensionless"/>
+        <variable name="G_alp" public_interface="in" units="dimensionless"/>
+        <variable name="G_acp" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_asp</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <times/>
+                        <ci>G_abp</ci>
+                        <ci>f_br</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>G_alp</ci>
+                        <ci>f_ls</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>G_acp</ci>
+                        <apply>
+                            <minus/>
+                            <ci>f_cp</ci>
+                            <cn cellml:units="Hz">10</cn>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- s.48 (unstressed volumes)-->
+        <variable name="f_asv" public_interface="out" units="Hz"/>
+        <variable name="G_abv" public_interface="in" units="dimensionless"/>
+        <variable name="G_alv" public_interface="in" units="dimensionless"/>
+        <variable name="G_acv" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_asv</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <times/>
+                        <ci>G_abv</ci>
+                        <ci>f_br</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>G_alv</ci>
+                        <ci>f_ls</ci>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>G_acv</ci>
+                        <apply>
+                            <minus/>
+                            <ci>f_cp</ci>
+                            <cn cellml:units="Hz">10</cn>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- efferent neural pathways &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;- -->
+    <!-- s.49 (heart)-->
+    <component name="sympathetic_efferent_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_esh" public_interface="out" units="Hz"/>
+        <variable name="f_esinf" public_interface="in" units="Hz"/>
+        <variable name="f_es0" public_interface="in" units="Hz"/>
+        <variable name="k_es" public_interface="in" units="second"/>
+        <variable name="f_ash" public_interface="in" units="Hz"/>
+        <!-- (Finbar note) are all three of these supposed to be the same?-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_esh</ci>
+                <apply>
+                    <plus/>
+                    <ci>f_esinf</ci>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <minus/>
+                            <ci>f_es0</ci>
+                            <ci>f_esinf</ci>
+                        </apply>
+                        <apply>
+                            <exp/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <minus/>
+                                    <ci>k_es</ci>
+                                </apply>
+                                <ci>f_ash</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- s. 50 (peripheral circulation)-->
+        <variable name="f_esp" public_interface="out" units="Hz"/>
+        <variable name="f_asp" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_esp</ci>
+                <apply>
+                    <plus/>
+                    <ci>f_esinf</ci>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <minus/>
+                            <ci>f_es0</ci>
+                            <ci>f_esinf</ci>
+                        </apply>
+                        <apply>
+                            <exp/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <minus/>
+                                    <ci>k_es</ci>
+                                </apply>
+                                <ci>f_asp</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <!-- s. 51 ( unstressed volumes)-->
+        <variable name="f_esv" public_interface="out" units="Hz"/>
+        <variable name="f_asv" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_esv</ci>
+                <apply>
+                    <plus/>
+                    <ci>f_esinf</ci>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <minus/>
+                            <ci>f_es0</ci>
+                            <ci>f_esinf</ci>
+                        </apply>
+                        <apply>
+                            <exp/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <minus/>
+                                    <ci>k_es</ci>
+                                </apply>
+                                <ci>f_asv</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--effector fxn regulation /////////////////////////////////////////////////////////////////
+  eqns: s.52 s.53 s.54-->
+    <!-- peripheral circulation efferent neural pathway (f_esp) &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <!-- rsp &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;- -->
+    <component name="peripheral_resistance_effector_Gee2023">
+        <variable name="sigma_Rsp" public_interface="out" units="Js_per_m6"/>
+        <variable name="G_Rsp" public_interface="in" units="Js_per_m6"/>
+        <variable name="f_esp" public_interface="in" units="Hz"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_es_min" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>sigma_Rsp</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <times/>
+                            <ci>G_Rsp</ci>
+                            <apply>
+                                <ln/>
+                                <apply>
+                                    <times/>
+                                    <cn cellml:units="second">1</cn>
+                                    <apply>
+                                        <plus/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>f_esp</ci>
+                                            <ci>f_es_min</ci>
+                                        </apply>
+                                        <cn cellml:units="Hz">1</cn>
+                                    </apply>
+                                </apply>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <geq/>
+                            <ci>f_esp</ci>
+                            <ci>f_es_min</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="Js_per_m6">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <!-- -->
+        <variable initial_value="0" name="Delta_Rsp" public_interface="out" units="Js_per_m6"/>
+        <variable name="tau_Rsp" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>Delta_Rsp</ci>
+                </apply>
+                <apply>
+                    <times/>
+                    <apply>
+                        <divide/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>tau_Rsp</ci>
+                    </apply>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <minus/>
+                            <ci>Delta_Rsp</ci>
+                        </apply>
+                        <ci>sigma_Rsp</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- unstressed volumes efferent neural pathway (f_esv) &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <!-- vusv &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <component name="unstressed_volume_effector_Gee2023">
+        <variable name="sigma_Vusv" public_interface="out" units="m3"/>
+        <variable name="G_Vusv" public_interface="in" units="m3"/>
+        <variable name="f_esv" public_interface="in" units="Hz"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_es_min" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>sigma_Vusv</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <times/>
+                            <ci>G_Vusv</ci>
+                            <apply>
+                                <ln/>
+                                <apply>
+                                    <times/>
+                                    <cn cellml:units="second">1</cn>
+                                    <apply>
+                                        <plus/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>f_esv</ci>
+                                            <ci>f_es_min</ci>
+                                        </apply>
+                                        <cn cellml:units="Hz">1</cn>
+                                    </apply>
+                                </apply>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <geq/>
+                            <ci>f_esv</ci>
+                            <ci>f_es_min</ci>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="m3">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <variable initial_value="0" name="Delta_Vusv" public_interface="out" units="m3"/>
+        <variable name="tau_Vusv" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>Delta_Vusv</ci>
+                </apply>
+                <apply>
+                    <times/>
+                    <apply>
+                        <divide/>
+                        <cn cellml:units="dimensionless">1</cn>
+                        <ci>tau_Vusv</ci>
+                    </apply>
+                    <apply>
+                        <plus/>
+                        <apply>
+                            <minus/>
+                            <ci>Delta_Vusv</ci>
+                        </apply>
+                        <ci>sigma_Vusv</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--Brainstem vagal efferents ///////////////////////////////////////////////////////-->
+    <!-- NTS &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <!-- baroreceptors-->
+    <component name="NTS_Gee2023">
+        <!-- baroreceptors-->
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_br" public_interface="in" units="Hz"/>
+        <variable name="f_min_br" public_interface="in" units="Hz"/>
+        <variable name="f_max_br" public_interface="in" units="Hz"/>
+        <variable name="f_mid_br" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_br" public_interface="out" units="Hz"/>
+        <variable name="k_NTS_br" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NTS_br</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_br</ci>
+                            <ci>f_max_br</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_br</ci>
+                                    <ci>f_mid_br</ci>
+                                </apply>
+                                <ci>k_NTS_br</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_br</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- lung stretch receptors-->
+        <variable name="f_ls" public_interface="in" units="Hz"/>
+        <variable name="f_min_ls" public_interface="in" units="Hz"/>
+        <variable name="f_max_ls" public_interface="in" units="Hz"/>
+        <variable name="f_mid_ls" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_ls" public_interface="out" units="Hz"/>
+        <variable name="k_NTS_ls" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NTS_ls</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_ls</ci>
+                            <ci>f_max_ls</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_ls</ci>
+                                    <ci>f_mid_ls</ci>
+                                </apply>
+                                <ci>k_NTS_ls</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_ls</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- cardiopulmonary receptros-->
+        <variable name="f_cp" public_interface="in" units="Hz"/>
+        <variable name="f_min_cp" public_interface="in" units="Hz"/>
+        <variable name="f_max_cp" public_interface="in" units="Hz"/>
+        <variable name="f_mid_cp" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_cp" public_interface="out" units="Hz"/>
+        <variable name="k_NTS_cp" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NTS_cp</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_cp</ci>
+                            <ci>f_max_cp</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_cp</ci>
+                                    <ci>f_mid_cp</ci>
+                                </apply>
+                                <ci>k_NTS_cp</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_cp</ci>
+                </apply>
+            </apply>
+        </math>
+        <!-- chemoreceptors-->
+        <variable name="f_apc" public_interface="in" units="Hz"/>
+        <variable name="f_min_ch" public_interface="in" units="Hz"/>
+        <variable name="f_max_ch" public_interface="in" units="Hz"/>
+        <variable name="f_mid_ch" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_ch" public_interface="out" units="Hz"/>
+        <variable name="k_NTS_ch" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NTS_ch</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_ch</ci>
+                            <ci>f_max_ch</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_apc</ci>
+                                    <ci>f_mid_ch</ci>
+                                </apply>
+                                <ci>k_NTS_ch</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_ch</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--DMV (new sigmoid form2) &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <component name="DMV_Gee2023">
+        <!--var f_NTS_br: Hz {pub: in}; will just write out f_NTS_ls + f_NTS_cp-->
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_NTS_ls" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_cp" public_interface="in" units="Hz"/>
+        <variable name="f_min_DMV" public_interface="in" units="Hz"/>
+        <variable name="f_max_DMV" public_interface="in" units="Hz"/>
+        <variable name="f_mid_DMV" public_interface="in" units="Hz"/>
+        <variable name="f_DMV" public_interface="out" units="Hz"/>
+        <variable name="k_DMV" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_DMV</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_DMV</ci>
+                            <ci>f_max_DMV</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <plus/>
+                                        <ci>f_NTS_ls</ci>
+                                        <ci>f_NTS_cp</ci>
+                                    </apply>
+                                    <ci>f_mid_DMV</ci>
+                                </apply>
+                                <ci>k_DMV</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_DMV</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- step/threshold goes here ******************************************************************************************-->
+    <!-- NA (new sigmoid form1) &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;- -->
+    <component name="NA_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_NTS_br" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_ls" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_cp" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_ch" public_interface="in" units="Hz"/>
+        <variable name="f_NTS_output" public_interface="out" units="Hz"/>
+        <variable name="f_NA_input" public_interface="out" units="Hz"/>
+        <variable name="k_RSA" public_interface="in" units="dimensionless"/>
+        <variable name="s_floor" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NTS_output</ci>
+                <apply>
+                    <plus/>
+                    <ci>f_NTS_br</ci>
+                    <ci>f_NTS_ls</ci>
+                    <ci>f_NTS_cp</ci>
+                    <ci>f_NTS_ch</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>f_NA_input</ci>
+                <piecewise>
+                    <piece>
+                        <ci>f_NTS_output</ci>
+                        <apply>
+                            <gt/>
+                            <ci>s_floor</ci>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <apply>
+                            <times/>
+                            <ci>f_NTS_output</ci>
+                            <ci>k_RSA</ci>
+                        </apply>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <variable name="f_min_NA" public_interface="in" units="Hz"/>
+        <variable name="f_max_NA" public_interface="in" units="Hz"/>
+        <variable name="f_mid_NA" public_interface="in" units="Hz"/>
+        <variable name="f_NA" public_interface="out" units="Hz"/>
+        <variable name="k_NA" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NA</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_NA</ci>
+                            <ci>f_max_NA</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_NA_input</ci>
+                                    <ci>f_mid_NA</ci>
+                                </apply>
+                                <ci>k_NA</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_NA</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--NActr (new sigmoid form3) &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <component name="NActr_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_NA" public_interface="in" units="Hz"/>
+        <variable name="f_min_NActr" public_interface="in" units="Hz"/>
+        <variable name="f_max_NActr" public_interface="in" units="Hz"/>
+        <variable name="f_mid_NActr" public_interface="in" units="Hz"/>
+        <!--off from simulink (9.8)
+var f_max_NA: Hz {init: 15.78};
+var G_mid_NActr: dimensionless {init: 0.62};-->
+        <variable name="f_NActr" public_interface="out" units="Hz"/>
+        <variable name="k_NActr" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_NActr</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_NActr</ci>
+                            <ci>f_max_NActr</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_NA</ci>
+                                    <ci>f_mid_NActr</ci>
+                                </apply>
+                                <ci>k_NActr</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_NActr</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!-- ICN //////////////////////////////////////////////////////////////////////////////////-->
+    <!-- LCN &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;- -->
+    <component name="LCN_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="k_evEmax_gainLCN" public_interface="in" units="dimensionless"/>
+        <variable name="f_DMV" public_interface="in" units="Hz"/>
+        <variable name="f_NActr" public_interface="in" units="Hz"/>
+        <variable name="k_br_gainLCN" public_interface="in" units="dimensionless"/>
+        <variable name="f_br" public_interface="in" units="Hz"/>
+        <variable name="k_esh_gainLCN" public_interface="in" units="dimensionless"/>
+        <variable name="f_esh" public_interface="in" units="Hz"/>
+        <variable name="k_cp_gainLCN" public_interface="in" units="dimensionless"/>
+        <variable name="f_cp" public_interface="in" units="Hz"/>
+        <variable name="f_input_LCN_sum" public_interface="out" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_input_LCN_sum</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <plus/>
+                            <apply>
+                                <times/>
+                                <ci>k_evEmax_gainLCN</ci>
+                                <apply>
+                                    <plus/>
+                                    <ci>f_DMV</ci>
+                                    <ci>f_NActr</ci>
+                                </apply>
+                            </apply>
+                            <apply>
+                                <times/>
+                                <ci>k_br_gainLCN</ci>
+                                <ci>f_br</ci>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>k_esh_gainLCN</ci>
+                            <ci>f_esh</ci>
+                        </apply>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>k_cp_gainLCN</ci>
+                        <ci>f_cp</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <variable name="f_input_LCN" public_interface="out" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_input_LCN</ci>
+                <piecewise>
+                    <piece>
+                        <ci>f_input_LCN_sum</ci>
+                        <apply>
+                            <geq/>
+                            <ci>f_input_LCN_sum</ci>
+                            <cn cellml:units="Hz">0</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="Hz">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+        <variable name="f_LCN" public_interface="out" units="Hz"/>
+        <variable name="f_mid_LCN" public_interface="in" units="Hz"/>
+        <variable name="f_min_LCN" public_interface="in" units="Hz"/>
+        <variable name="f_max_LCN" public_interface="in" units="Hz"/>
+        <variable name="k_LCN" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_LCN</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_LCN</ci>
+                            <ci>f_max_LCN</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <ci>f_input_LCN</ci>
+                                    <ci>f_mid_LCN</ci>
+                                </apply>
+                                <ci>k_LCN</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_LCN</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--PN-NA &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <component name="PNNA_Gee2023">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_PNNA_natural" public_interface="out" units="Hz"/>
+        <variable name="f_PNNA" public_interface="out" units="Hz"/>
+        <variable name="f_NA" public_interface="in" units="Hz"/>
+        <variable name="f_LCN" public_interface="in" units="Hz"/>
+        <variable name="f_mid_PNNA" public_interface="in" units="Hz"/>
+        <variable name="f_min_PNNA" public_interface="in" units="Hz"/>
+        <variable name="f_max_PNNA" public_interface="in" units="Hz"/>
+        <variable name="k_PNNA" public_interface="in" units="dimensionless"/>
+        <variable name="f_vagal_stim" public_interface="in" units="Hz"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_PNNA_natural</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_PNNA</ci>
+                            <ci>f_max_PNNA</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <plus/>
+                                        <ci>f_NA</ci>
+                                        <ci>f_LCN</ci>
+                                    </apply>
+                                    <ci>f_mid_PNNA</ci>
+                                </apply>
+                                <ci>k_PNNA</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_PNNA</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>f_PNNA</ci>
+                <apply>
+                    <plus/>
+                    <ci>f_PNNA_natural</ci>
+                    <ci>f_vagal_stim</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--PN-DMV &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
+    <component name="PNDMV_Gee2023">
+        <variable name="f_PNDMV" public_interface="out" units="Hz"/>
+        <variable name="f_DMV" public_interface="in" units="Hz"/>
+        <variable name="f_NActr" public_interface="in" units="Hz"/>
+        <variable name="f_LCN" public_interface="in" units="Hz"/>
+        <variable name="f_mid_PNDMV" public_interface="in" units="Hz"/>
+        <variable name="f_min_PNDMV" public_interface="in" units="Hz"/>
+        <variable name="f_max_PNDMV" public_interface="in" units="Hz"/>
+        <variable name="k_PNDMV" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>f_PNDMV</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <divide/>
+                        <apply>
+                            <minus/>
+                            <ci>f_min_PNDMV</ci>
+                            <ci>f_max_PNDMV</ci>
+                        </apply>
+                        <apply>
+                            <plus/>
+                            <cn cellml:units="dimensionless">1</cn>
+                            <apply>
+                                <power/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <plus/>
+                                        <ci>f_DMV</ci>
+                                        <ci>f_NActr</ci>
+                                        <ci>f_LCN</ci>
+                                    </apply>
+                                    <ci>f_mid_PNDMV</ci>
+                                </apply>
+                                <ci>k_PNDMV</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <ci>f_max_PNDMV</ci>
+                </apply>
+            </apply>
+        </math>
+        <variable initial_value="0" name="f_PNDMV_filt" public_interface="out" units="Hz"/>
+        <variable name="tau_PNDMV" public_interface="in" units="second"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>f_PNDMV_filt</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <minus/>
+                        <ci>f_PNDMV</ci>
+                        <ci>f_PNDMV_filt</ci>
+                    </apply>
+                    <ci>tau_PNDMV</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ABDONMINAL CAVITY///////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="P_abd">
+        <variable initial_value="0" name="epsilon" public_interface="out" units="dimensionless"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <variable initial_value="4" name="T_resp" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>epsilon</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">1</cn>
+                    <ci>T_resp</ci>
+                </apply>
+            </apply>
+        </math>
+        <variable name="s" public_interface="out" units="dimensionless"/>
+        <!--s = 4{dimensionless}/3{dimensionless}*(epsilon-floor(epsilon));-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>s</ci>
+                <apply>
+                    <minus/>
+                    <ci>epsilon</ci>
+                    <apply>
+                        <floor/>
+                        <ci>epsilon</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+        <variable name="P_abd" public_interface="out" units="mmHg"/>
+        <variable initial_value="1.6" name="T_insp" units="second"/>
+        <variable initial_value="1.4" name="T_exp" units="second"/>
+        <!--    -5{dimensionless}*(T_insp+T_exp-s*T_resp)/T_exp;-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_abd</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <minus/>
+                                    <cn cellml:units="dimensionless">2.5</cn>
+                                </apply>
+                                <ci>s</ci>
+                                <ci>T_resp</ci>
+                            </apply>
+                            <apply>
+                                <divide/>
+                                <ci>T_insp</ci>
+                                <cn cellml:units="dimensionless">2</cn>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <leq/>
+                            <apply>
+                                <lt/>
+                                <cn cellml:units="dimensionless">0</cn>
+                                <ci>s</ci>
+                            </apply>
+                            <cn cellml:units="dimensionless">0.2</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <minus/>
+                            <cn cellml:units="dimensionless">2.5</cn>
+                        </apply>
+                        <apply>
+                            <leq/>
+                            <apply>
+                                <lt/>
+                                <cn cellml:units="dimensionless">0.2</cn>
+                                <ci>s</ci>
+                            </apply>
+                            <cn cellml:units="dimensionless">0.4</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <minus/>
+                                    <cn cellml:units="dimensionless">2.5</cn>
+                                </apply>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <plus/>
+                                        <ci>T_insp</ci>
+                                        <ci>T_exp</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <ci>s</ci>
+                                        <ci>T_resp</ci>
+                                    </apply>
+                                </apply>
+                            </apply>
+                            <ci>T_exp</ci>
+                        </apply>
+                        <apply>
+                            <leq/>
+                            <apply>
+                                <lt/>
+                                <cn cellml:units="dimensionless">0.4</cn>
+                                <ci>s</ci>
+                            </apply>
+                            <cn cellml:units="dimensionless">0.75</cn>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="dimensionless">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+    </component>
+    <!--P_abd should be 0 to -2.5 but its showing as 0 to -3.5!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!-->
+    <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+THORACIC CAVITY///////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="P_thor">
+        <variable name="P_thor" public_interface="out" units="mmHg"/>
+        <variable name="t" public_interface="in" units="second"/>
+        <!--P_thor = 2.5{dimensionless}*sin(4.2{dimensionless}*t)-6.5{dimensionless};-->
+        <variable initial_value="-4" name="P_thormax" units="mmHg"/>
+        <variable initial_value="-9" name="P_thormin" units="mmHg"/>
+        <variable initial_value="4" name="T_resp" units="second"/>
+        <variable initial_value="1.6" name="T_insp" units="second"/>
+        <variable initial_value="1.4" name="T_exp" units="second"/>
+        <variable name="s" public_interface="in" units="dimensionless"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>P_thor</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <minus/>
+                            <ci>P_thormax</ci>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <minus/>
+                                            <ci>P_thormax</ci>
+                                            <ci>P_thormin</ci>
+                                        </apply>
+                                        <ci>T_resp</ci>
+                                    </apply>
+                                    <ci>T_insp</ci>
+                                </apply>
+                                <ci>s</ci>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <ci>T_resp</ci>
+                                    <ci>T_insp</ci>
+                                </apply>
+                                <ci>s</ci>
+                            </apply>
+                            <cn cellml:units="dimensionless">1</cn>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <apply>
+                            <minus/>
+                            <ci>P_thormax</ci>
+                            <apply>
+                                <times/>
+                                <apply>
+                                    <divide/>
+                                    <apply>
+                                        <minus/>
+                                        <ci>P_thormax</ci>
+                                        <ci>P_thormin</ci>
+                                    </apply>
+                                    <ci>T_exp</ci>
+                                </apply>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <plus/>
+                                        <ci>T_insp</ci>
+                                        <ci>T_exp</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <ci>s</ci>
+                                        <ci>T_resp</ci>
+                                    </apply>
+                                </apply>
+                            </apply>
+                        </apply>
+                        <apply>
+                            <lt/>
+                            <apply>
+                                <lt/>
+                                <cn cellml:units="dimensionless">1</cn>
+                                <apply>
+                                    <times/>
+                                    <apply>
+                                        <divide/>
+                                        <ci>T_resp</ci>
+                                        <ci>T_insp</ci>
+                                    </apply>
+                                    <ci>s</ci>
+                                </apply>
+                            </apply>
+                            <apply>
+                                <plus/>
+                                <cn cellml:units="dimensionless">1</cn>
+                                <apply>
+                                    <divide/>
+                                    <ci>T_exp</ci>
+                                    <ci>T_insp</ci>
+                                </apply>
+                            </apply>
+                        </apply>
+                    </piece>
+                    <piece>
+                        <ci>P_thormax</ci>
+                        <apply>
+                            <gt/>
+                            <apply>
+                                <plus/>
+                                <cn cellml:units="dimensionless">1</cn>
+                                <apply>
+                                    <times/>
+                                    <apply>
+                                        <divide/>
+                                        <ci>T_exp</ci>
+                                        <ci>T_insp</ci>
+                                    </apply>
+                                    <ci>s</ci>
+                                </apply>
+                            </apply>
+                            <cn cellml:units="dimensionless">1</cn>
+                        </apply>
+                    </piece>
+                </piecewise>
+            </apply>
+        </math>
+    </component>
+    <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LUNGS///////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="v_lung">
+        <variable name="V_lung" public_interface="out" units="milliL"/>
+        <variable initial_value="1.9" name="V_lung0" units="milliL"/>
+        <variable name="P_thor" public_interface="in" units="mmHg"/>
+        <variable initial_value="2.54" name="V_ln" units="milliL"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>V_lung</ci>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <ci>V_lung0</ci>
+                        <apply>
+                            <times/>
+                            <cn cellml:units="dimensionless">0.16</cn>
+                            <ci>P_thor</ci>
+                        </apply>
+                    </apply>
+                    <ci>V_ln</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+</model>

@@ -21,7 +21,7 @@
       <el-divider />
 
       <label class="el-form-label">Port Labels:</label>
-      <div v-if="editableData.portLabels.length>0" class="port-header-row">
+      <div v-if="editableData.portLabels.length > 0" class="port-header-row">
         <span class="port-type-header">Type</span>
         <span class="port-label-header">Label</span>
         <span class="port-select-header">Option</span>
@@ -33,11 +33,8 @@
         :key="index"
         class="port-label-row"
       >
-        <el-select
-          v-model="port.portType"
-          class="port-type-select"
-        >
-        <el-option
+        <el-select v-model="port.portType" class="port-type-select">
+          <el-option
             v-for="options in portTypeOptions"
             :key="options.value"
             :label="options.label"
@@ -67,7 +64,7 @@
           />
         </el-select>
         <div class="port-checkbox">
-          <el-checkbox v-model="port.isMultiPortSum"></el-checkbox>  
+          <el-checkbox v-model="port.isMultiPortSum"></el-checkbox>
         </div>
         <el-button
           type="danger"
@@ -104,16 +101,10 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from "vue"
-import {
-  ElNotification,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElButton,
-} from "element-plus"
-import { Delete, Plus } from "@element-plus/icons-vue"
+import { computed, reactive, watch } from 'vue'
+import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
+import { Delete, Plus } from '@element-plus/icons-vue'
+import { notify } from '../utils/notify'
 
 const props = defineProps({
   // v-model for visibility
@@ -124,7 +115,7 @@ const props = defineProps({
   // Pass the current name to edit
   initialName: {
     type: String,
-    default: "",
+    default: '',
   },
   portOptions: { type: Array, default: () => [] },
   initialPortLabels: { type: Array, default: () => [] },
@@ -139,12 +130,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  "update:modelValue", // Required for v-model
-  "confirm", // Emits the new data
+  'update:modelValue', // Required for v-model
+  'confirm', // Emits the new data
 ])
 
 const editableData = reactive({
-  name: "",
+  name: '',
   portLabels: [], // Will hold objects like { option: 'var_a', label: 'label_1' }
 })
 
@@ -161,7 +152,7 @@ const portTypeOptions = [
     value: 'exit_ports',
     label: 'O',
   },
-];
+]
 
 function resetForm() {
   editableData.name = props.initialName
@@ -171,12 +162,12 @@ function resetForm() {
 }
 
 function closeDialog() {
-  emit("update:modelValue", false)
+  emit('update:modelValue', false)
 }
 
 function handleConfirm() {
   if (!editableData.name || !editableData.name.trim()) {
-    ElNotification.error("Module name cannot be empty.")
+    notify.error({ message: 'Module name cannot be empty.' })
     return
   }
 
@@ -184,7 +175,7 @@ function handleConfirm() {
     (name) => name === editableData.name && name !== props.initialName
   )
   if (nameExists) {
-    ElNotification.error("A module with this name already exists.")
+    notify.error({ message: 'A module with this name already exists.' })
     return
   }
 
@@ -192,7 +183,7 @@ function handleConfirm() {
     (p) => p.option && p.label && p.label.trim()
   )
 
-  emit("confirm", {
+  emit('confirm', {
     name: editableData.name,
     nodeId: props.nodeId,
     portLabels: finalPortLabels,
@@ -212,18 +203,31 @@ watch(
 )
 
 const usedOptions = computed(() => {
-  return new Set(editableData.portLabels.map((p) => p.option).filter(Boolean).flat())
+  return new Set(
+    editableData.portLabels
+      .map((p) => p.option)
+      .filter(Boolean)
+      .flat()
+  )
 })
 
 function isOptionDisabled(optionName, currentSelection) {
   // Disable if:
   // 1. It's in the usedOptions Set
   // 2. And it's NOT an option this row already has selected
-  return usedOptions.value.has(optionName) && currentSelection.includes(optionName) === false
+  return (
+    usedOptions.value.has(optionName) &&
+    currentSelection.includes(optionName) === false
+  )
 }
 
 function addPortLabel() {
-  editableData.portLabels.push({ portType: "general_ports", option: "", label: "", isMultiPortSum: false })
+  editableData.portLabels.push({
+    portType: 'general_ports',
+    option: '',
+    label: '',
+    isMultiPortSum: false,
+  })
 }
 
 function deletePortLabel(index) {

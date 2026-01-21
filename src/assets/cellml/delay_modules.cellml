@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <component name="delay_test">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="f_a" units="per_s"/>
+        <variable name="V_delay" public_interface="out" units="dimensionless"/>
+        <variable initial_value="0.0" name="V" public_interface="out" units="dimensionless"/>
+        <variable name="out" units="dimensionless"/>
+        <variable name="delay" public_interface="in" units="second"/>
+        <!-- Constants-->
+        <variable name="k_e" public_interface="in" units="per_s"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>V</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <ci>f_a</ci>
+                    <apply>
+                        <times/>
+                        <ci>k_e</ci>
+                        <ci>V</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>f_a</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <times/>
+                        <cn cellml:units="per_s">1</cn>
+                        <apply>
+                            <sin/>
+                            <apply>
+                                <times/>
+                                <cn cellml:units="per_s">10</cn>
+                                <ci>t</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <cn cellml:units="per_s">1</cn>
+                        <apply>
+                            <sin/>
+                            <apply>
+                                <times/>
+                                <cn cellml:units="per_s">1</cn>
+                                <ci>t</ci>
+                            </apply>
+                        </apply>
+                    </apply>
+                    <cn cellml:units="per_s">10</cn>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>V_delay</ci>
+                <ci>V</ci>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>out</ci>
+                <apply>
+                    <times/>
+                    <cn cellml:units="dimensionless">2</cn>
+                    <ci>V_delay</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+</model>

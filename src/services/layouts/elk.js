@@ -8,7 +8,7 @@ const elk = new ELK()
  * ELK Layout Function
  */
 export async function runElkLayout(nodes, edges) {
-  // 1. Construct the ELK Graph Structure
+  // Construct the ELK Graph Structure
   const elkGraph = {
     id: 'root',
     layoutOptions: {
@@ -64,11 +64,11 @@ export async function runElkLayout(nodes, edges) {
     }))
   }
 
-  // 2. Run the Layout
+  // Run the Layout
   try {
     const layoutedGraph = await elk.layout(elkGraph)
 
-    // 3. Map Coordinates Back to Vue Flow
+    // Map Coordinates Back to Vue Flow
     layoutedGraph.children.forEach((elkNode) => {
       const originalNode = nodes.find((n) => n.id === elkNode.id)
       if (!originalNode) return

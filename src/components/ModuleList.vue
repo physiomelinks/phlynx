@@ -18,10 +18,10 @@
           v-for="module in file.modules"
           :key="module.name"
           class="module-card"
-          :class="{ selectable: selectable }"
+          :class="{ selectable: selectable, 'is-stub': file.isStub }"
           shadow="hover"
-          :draggable="!selectable"
-          @dragstart="!selectable && onDragStart($event, module)"
+          :draggable="!selectable && !file.isStub"
+          @dragstart="!selectable && !file.isStub && onDragStart($event, module)"
           @click="selectable && handleSelect(module)"
         >
           <div class="module-name">{{ module.name }}</div>
@@ -89,12 +89,11 @@ watch(filteredModuleFiles, (newFiles) => {
     activeCollapseNames.value = newFiles.map((f) => f.filename)
   }
   // If filter is cleared, you might want to close them all:
-  // else {
-  //   activeCollapseNames.value = []
-  // }
+  else {
+    activeCollapseNames.value = []
+  }
 })
 
-// Open new panels
 watch(
   () => store.availableModules,
   (currentModuleFiles) => {
@@ -105,10 +104,9 @@ watch(
         knownFilenames.value.add(file.filename)
       }
     }
-
-    if (newFileNames.length > 0) {
-      activeCollapseNames.value.push(...newFileNames)
-    }
+    // if (newFileNames.length > 0) {
+    //   activeCollapseNames.value.push(...newFileNames)
+    // }
   },
   {
     deep: true,
@@ -121,6 +119,7 @@ function handleSelect(module) {
     emit("select", module)
   }
 }
+
 </script>
 
 <style scoped>
@@ -175,6 +174,11 @@ function handleSelect(module) {
 
 .module-card.selectable {
   cursor: pointer;
+}
+
+.module-card.is-stub {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .module-name {

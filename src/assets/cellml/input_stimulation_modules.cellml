@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="modules" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <!--//////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////// //////////////////modules for different ion channels ///////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////-->
+    <component name="stim_mode_Paci_2013">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="Cm" public_interface="in" units="farad"/>
+        <variable name="stim_flag" public_interface="in" units="dimensionless"/>
+        <variable name="i" public_interface="out" units="A_per_F"/>
+        <variable name="t_start" public_interface="in" units="second"/>
+        <variable name="t_end" public_interface="in" units="second"/>
+        <variable name="i_amplitude" public_interface="in" units="ampere"/>
+        <variable name="i_frequency" public_interface="in" units="per_s"/>
+        <variable name="period" units="second"/>
+        <variable name="i_pulse_duration" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>period</ci>
+                <apply>
+                    <divide/>
+                    <cn cellml:units="dimensionless">60</cn>
+                    <ci>i_frequency</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <ci>i</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <times/>
+                                <ci>stim_flag</ci>
+                                <ci>i_amplitude</ci>
+                            </apply>
+                            <ci>Cm</ci>
+                        </apply>
+                        <apply>
+                            <and/>
+                            <apply>
+                                <geq/>
+                                <ci>t</ci>
+                                <ci>t_start</ci>
+                            </apply>
+                            <apply>
+                                <leq/>
+                                <ci>t</ci>
+                                <ci>t_end</ci>
+                            </apply>
+                            <apply>
+                                <leq/>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <minus/>
+                                        <ci>t</ci>
+                                        <ci>t_start</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <floor/>
+                                            <apply>
+                                                <divide/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>t</ci>
+                                                    <ci>t_start</ci>
+                                                </apply>
+                                                <ci>period</ci>
+                                            </apply>
+                                        </apply>
+                                        <ci>period</ci>
+                                    </apply>
+                                </apply>
+                                <ci>i_pulse_duration</ci>
+                            </apply>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="A_per_F">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+    </component>
+    <component name="voltage_change">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="Vm" public_interface="out" units="volt"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>Vm</ci>
+                <apply>
+                    <plus/>
+                    <apply>
+                        <minus/>
+                        <cn cellml:units="volt">0.08</cn>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <cn cellml:units="V_per_s">0.01</cn>
+                        <ci>t</ci>
+                    </apply>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <component name="i_stim_periodic">
+        <variable name="t" public_interface="in" units="second"/>
+        <variable name="stim_flag" public_interface="in" units="dimensionless"/>
+        <variable name="i" public_interface="out" units="nanoA"/>
+        <variable name="t_start" public_interface="in" units="second"/>
+        <variable name="t_end" public_interface="in" units="second"/>
+        <variable name="i_amplitude" public_interface="in" units="nanoA"/>
+        <variable name="period" public_interface="in" units="second"/>
+        <variable name="pulse_duration" public_interface="in" units="second"/>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <ci>i</ci>
+                <piecewise>
+                    <piece>
+                        <apply>
+                            <times/>
+                            <apply>
+                                <minus/>
+                                <ci>stim_flag</ci>
+                            </apply>
+                            <ci>i_amplitude</ci>
+                        </apply>
+                        <apply>
+                            <and/>
+                            <apply>
+                                <geq/>
+                                <ci>t</ci>
+                                <ci>t_start</ci>
+                            </apply>
+                            <apply>
+                                <leq/>
+                                <ci>t</ci>
+                                <ci>t_end</ci>
+                            </apply>
+                            <apply>
+                                <leq/>
+                                <apply>
+                                    <minus/>
+                                    <apply>
+                                        <minus/>
+                                        <ci>t</ci>
+                                        <ci>t_start</ci>
+                                    </apply>
+                                    <apply>
+                                        <times/>
+                                        <apply>
+                                            <floor/>
+                                            <apply>
+                                                <divide/>
+                                                <apply>
+                                                    <minus/>
+                                                    <ci>t</ci>
+                                                    <ci>t_start</ci>
+                                                </apply>
+                                                <ci>period</ci>
+                                            </apply>
+                                        </apply>
+                                        <ci>period</ci>
+                                    </apply>
+                                </apply>
+                                <ci>pulse_duration</ci>
+                            </apply>
+                        </apply>
+                    </piece>
+                    <otherwise>
+                        <cn cellml:units="nanoA">0</cn>
+                    </otherwise>
+                </piecewise>
+            </apply>
+        </math>
+    </component>
+</model>

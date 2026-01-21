@@ -1,5 +1,5 @@
 import { createApp } from "vue"
-import { createPinia } from "pinia" // Import Pinia
+import { createPinia } from "pinia"
 import ElementPlus from "element-plus"
 import libcellmlPlugin from "vue3-libcellml.js"
 
@@ -19,9 +19,9 @@ import router from "./router"
 import App from "./App.vue"
 
 const app = createApp(App)
-const pinia = createPinia() // Create Pinia instance
+const pinia = createPinia()
 
-app.use(pinia) // Use Pinia
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
 app.use(libcellmlPlugin)
