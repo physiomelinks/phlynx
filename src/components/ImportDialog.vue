@@ -1,17 +1,38 @@
 <template>
-  <el-dialog :model-value="modelValue" :title="config.title || 'Import File'" width="500px" @closed="closeDialog"
-    @update:model-value="closeDialog" :close-on-click-modal="!isLoading" :close-on-press-escape="!isLoading"
-    :show-close="!isLoading">
-    <div v-loading="isLoading" :element-loading-text="loadingText" :element-loading-svg="phlynxspinner"
-      element-loading-svg-view-box="0, 0, 100, 100" element-loading-background="rgba(255, 255, 255, 0.9)">
+  <el-dialog
+    :model-value="modelValue"
+    :title="config.title || 'Import File'"
+    width="500px"
+    @closed="closeDialog"
+    @update:model-value="closeDialog"
+    :close-on-click-modal="!isLoading"
+    :close-on-press-escape="!isLoading"
+    :show-close="!isLoading"
+  >
+    <div
+      v-loading="isLoading"
+      :element-loading-text="loadingText"
+      :element-loading-svg="phlynxspinner"
+      element-loading-svg-view-box="0, 0, 100, 100"
+      element-loading-background="rgba(255, 255, 255, 0.9)"
+    >
       <el-form label-position="top">
         <div v-for="field in displayFields" :key="field.key" class="field-container">
           <el-form-item :label="field.label" :required="field.required || true">
             <div class="upload-row">
-              <el-upload action="#" :auto-upload="false" :show-file-list="false" :accept="field.accept"
-                :on-change="(file) => handleFileChange(file, field)">
-                <el-input :model-value="formState[field.key]?.fileName"
-                  :placeholder="field.placeholder || 'Select file...'" class="file-input" readonly>
+              <el-upload
+                action="#"
+                :auto-upload="false"
+                :show-file-list="false"
+                :accept="field.accept"
+                :on-change="(file) => handleFileChange(file, field)"
+              >
+                <el-input
+                  :model-value="formState[field.key]?.fileName"
+                  :placeholder="field.placeholder || 'Select file...'"
+                  class="file-input"
+                  readonly
+                >
                 </el-input>
                 <el-button type="success">Browse</el-button>
               </el-upload>
@@ -24,11 +45,14 @@
         </div>
 
         <div v-if="validationStatus && formState[IMPORT_KEYS.VESSEL]?.isValid" class="validation-status">
-          <el-alert v-if="validationStatus.isComplete" title="All Required Resources Available" type="success"
-            :closable="false" show-icon>
-            <template #default>
-              All necessary modules and configurations are available.
-            </template>
+          <el-alert
+            v-if="validationStatus.isComplete"
+            title="All Required Resources Available"
+            type="success"
+            :closable="false"
+            show-icon
+          >
+            <template #default> All necessary modules and configurations are available. </template>
           </el-alert>
 
           <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
@@ -44,7 +68,7 @@
                   {{ validationStatus.missingResources?.configs?.join(', ') }} and possibly CellML modules.
                 </li>
               </ul>
-              <br>
+              <br />
               <div v-if="validationStatus.needsConfigFile">
                 <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
               </div>
@@ -69,6 +93,8 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { Check } from '@element-plus/icons-vue'
 import { notify } from '../utils/notify'
 import { IMPORT_KEYS } from '../utils/constants'
+import { createDynamicFields, validateVesselData } from '../utils/import'
+import { processModuleData } from '../utils/cellml'
 import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
 
 const props = defineProps({
@@ -139,11 +165,10 @@ const displayFields = computed(() => {
 
 const addDynamicFields = async (validation) => {
   try {
-    const { createDynamicFields } = await import('../utils/import')
     const newFields = createDynamicFields(validation)
 
     // Merge new fields with existing ones
-    const existingKeys = new Set(dynamicFields.value.map(f => f.key))
+    const existingKeys = new Set(dynamicFields.value.map((f) => f.key))
 
     newFields.forEach((newField) => {
       if (!existingKeys.has(newField.key)) {
@@ -182,9 +207,7 @@ const createValidationStore = () => {
     const configs = payload
 
     configs.forEach((config) => {
-      let moduleFile = availableModules.find(
-        (f) => f.filename === config.module_file
-      )
+      let moduleFile = availableModules.find((f) => f.filename === config.module_file)
 
       if (!moduleFile) {
         moduleFile = {
@@ -232,12 +255,10 @@ const createValidationStore = () => {
   stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
     const existingFile = availableModules.find((f) => f.filename === filename)
 
-
     if (existingFile) {
       if (existingFile.isStub) {
         delete existingFile.isStub
       }
-
 
       if (existingFile.modules) {
         payload.modules.forEach((newMod) => {
@@ -247,7 +268,6 @@ const createValidationStore = () => {
           }
         })
       }
-
 
       Object.assign(existingFile, payload)
     } else {
@@ -307,12 +327,8 @@ const handleFileChange = async (uploadFile, field) => {
 
       // Re-validate vessel if needed
       if (formState[IMPORT_KEYS.VESSEL]?.payload) {
-        const { validateVesselData } = await import('../utils/import')
         const validationStore = createValidationStore()
-        const newValidation = validateVesselData(
-          formState[IMPORT_KEYS.VESSEL].payload.data,
-          validationStore
-        )
+        const newValidation = validateVesselData(formState[IMPORT_KEYS.VESSEL].payload.data, validationStore)
         validation = newValidation
       }
     }
@@ -368,16 +384,13 @@ async function stageFile(field, parsedData, fileName) {
   // Stage the file instead of adding directly to store
   if (field.processUpload === 'cellml') {
     // Parse the module data to get the proper structure
-    const { processModuleData } = await import('../utils/cellml')
     const result = processModuleData(data)
-
 
     if (result.type === 'success') {
       const augmentedData = result.data.map((item) => ({
         ...item,
         sourceFile: fileName,
       }))
-
 
       stagedFiles.value.moduleFiles.push({
         filename: fileName,
@@ -401,12 +414,8 @@ async function stageFile(field, parsedData, fileName) {
   const vesselField = formState[IMPORT_KEYS.VESSEL]
 
   if (vesselField?.payload?.data) {
-    const { validateVesselData } = await import('../utils/import')
     const validationStore = createValidationStore()
-    const newValidation = validateVesselData(
-      vesselField.payload.data,
-      validationStore
-    )
+    const newValidation = validateVesselData(vesselField.payload.data, validationStore)
 
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
     updateVesselValidation(newValidation)
@@ -440,7 +449,7 @@ const handleConfirm = async () => {
   loadingText.value = 'Importing modules...'
 
   await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 50))
+  await new Promise((resolve) => setTimeout(resolve, 50))
 
   commitStagedFiles()
 
@@ -449,7 +458,9 @@ const handleConfirm = async () => {
     result[field.key] = formState[field.key].payload
   })
 
-  emit('confirm', result, (progressText) => { loadingText.value = progressText })
+  emit('confirm', result, (progressText) => {
+    loadingText.value = progressText
+  })
 }
 
 const closeDialog = () => {
@@ -463,7 +474,7 @@ defineExpose({
   finishLoading: () => {
     isLoading.value = false
     closeDialog()
-  }
+  },
 })
 </script>
 
@@ -510,7 +521,6 @@ defineExpose({
 }
 
 @keyframes breathe {
-
   0%,
   100% {
     transform: scale(0.95);

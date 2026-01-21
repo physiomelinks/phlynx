@@ -1,10 +1,18 @@
 {
   "name": "phlynx",
-  "description": "A Circulatory Autogen system builder application.",
+  "description": "A web-based graphical interface for coupling existing CellML modules into a single system model.",
   "author": {
     "name": "Hugh Sorby",
     "email": "h.sorby@auckland.ac.nz"
   },
+  "contributors": [
+    {
+      "name": "Jarrah Dowrick"
+    },
+    {
+      "name": "Finbar Argus"
+    }
+  ],
   "private": true,
   "version": "0.1.0",
   "type": "module",
