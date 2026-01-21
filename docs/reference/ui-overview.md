@@ -160,9 +160,10 @@ Sets the unique identifier for the module in exported files.
 #### Port Definitions
 Maps specific CellML variables to the visual ports created on the module node.
 
-1.  **Port Name:** Enter a custom name for the shared variable (e.g., `sodium_concentration`). This acts as the "common language" between connected modules.
-2.  **Variable Selection:** Use the dropdown to select one or more internal CellML variables to expose through this port.
-3.  **Manage Ports:**
+1.  **Port Type:** Use the dropdown to select one of I (input), O (output), and G (general) to set the port type. 
+2.  **Port Name:** Enter a custom name for the shared variable (e.g., `sodium_concentration`). This acts as the "common language" between connected modules.
+3.  **Variable Selection:** Use the dropdown to select one or more internal CellML variables to expose through this port.
+4.  **Manage Ports:**
     * **Add Port:** Adds a new definition row.
     * **Delete:** Removes a definition row.
 
