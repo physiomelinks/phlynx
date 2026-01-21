@@ -7,11 +7,7 @@
     @update:model-value="closeDialog"
   >
     <el-form label-position="top">
-      <div
-        v-for="field in displayFields"
-        :key="field.key"
-        class="field-container"
-      >
+      <div v-for="field in displayFields" :key="field.key" class="field-container">
         <el-form-item :label="field.label" :required="field.required || true">
           <div class="upload-row">
             <el-upload
@@ -31,11 +27,7 @@
               <el-button type="success">Browse</el-button>
             </el-upload>
 
-            <el-icon
-              v-if="formState[field.key]?.isValid"
-              color="#67C23A"
-              size="20"
-            >
+            <el-icon v-if="formState[field.key]?.isValid" color="#67C23A" size="20">
               <Check />
             </el-icon>
           </div>
@@ -50,18 +42,10 @@
           :closable="false"
           show-icon
         >
-          <template #default>
-            All necessary modules and configurations are available.
-          </template>
+          <template #default> All necessary modules and configurations are available. </template>
         </el-alert>
 
-        <el-alert
-          v-else
-          title="Additional Files Required"
-          type="warning"
-          :closable="false"
-          show-icon
-        >
+        <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
           <template #default>
             <div>Please provide the following files to complete the import:</div>
             <ul class="missing-resources">
@@ -70,13 +54,13 @@
                 {{ validationStatus.missingResources?.moduleTypes?.join(', ') }}
               </li>
               <li v-if="validationStatus.needsConfigFile">
-                <strong>Module Configurations</strong> for vessel_types:bc_types: 
+                <strong>Module Configurations</strong> for vessel_types:bc_types:
                 {{ validationStatus.missingResources?.configs?.join(', ') }} and possibly CellML modules.
               </li>
             </ul>
-            <br>
+            <br />
             <div v-if="validationStatus.needsConfigFile">
-                <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
+              <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
             </div>
           </template>
         </el-alert>
@@ -86,13 +70,7 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog">Cancel</el-button>
-        <el-button
-          type="primary"
-          @click="handleConfirm"
-          :disabled="!isFormValid"
-        >
-          Import
-        </el-button>
+        <el-button type="primary" @click="handleConfirm" :disabled="!isFormValid"> Import </el-button>
       </span>
     </template>
   </el-dialog>
@@ -101,7 +79,7 @@
 <script setup>
 import { reactive, computed, watch, ref } from 'vue'
 import { Check } from '@element-plus/icons-vue'
-import { notify} from '../utils/notify'
+import { notify } from '../utils/notify'
 import { IMPORT_KEYS } from '../utils/constants'
 
 const props = defineProps({
@@ -174,14 +152,14 @@ const addDynamicFields = async (validation) => {
   try {
     const { createDynamicFields } = await import('../utils/import')
     const newFields = createDynamicFields(validation)
-    
+
     // Merge new fields with existing ones
-    const existingKeys = new Set(dynamicFields.value.map(f => f.key))
-    
+    const existingKeys = new Set(dynamicFields.value.map((f) => f.key))
+
     newFields.forEach((newField) => {
       if (!existingKeys.has(newField.key)) {
         dynamicFields.value.push(newField)
-        
+
         // Initialize form state for new field
         if (!formState[newField.key]) {
           formState[newField.key] = createEmptyFieldState()
@@ -189,7 +167,7 @@ const addDynamicFields = async (validation) => {
       }
     })
   } catch (error) {
-    console.error("Failed to create dynamic fields:", error)
+    console.error('Failed to create dynamic fields:', error)
   }
 }
 
@@ -209,34 +187,30 @@ const createValidationStore = () => {
 
   // Create a deep copy of availableModules
   const availableModules = JSON.parse(JSON.stringify(props.builderStore.availableModules))
-  
+
   // Apply staged config files
   stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
     const configs = payload
-    
+
     configs.forEach((config) => {
-      let moduleFile = availableModules.find(
-        (f) => f.filename === config.module_file 
-      )
+      let moduleFile = availableModules.find((f) => f.filename === config.module_file)
 
       if (!moduleFile) {
         moduleFile = {
           filename: config.module_file,
           modules: [],
-          isStub: true
+          isStub: true,
         }
         availableModules.push(moduleFile)
       }
 
-      let module = moduleFile.modules.find(
-        (m) => m.name === config.module_type || m.type === config.module_type
-      )
+      let module = moduleFile.modules.find((m) => m.name === config.module_type || m.type === config.module_type)
 
       if (!module) {
         module = {
           name: config.module_type,
           componentName: config.module_type,
-          configs: []
+          configs: [],
         }
         moduleFile.modules.push(module)
       }
@@ -248,7 +222,7 @@ const createValidationStore = () => {
       const configWithMetadata = {
         ...config,
         _sourceFile: filename,
-        _loadedAt: new Date().toISOString()
+        _loadedAt: new Date().toISOString(),
       }
 
       const existingConfigIndex = module.configs.findIndex(
@@ -266,21 +240,21 @@ const createValidationStore = () => {
   // Apply staged module files
   stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
     const existingFile = availableModules.find((f) => f.filename === filename)
-    
+
     if (existingFile) {
       if (existingFile.isStub) {
         delete existingFile.isStub
       }
-      
+
       if (existingFile.modules) {
-        payload.modules.forEach(newMod => {
-          const oldMod = existingFile.modules.find(m => m.name === newMod.name)
+        payload.modules.forEach((newMod) => {
+          const oldMod = existingFile.modules.find((m) => m.name === newMod.name)
           if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
             newMod.configs = oldMod.configs
           }
         })
       }
-      
+
       Object.assign(existingFile, payload)
     } else {
       availableModules.push(payload)
@@ -336,21 +310,18 @@ const handleFileChange = async (uploadFile, field) => {
     // Specific logic for Dynamic Files (Configs/Modules)
     if (field.processUpload) {
       await stageFile(field, parsed, rawFile.name)
-      
+
       // Re-validate vessel if needed
       if (formState[IMPORT_KEYS.VESSEL]?.payload) {
-         const { validateVesselData } = await import('../utils/import')
-         const validationStore = createValidationStore()
-         const newValidation = validateVesselData(
-           formState[IMPORT_KEYS.VESSEL].payload.data,
-           validationStore
-         )
-         validation = newValidation
+        const { validateVesselData } = await import('../utils/import')
+        const validationStore = createValidationStore()
+        const newValidation = validateVesselData(formState[IMPORT_KEYS.VESSEL].payload.data, validationStore)
+        validation = newValidation
       }
     }
 
     // Vessel-specific validation
-    if (field.key === IMPORT_KEYS.VESSEL && validation){
+    if (field.key === IMPORT_KEYS.VESSEL && validation) {
       await updateVesselValidation(validation)
     }
 
@@ -381,11 +352,12 @@ async function updateVesselValidation(validation) {
   validationStatus.value = validation
 
   if (validation.isComplete) {
-    notify.success({
-      title: 'All Resources Available',
-      message: 'All required modules and configurations are now loaded!',
-      duration: 3000,
-    })
+    // No need to notify again.
+    // notify.success({
+    //   title: 'All Resources Available',
+    //   message: 'All required modules and configurations are now loaded!',
+    //   duration: 3000,
+    // })
     return
   }
 
@@ -402,26 +374,26 @@ async function stageFile(field, parsedData, fileName) {
     // Parse the module data to get the proper structure
     const { processModuleData } = await import('../utils/cellml')
     const result = processModuleData(data)
-    
+
     if (result.type === 'success') {
       const augmentedData = result.data.map((item) => ({
         ...item,
         sourceFile: fileName,
       }))
-      
+
       stagedFiles.value.moduleFiles.push({
         filename: fileName,
         payload: {
           filename: fileName,
           modules: augmentedData,
           model: result.model,
-        }
+        },
       })
     }
   } else if (field.processUpload === 'config') {
     stagedFiles.value.configFiles.push({
       filename: fileName,
-      payload: data
+      payload: data,
     })
   }
 
@@ -429,14 +401,11 @@ async function stageFile(field, parsedData, fileName) {
 
   // Re-validate the Vessel CSV with staged files
   const vesselField = formState[IMPORT_KEYS.VESSEL]
-  
+
   if (vesselField?.payload?.data) {
     const { validateVesselData } = await import('../utils/import')
     const validationStore = createValidationStore()
-    const newValidation = validateVesselData(
-      vesselField.payload.data, 
-      validationStore
-    )
+    const newValidation = validateVesselData(vesselField.payload.data, validationStore)
 
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
     updateVesselValidation(newValidation)
@@ -447,9 +416,7 @@ async function stageFile(field, parsedData, fileName) {
   }
 
   notify.success({
-    title: field.processUpload === 'cellml'
-      ? 'CellML File Staged'
-      : 'Config Staged',
+    title: field.processUpload === 'cellml' ? 'CellML File Staged' : 'Config Staged',
     message: `${fileName} ready to import`,
     duration: 3000,
   })
@@ -496,7 +463,7 @@ const closeDialog = () => {
 }
 .warning-text {
   font-size: 12px;
-  color: #E6A23C;
+  color: #e6a23c;
   margin-top: 4px;
   display: flex;
   align-items: flex-start;

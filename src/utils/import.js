@@ -7,15 +7,15 @@ export const validateVesselData = (vesselData, builderStore) => {
   const errors = []
   const warnings = []
   const missingResources = {
-    configs: new Set(), 
-    moduleTypes: new Set(), 
+    configs: new Set(),
+    moduleTypes: new Set(),
   }
 
   const availableCellMLModules = new Set()
   builderStore.availableModules.forEach((file) => {
-    if (file.isStub){
+    if (file.isStub) {
       return
-    } 
+    }
 
     file.modules?.forEach((module) => {
       const moduleName = module.name || module.componentName
@@ -52,7 +52,7 @@ export const validateVesselData = (vesselData, builderStore) => {
   vesselData.forEach((vessel) => {
     const vesselType = vessel.vessel_type?.trim()
     const bcType = vessel.BC_type?.trim()
-    
+
     if (!vesselType || !bcType) return
 
     const key = `${vesselType}:${bcType}`
@@ -65,21 +65,17 @@ export const validateVesselData = (vesselData, builderStore) => {
       if (config.module_type && !availableCellMLModules.has(config.module_type)) {
         missingModules.push(config.module_type)
         missingResources.moduleTypes.add(config.module_type)
-      } 
+      }
     }
   })
 
   // Generate warnings
   if (missingConfigs.length > 0) {
-    warnings.push(
-      `Missing configurations for: ${[...new Set(missingConfigs)].join(', ')}`
-    )
+    warnings.push(`Missing configurations for: ${[...new Set(missingConfigs)].join(', ')}`)
   }
 
   if (missingModules.length > 0) {
-    warnings.push(
-      `Missing CellML modules: ${[...new Set(missingModules)].join(', ')}`
-    )
+    warnings.push(`Missing CellML modules: ${[...new Set(missingModules)].join(', ')}`)
   }
 
   const needsConfigFile = missingConfigs.length > 0
@@ -127,8 +123,8 @@ const parseVesselCsv = (file, builderStore = null) => {
             validation: validation,
           })
         } else {
-          resolve({ 
-            data: results.data, 
+          resolve({
+            data: results.data,
             warnings: [],
             validation: null,
           })
@@ -178,19 +174,25 @@ export const parseParametersFile = (file) => {
       complete: (results) => {
         // results.data will be an array of objects
         // e.g., [{ param_name: 'a', value: '1' }, { param_name: 'b', value: '2' }]
+        const cleanData = results.data.filter((row) => {
+          // Check if variable_name exists and does NOT start with '#'
+          return row.variable_name && !row.variable_name.trim().startsWith('#')
+        })
+
         if (
-          results.data.length === 0 ||
+          cleanData.length === 0 ||
           !(
-            'variable_name' in results.data[0] &&
-            'units' in results.data[0] &&
-            'value' in results.data[0] &&
-            'data_reference' in results.data[0]
+            'variable_name' in cleanData[0] &&
+            'units' in cleanData[0] &&
+            'value' in cleanData[0] &&
+            'data_reference' in cleanData[0]
           )
         ) {
           reject(new Error('Invalid parameter file format.'))
+          return
         }
 
-        resolve(results.data)
+        resolve(cleanData)
       },
 
       error: (err) => reject(err),

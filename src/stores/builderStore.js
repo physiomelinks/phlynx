@@ -19,7 +19,10 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function listUnits() {
-    availableUnits.value.forEach((e) => {console.log(e.filename); console.log(e.model.substring(0, 200))})
+    availableUnits.value.forEach((e) => {
+      console.log(e.filename)
+      console.log(e.model.substring(0, 200))
+    })
   }
 
   // --- ACTIONS ---
@@ -34,6 +37,10 @@ export const useBuilderStore = defineStore('builder', () => {
 
   function applyParameterLinks(linkMap) {
     moduleParameterMap.value = linkMap
+  }
+
+  function getParameterFileNameForModule(moduleName) {
+    return moduleParameterMap.value.get(moduleName) || null
   }
 
   function getParametersForModule(moduleName) {
@@ -51,9 +58,7 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function addOrUpdateFile(collection, payload) {
-    const existingFile = collection.value.find(
-      (f) => f.filename === payload.filename
-    )
+    const existingFile = collection.value.find((f) => f.filename === payload.filename)
 
     if (existingFile) {
       // Replace existing file's data
@@ -96,16 +101,11 @@ export const useBuilderStore = defineStore('builder', () => {
 
     configs.forEach((config) => {
       if (!config.module_file || typeof config.module_file !== 'string') {
-        console.warn(
-          '[builderStore] Skipping config: missing module_file',
-          config
-        )
+        console.warn('[builderStore] Skipping config: missing module_file', config)
         return
       }
 
-      let moduleFile = availableModules.value.find(
-        (f) => f.filename === config.module_file
-      )
+      let moduleFile = availableModules.value.find((f) => f.filename === config.module_file)
 
       if (!moduleFile) {
         moduleFile = {
@@ -116,9 +116,7 @@ export const useBuilderStore = defineStore('builder', () => {
         availableModules.value.push(moduleFile)
       }
 
-      let module = moduleFile.modules.find(
-        (m) => m.name === config.module_type || m.type === config.module_type
-      )
+      let module = moduleFile.modules.find((m) => m.name === config.module_type || m.type === config.module_type)
 
       if (!module) {
         module = {
@@ -134,8 +132,7 @@ export const useBuilderStore = defineStore('builder', () => {
       }
 
       const existingConfigIndex = module.configs.findIndex(
-        (c) =>
-          c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
       )
 
       const configWithMetadata = {
@@ -153,9 +150,7 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function addModuleFile(payload) {
-    const existingFile = availableModules.value.find(
-      (f) => f.filename === payload.filename
-    )
+    const existingFile = availableModules.value.find((f) => f.filename === payload.filename)
 
     if (existingFile) {
       if (existingFile.isStub) {
@@ -164,9 +159,7 @@ export const useBuilderStore = defineStore('builder', () => {
 
       if (existingFile.modules) {
         payload.modules.forEach((newMod) => {
-          const oldMod = existingFile.modules.find(
-            (m) => m.name === newMod.name
-          )
+          const oldMod = existingFile.modules.find((m) => m.name === newMod.name)
           if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
             newMod.configs = oldMod.configs
           }
@@ -197,9 +190,7 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function getModuleContent(filename) {
-    const index = this.availableModules.findIndex(
-      (f) => f.filename === filename
-    )
+    const index = this.availableModules.findIndex((f) => f.filename === filename)
 
     if (index !== -1) {
       return this.availableModules[index].model
@@ -214,9 +205,7 @@ export const useBuilderStore = defineStore('builder', () => {
    * @param {*} payload
    */
   function addUnitsFile(payload) {
-    const existingFile = availableUnits.value.find(
-      (f) => f.filename === payload.filename
-    )
+    const existingFile = availableUnits.value.find((f) => f.filename === payload.filename)
     if (existingFile) {
       existingFile.model = payload.model
     } else {
@@ -237,9 +226,7 @@ export const useBuilderStore = defineStore('builder', () => {
     for (const file of availableModules.value) {
       for (const module of file.modules) {
         if (module.configs) {
-          const config = module.configs.find(
-            (c) => c.vessel_type === vesselType && c.BC_type === bcType
-          )
+          const config = module.configs.find((c) => c.vessel_type === vesselType && c.BC_type === bcType)
           if (config) {
             return {
               config: config,
@@ -292,6 +279,7 @@ export const useBuilderStore = defineStore('builder', () => {
     getConfig,
     getConfigForVessel,
     getModuleContent,
+    getParameterFileNameForModule,
     getParametersForModule,
     hasModuleFile,
     removeModuleFile,

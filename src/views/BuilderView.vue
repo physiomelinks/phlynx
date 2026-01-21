@@ -1488,7 +1488,7 @@ watchPostEffect(() => {
 
   if (!actionBtn) return
 
-  // 3. Toggle the Element Plus 'is-disabled' class and native attribute
+  // Toggle the Element Plus 'is-disabled' class and native attribute
   if (currentImportMode.value.disabled) {
     actionBtn.classList.add('is-disabled')
     actionBtn.setAttribute('disabled', 'disabled') // Disables clicks & hover styles
