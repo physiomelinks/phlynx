@@ -465,7 +465,7 @@ const exportTooltip = useAutoClosingTooltip(1500)
 const allNodeNames = computed(() => nodes.value.map((n) => n.data.name))
 
 const somethingAvailable = computed(
-  () => nodes.value.length > 0 && builderStore.parameterData.length > 0
+  () => nodes.value.length > 0 && builderStore.parameterFiles.size > 0
 )
 
 const importOptions = computed(() => [
