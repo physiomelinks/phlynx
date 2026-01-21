@@ -766,7 +766,7 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
 
     validator.validateModel(model)
     if (validator.errorCount()) {
-      handleLoggerErrors(validator, 'Validator error count:', validator.errorCount())
+      handleLoggerErrors(validator, `Validator error count: ${validator.errorCount()}`)
     }
 
     // Resolve and Flatten
@@ -774,7 +774,8 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     const flattenedModel = importer.flattenModel(model)
 
     if (importer.errorCount()) {
-      handleLoggerErrors(validator, 'Importer error count:', importer.errorCount())
+      flattenedModel.delete()
+      handleLoggerErrors(importer, `Importer error count: ${importer.errorCount()}`)
     }
 
     analyser.analyseModel(flattenedModel)
@@ -782,7 +783,7 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
       // FIXME: There is a bug in libCellML where the analyser cannot handle
       // initialisation of a variable that is computed.
       // flattenedModel.delete()
-      handleLoggerErrors(analyser, 'Analyser error count:', analyser.errorCount(), true)
+      handleLoggerErrors(analyser, `Analyser error count: ${analyser.errorCount()}`, true)
     }
 
     let flattenedModelString = printer.printModel(flattenedModel, false)
