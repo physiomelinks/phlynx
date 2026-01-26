@@ -253,21 +253,20 @@ export default {
 </script>
 
 <script setup>
-import { computed, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watchPostEffect } from 'vue'
+import { computed, h, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watchPostEffect } from 'vue'
 import { useVueFlow, VueFlow } from '@vue-flow/core'
 import {
   DCaret,
   CameraFilled,
   Menu as IconVessel,
-  Box as IconCellML,
   Operation as IconParameters,
   Setting as IconModuleConfig,
-  ScaleToOriginal as IconUnits,
 } from '@element-plus/icons-vue'
+import CellMLIcon from '../components/icons/CellMLIcon.vue'
+import UnitsIcon from '../components/icons/UnitsIcon.vue'
 
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import Papa from 'papaparse'
 
 import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
@@ -410,7 +409,7 @@ const importOptions = computed(() => [
   {
     key: IMPORT_KEYS.CELLML_FILE,
     label: 'CellML File',
-    icon: markRaw(IconCellML),
+    icon: markRaw(CellMLIcon),
     disabled: libcellml.status !== 'ready',
   },
   {
@@ -428,7 +427,7 @@ const importOptions = computed(() => [
   {
     key: IMPORT_KEYS.UNITS,
     label: 'Units',
-    icon: markRaw(IconUnits),
+    icon: markRaw(UnitsIcon),
     disabled: libcellml.status !== 'ready',
   },
 ])
@@ -438,7 +437,7 @@ const exportOptions = computed(() => [
   {
     key: EXPORT_KEYS.CELLML,
     label: 'CellML',
-    icon: markRaw(IconCellML),
+    icon: markRaw(CellMLIcon),
     disabled: libcellml.status !== 'ready',
     suffix: '.cellml',
   },
@@ -1035,7 +1034,22 @@ async function onExportConfirm(fileName, handle) {
 
     builderStore.setLastExportName(finalName)
     notification.close()
-    notify.success({ message: 'Export successful!' })
+    notify.success({
+      title: 'Export successful!',
+      message: h('div', null, [
+        'Model downloaded. ',
+        h(
+          'a',
+          {
+            href: 'https://opencor.ws/app/',
+            target: '_blank',
+            style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
+          },
+          'Open in OpenCOR'
+        ),
+      ]),
+      duration: 5000,
+    })
   } catch (error) {
     notification.close()
     notify.error({ message: `Export failed: ${error.message}` })

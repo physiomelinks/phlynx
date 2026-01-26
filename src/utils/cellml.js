@@ -1,5 +1,9 @@
 let _libcellml = null
 
+// Define the Namespaces.
+const CELLML_NS = 'http://www.cellml.org/cellml/2.0#'
+const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
+
 export function initLibCellML(instance) {
   _libcellml = instance
 }
@@ -269,10 +273,6 @@ function extractUnitsFromMath(multiBlockMathString) {
     throw new Error('XML Parse Error:', parserError.textContent)
   }
 
-  // Define the Namespaces.
-  const CELLML_NS = 'http://www.cellml.org/cellml/2.0#'
-  const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
-
   // Find all <cn> elements
   // We use getElementsByTagNameNS to be strictly safe,
   // ensuring we only get MathML <cn> tags, not other tags named 'cn'.
@@ -383,6 +383,39 @@ function addEnvironmentComponent(model) {
 
   environmentComp.delete()
   timeVar.delete()
+}
+
+function prioritizeEnvironmentComponent(xmlString) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(xmlString, 'application/xml')
+
+  // Check for parse errors.
+  const parserError = doc.querySelector('parsererror')
+  if (parserError) {
+    console.error('XML Parse Error during reordering:', parserError.textContent)
+    return xmlString // Return original if parsing fails
+  }
+
+  // Get the Model element
+  const model = doc.getElementsByTagNameNS(CELLML_NS, 'model')[0]
+  if (!model) return xmlString
+
+  // Find the 'environment' component.
+  const components = Array.from(doc.getElementsByTagNameNS(CELLML_NS, 'component'))
+
+  const envComp = components.find((c) => c.getAttribute('name') === 'environment')
+
+  // Move it to be the first component child of model.
+  if (envComp) {
+    const firstOtherComp = components.find((c) => c !== envComp)
+    if (firstOtherComp) {
+      model.insertBefore(envComp, firstOtherComp)
+    }
+  }
+
+  // Serialize back to string.
+  const serializer = new XMLSerializer()
+  return serializer.serializeToString(doc)
 }
 
 /**
@@ -733,7 +766,7 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
 
     validator.validateModel(model)
     if (validator.errorCount()) {
-      handleLoggerErrors(validator, 'Validator error count:', validator.errorCount())
+      handleLoggerErrors(validator, `Validator error count: ${validator.errorCount()}`)
     }
 
     // Resolve and Flatten
@@ -741,7 +774,8 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     const flattenedModel = importer.flattenModel(model)
 
     if (importer.errorCount()) {
-      handleLoggerErrors(validator, 'Importer error count:', importer.errorCount())
+      flattenedModel.delete()
+      handleLoggerErrors(importer, `Importer error count: ${importer.errorCount()}`)
     }
 
     analyser.analyseModel(flattenedModel)
@@ -749,11 +783,13 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
       // FIXME: There is a bug in libCellML where the analyser cannot handle
       // initialisation of a variable that is computed.
       // flattenedModel.delete()
-      handleLoggerErrors(analyser, 'Analyser error count:', analyser.errorCount(), true)
+      handleLoggerErrors(analyser, `Analyser error count: ${analyser.errorCount()}`, true)
     }
 
-    const flattenedModelString = printer.printModel(flattenedModel, false)
+    let flattenedModelString = printer.printModel(flattenedModel, false)
     flattenedModel.delete()
+
+    flattenedModelString = prioritizeEnvironmentComponent(flattenedModelString)
 
     return new Blob([flattenedModelString], {
       type: 'application/x.vnd.cellml+xml',
