@@ -1093,8 +1093,9 @@ async function onExportConfirm(fileName, handle) {
           'a',
           {
             href: 'https://opencor.ws/app/',
-            target: '_blank',
+            rel: 'noopener noreferrer',
             style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
+            target: '_blank',
           },
           'Open in OpenCOR'
         ),
