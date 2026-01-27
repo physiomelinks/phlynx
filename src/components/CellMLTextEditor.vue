@@ -150,10 +150,11 @@ watch(
 <style scoped>
 .container {
   display: flex;
-  height: 95vh;
+  height: 100%;
   gap: 20px;
   padding: 20px;
   font-family: sans-serif;
+  box-sizing: border-box; 
 }
 .panel {
   flex: 1;
@@ -170,6 +171,8 @@ textarea,
   font-size: 14px;
   white-space: pre;
   overflow: auto;
+  outline: none;
+  resize: none;
 }
 .code-view {
   background: #1e1e1e;

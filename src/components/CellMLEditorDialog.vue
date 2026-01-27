@@ -3,6 +3,8 @@
     :model-value="modelValue"
     :title="dialogTitle"
     width="80%"
+    top="5vh"
+    class="editor-dialog"
     :before-close="handleBeforeClose"
     @update:model-value="(val) => emit('update:modelValue', val)"
   >
@@ -204,6 +206,16 @@ const handleForkSave = async () => {
 </script>
 
 <style scoped>
+.editor-container {
+  height: 75vh; 
+  display: flex;
+  flex-direction: column;
+}
+.editor-wrapper {
+  flex: 1; 
+  overflow: hidden; 
+  position: relative;
+}
 .tag.internal {
   color: orange;
   font-weight: bold;
