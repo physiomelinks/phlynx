@@ -77,6 +77,15 @@
         >
           <el-icon><Edit /></el-icon>
         </el-button>
+
+        <el-button
+          size="small"
+          circle
+          @click="openCellMLEditDialog"
+          class="module-button"
+        >
+          <el-icon><CellMLIcon /></el-icon>
+        </el-button>
       </div>
     </el-card>
 
@@ -136,6 +145,7 @@ import {
   Place,
   WarningFilled,
 } from '@element-plus/icons-vue'
+import CellMLIcon from './icons/CellMLIcon.vue'
 import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
 import { getHandleId, getHandleStyle, portPosition } from '../utils/ports'
@@ -162,7 +172,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['open-edit-dialog', 'open-replacement-dialog'])
+const emit = defineEmits(['open-cellml-editor-dialog', 'open-edit-dialog', 'open-replacement-dialog'])
 
 const moduleNode = ref(null)
 
@@ -173,6 +183,15 @@ async function openEditDialog() {
     name: props.data.name,
     portOptions: props.data.portOptions,
     portLabels: props.data.portLabels,
+  })
+}
+
+function openCellMLEditDialog() {
+  emit('open-cellml-editor-dialog', {
+    nodeId: props.id,
+    name: props.data.name,
+    sourceFile: props.data.sourceFile,
+    componentName: props.data.componentName,
   })
 }
 

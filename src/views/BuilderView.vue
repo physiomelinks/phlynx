@@ -184,6 +184,7 @@
                 :data="props.data"
                 :selected="props.selected"
                 @open-edit-dialog="onOpenEditDialog"
+                @open-cellml-editor-dialog="onOpenCellMLEditorDialog"
                 @open-replacement-dialog="onOpenReplacementDialog"
                 :ref="(el) => (nodeRefs[props.id] = el)"
               />
@@ -205,6 +206,13 @@
     :port-options="currentEditingNode?.portOptions || []"
     :initial-port-labels="currentEditingNode?.portLabels || []"
     @confirm="onEditConfirm"
+  />
+
+  <CellMLEditorDialog
+    v-model="cellMLEditorDialogVisible"
+    :nodeData="currentEditingNode"
+    @save-update="onCellMLUpdateSave"
+    @save-fork="onCellMLForkSave"
   />
 
   <SaveDialog v-model="saveDialogVisible" @confirm="onSaveConfirm" :default-name="builderStore.lastSaveName" />
@@ -253,21 +261,20 @@ export default {
 </script>
 
 <script setup>
-import { computed, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watchPostEffect } from 'vue'
+import { computed, h, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watchPostEffect } from 'vue'
 import { useVueFlow, VueFlow } from '@vue-flow/core'
 import {
   DCaret,
   CameraFilled,
   Menu as IconVessel,
-  Box as IconCellML,
   Operation as IconParameters,
   Setting as IconModuleConfig,
-  ScaleToOriginal as IconUnits,
 } from '@element-plus/icons-vue'
+import CellMLIcon from '../components/icons/CellMLIcon.vue'
+import UnitsIcon from '../components/icons/UnitsIcon.vue'
 
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import Papa from 'papaparse'
 
 import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
@@ -297,6 +304,7 @@ import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig, parseParametersFile } from '../utils/import'
 import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
 import { generateParameterAssociations } from '../utils/parameters'
+import CellMLEditorDialog from '../components/CellMLEditorDialog.vue'
 
 // import testModuleBGContent from '../assets/bg_modules.cellml?raw'
 // import testModuleColonContent from '../assets/colon_FTU_modules.cellml?raw'
@@ -368,6 +376,7 @@ const libcellmlReadyPromise = inject('$libcellml_ready')
 const libcellml = inject('$libcellml')
 const configDialogVisible = ref(false)
 const editDialogVisible = ref(false)
+const cellMLEditorDialogVisible = ref(false)
 const saveDialogVisible = ref(false)
 const importDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
@@ -410,7 +419,7 @@ const importOptions = computed(() => [
   {
     key: IMPORT_KEYS.CELLML_FILE,
     label: 'CellML File',
-    icon: markRaw(IconCellML),
+    icon: markRaw(CellMLIcon),
     disabled: libcellml.status !== 'ready',
   },
   {
@@ -428,7 +437,7 @@ const importOptions = computed(() => [
   {
     key: IMPORT_KEYS.UNITS,
     label: 'Units',
-    icon: markRaw(IconUnits),
+    icon: markRaw(UnitsIcon),
     disabled: libcellml.status !== 'ready',
   },
 ])
@@ -438,7 +447,7 @@ const exportOptions = computed(() => [
   {
     key: EXPORT_KEYS.CELLML,
     label: 'CellML',
-    icon: markRaw(IconCellML),
+    icon: markRaw(CellMLIcon),
     disabled: libcellml.status !== 'ready',
     suffix: '.cellml',
   },
@@ -913,6 +922,47 @@ function onOpenEditDialog(eventPayload) {
   editDialogVisible.value = true
 }
 
+function onOpenCellMLEditorDialog(eventPayload) {
+  currentEditingNode.value = {
+    ...eventPayload,
+  }
+  cellMLEditorDialogVisible.value = true
+}
+
+async function onCellMLUpdateSave(updatedData) {
+  await loadCellMLModuleData(updatedData.code, updatedData.sourceFile, false)
+
+  notify.success({
+    title: 'CellML Module Updated',
+    message: `Module ${updatedData.componentName} has been updated in ${updatedData.sourceFile}.`,
+  })
+}
+async function onCellMLForkSave(saveData) {
+  if (!saveData.nodeId) return
+
+  const node = findNode(saveData.nodeId)
+  if (!node) return
+
+  const originalSourceFile = node.data.sourceFile || 'unknown_source.cellml'
+  const originalComponentName = node.data.componentName
+  const nodeData = {
+    ...node.data,
+    componentName: saveData.componentName,
+    sourceFile: saveData.sourceFile,
+    label: `${saveData.componentName} — ${saveData.sourceFile}`,
+  }
+
+  await loadCellMLModuleData(saveData.code, saveData.sourceFile, false)
+  await nextTick()
+
+  updateNodeData(saveData.nodeId, nodeData)
+
+  notify.success({
+    title: 'CellML Module Saved As',
+    message: `Module ${originalComponentName} from ${originalSourceFile} has been saved as ${saveData.componentName} in ${saveData.sourceFile}.`,
+  })
+}
+
 function onOpenMacroBuilderDialog() {
   macroBuilderDialogVisible.value = true
 }
@@ -1035,7 +1085,23 @@ async function onExportConfirm(fileName, handle) {
 
     builderStore.setLastExportName(finalName)
     notification.close()
-    notify.success({ message: 'Export successful!' })
+    notify.success({
+      title: 'Export successful!',
+      message: h('div', null, [
+        'Model downloaded. ',
+        h(
+          'a',
+          {
+            href: 'https://opencor.ws/app/',
+            rel: 'noopener noreferrer',
+            style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
+            target: '_blank',
+          },
+          'Open in OpenCOR'
+        ),
+      ]),
+      duration: 5000,
+    })
   } catch (error) {
     notification.close()
     notify.error({ message: `Export failed: ${error.message}` })

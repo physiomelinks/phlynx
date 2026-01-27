@@ -1852,6 +1852,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cellml-text-editor@npm:^0.1.7":
+  version: 0.1.7
+  resolution: "cellml-text-editor@npm:0.1.7"
+  checksum: 10c0/011a0337b71edfdca545b7bc470097471768cbb3d71301499894dba0a279ebf34ec3ad98d5224d433eb95d81dd45cc09352581b4045b5d1ac03d8bbcbd7923f5
+  languageName: node
+  linkType: hard
+
 "chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.1, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
@@ -1995,6 +2002,13 @@ __metadata:
   version: 5.1.0
   resolution: "commander@npm:5.1.0"
   checksum: 10c0/da9d71dbe4ce039faf1fe9eac3771dca8c11d66963341f62602f7b66e36d2a3f8883407af4f9a37b1db1a55c59c0c1325f186425764c2e963dc1d67aec2a4b6d
+  languageName: node
+  linkType: hard
+
+"commander@npm:^8.3.0":
+  version: 8.3.0
+  resolution: "commander@npm:8.3.0"
+  checksum: 10c0/8b043bb8322ea1c39664a1598a95e0495bfe4ca2fad0d84a92d7d1d8d213e2a155b441d2470c8e08de7c4a28cf2bc6e169211c49e1b21d9f7edc6ae4d9356060
   languageName: node
   linkType: hard
 
@@ -3500,6 +3514,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"katex@npm:^0.16.27":
+  version: 0.16.27
+  resolution: "katex@npm:0.16.27"
+  dependencies:
+    commander: "npm:^8.3.0"
+  bin:
+    katex: cli.js
+  checksum: 10c0/f5f9a8c9f422c8f798081cc3483d44f112d75f65968a643572d9cfa910b9ebcf47f3563111764b91b9298f32776dfc04ebaf950f515ff3f406f058a0b9a33c9a
+  languageName: node
+  linkType: hard
+
 "keyv@npm:^4.0.0":
   version: 4.5.4
   resolution: "keyv@npm:4.5.4"
@@ -4291,6 +4316,7 @@ __metadata:
     "@vue-flow/core": "npm:^1.47.0"
     "@vue-flow/minimap": "npm:^1.5.4"
     "@vue-flow/node-resizer": "npm:^1.5.0"
+    cellml-text-editor: "npm:^0.1.7"
     cytoscape: "npm:^3.33.1"
     cytoscape-fcose: "npm:^2.2.0"
     electron: "npm:^39.0.0"
@@ -4300,6 +4326,7 @@ __metadata:
     github-markdown-css: "npm:^5.8.1"
     html-to-image: "npm:^1.11.13"
     jszip: "npm:^3.10.1"
+    katex: "npm:^0.16.27"
     markdown-it: "npm:^14.1.0"
     markdown-it-attrs: "npm:^4.3.1"
     markdown-it-github-alerts: "npm:^1.0.0"

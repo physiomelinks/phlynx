@@ -2,6 +2,7 @@ import { MarkerType } from '@vue-flow/core'
 
 export const SOURCE_PORT_TYPE = 'source'
 export const TARGET_PORT_TYPE = 'target'
+export const USER_MODULES_FILE = 'UserModules.cellml'
 
 export const markerEnd = MarkerType.ArrowClosed
 export const edgeLineOptions = {
