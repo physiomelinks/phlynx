@@ -178,7 +178,7 @@ export async function generateExportZip(fileName, nodes, edges, parameters) {
 
             const portEntry = {
               port_type: currentPortLabel,
-              variables: [info.option] || [],
+              variables: info.option || [],
             }
 
             if (info.isMultiPortSum) portEntry.multi_port = 'Sum'
