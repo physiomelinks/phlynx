@@ -1,6 +1,6 @@
 import JSZip from 'jszip'
 import Papa from 'papaparse'
-import { notify} from '../utils/notify'
+import { notify } from '../utils/notify'
 
 
 /**
@@ -80,7 +80,7 @@ function checkSharedPorts(nodes, edges) {
 
       if (srcTypes.length === 0 || tgtTypes.length === 0) continue // unknown label
 
-        const isValid = srcTypes.some(srcType =>
+      const isValid = srcTypes.some(srcType =>
         tgtTypes.some(tgtType =>
           (srcType === 'exit' && tgtType === 'entrance') ||
           (srcType === 'entrance' && tgtType === 'exit') ||
@@ -104,10 +104,9 @@ function checkSharedPorts(nodes, edges) {
  * Generates a zip blob for the Circulatory Autogen export.
  * @param {Array} nodes - The array of nodes from Vue Flow.
  * @param {Array} edges - The array of edges from Vue Flow.
- * @param {Array} parameters - The parameter data from the store.
  * @returns {Promise<Blob>} A promise that resolves with the zip file blob.
  */
-export async function generateExportZip(fileName, nodes, edges, parameters) {
+export async function generateExportZip(fileName, nodes, edges, builderStore) {
   try {
 
     const zip = new JSZip()
@@ -189,13 +188,20 @@ export async function generateExportZip(fileName, nodes, edges, parameters) {
       }
 
       let variablesAndUnits = []
-      for (const variable of node.data.portOptions || []) {
-        variablesAndUnits.push([
-          variable.name,
-          variable.units || 'missing',
-          'access',
-          classifyVariable(node.data.name, variable, parameters),
-        ])
+
+      const cellmlFileName = node.data?.sourceFile
+      const parameterFileName = builderStore.getParameterFileNameForModule(cellmlFileName)
+
+      if (parameterFileName) {
+        const parameters = builderStore.getParametersForModule(cellmlFileName)
+        for (const variable of node.data.portOptions || []) {
+          variablesAndUnits.push([
+            variable.name,
+            variable.units || 'missing',
+            'access',
+            classifyVariable(node.data.name, variable, parameters),
+          ])
+        }
       }
 
       module_config.push({
@@ -236,7 +242,7 @@ export async function generateExportZip(fileName, nodes, edges, parameters) {
 
     return zipBlob
   } catch (error) {
-    notify.error({message: `Failed to export config files: ${error.message}`})
+    notify.error({ message: `Failed to export config files: ${error.message}` })
     throw error
   }
 }
