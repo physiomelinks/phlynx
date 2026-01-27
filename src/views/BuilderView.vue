@@ -1062,7 +1062,7 @@ async function onExportConfirm(fileName, handle) {
   try {
     let blob = undefined
     if (caExport) {
-      blob = await generateExportZip(fileName, nodes.value, edges.value, builderStore.parameterData)
+      blob = await generateExportZip(fileName, nodes.value, edges.value, builderStore)
     } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
       blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
     }

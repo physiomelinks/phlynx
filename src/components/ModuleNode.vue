@@ -454,9 +454,13 @@ function handleDocumentContextmenu(e) {
   font-size: 18px;
   cursor: help;
 
-  /* Optional: specific Hover effect */
   &:hover {
     color: var(--el-color-warning-dark-2);
   }
 }
+
+.module-button {
+  margin: 0;
+}
+
 </style>

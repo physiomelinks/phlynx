@@ -10,7 +10,7 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue"/>
+        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" />
       </div>
 
       <div class="status-bar">
@@ -90,7 +90,7 @@ const isInternalModule = computed(() => {
 })
 
 const isDirty = computed(() => {
-  return !areModelsEquivalent(originalCode.value, currentCode.value);
+  return !areModelsEquivalent(originalCode.value, currentCode.value)
 })
 
 const dialogTitle = computed(() => {
@@ -105,12 +105,21 @@ watch(
       loading.value = true
       try {
         const modelString = await store.getModuleContent(newData.sourceFile)
-        const xml = createEditableModelFromSourceModelAndComponent(modelString, newData.componentName)
-        currentCode.value = xml
-        originalCode.value = xml
+        const { xml, errors } = createEditableModelFromSourceModelAndComponent(modelString, newData.componentName)
+        if (errors.length > 0) {
+          console.error('Errors while extracting component for editing:', errors)
+          ElMessageBox.alert(
+            `Failed to load the CellML source for editing.\n\nError${errors.length === 1 ? '' : 's'}:\n- ${errors.join('\n- ')}\n\nPlease create an issue if the problem persists.`,
+            'Load Error',
+            { type: 'error' }
+          )
+        } else {
+          currentCode.value = xml
+          originalCode.value = xml
 
-        // Pre-fill a name for "Save As" (e.g., "sodium_channel_custom")
-        newComponentName.value = `${newData.componentName}_custom`
+          // Pre-fill a name for "Save As" (e.g., "sodium_channel_custom")
+          newComponentName.value = `${newData.componentName}_custom`
+        }
       } catch (e) {
         console.error('Failed to load source', e)
       } finally {
@@ -162,11 +171,7 @@ const handleDirectSave = async () => {
   const modelString = await store.getModuleContent(USER_MODULES_FILE)
   const mergedModelString = mergeModelComponents(modelString, currentCode.value, componentName)
   if (!mergedModelString) {
-    ElMessageBox.alert(
-      `Failed to merge changes into User Modules.`,
-      'Save Error',
-      { type: 'error' }
-    )
+    ElMessageBox.alert(`Failed to merge changes into User Modules.`, 'Save Error', { type: 'error' })
     return
   }
   emit('save-update', formSaveData(componentName, mergedModelString))
@@ -188,11 +193,7 @@ const handleForkSave = async () => {
 
   const mergedModelString = mergeModelComponents(modelString, currentCode.value, trimmedComponentName)
   if (!mergedModelString) {
-    ElMessageBox.alert(
-      `Failed to merge new component into User Modules.`,
-      'Save Error',
-      { type: 'error' }
-    )
+    ElMessageBox.alert(`Failed to merge new component into User Modules.`, 'Save Error', { type: 'error' })
     return
   }
 

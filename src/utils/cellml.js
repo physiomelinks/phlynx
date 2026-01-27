@@ -857,42 +857,93 @@ function removeComments(node) {
   }
 }
 
-export function createEditableModelFromSourceModelAndComponent(modelString, componentName) {
-  if (modelString) {
-    const parser = new _libcellml.Parser(false)
-    const model = parser.parseModel(modelString)
-    const component = model.componentByName(componentName, true)
-    if (component) {
-      const newModel = new _libcellml.Model()
-      newModel.setName('EditModel')
-      const compClone = component.clone()
-      newModel.addComponent(compClone)
+function hasParserError(parsedDocument) {
+  var parser = new DOMParser(),
+    errorneousParse = parser.parseFromString('<', 'application/xml'),
+    parsererrorNS = errorneousParse.getElementsByTagName('parsererror')[0].namespaceURI
 
-      const xmlParser = new DOMParser()
-      // Remove comments from MathML, maybe libCellML can't handle them?
-      const doc = xmlParser.parseFromString(compClone.math(), 'application/xml')
-      removeComments(doc)
-      const serializer = new XMLSerializer()
-      const cleanMathML = serializer.serializeToString(doc)
-      compClone.setMath(cleanMathML)
-
-      const printer = new _libcellml.Printer()
-      const newModelString = printer.printModel(newModel, false)
-
-      component.delete()
-      compClone.delete()
-      model.delete()
-      parser.delete()
-      printer.delete()
-      newModel.delete()
-
-      return newModelString
-    }
-    model.delete()
-    parser.delete()
+  if (parsererrorNS === 'http://www.w3.org/1999/xhtml') {
+    return parsedDocument.getElementsByTagName('parsererror').length > 0
   }
 
-  return null
+  return parsedDocument.getElementsByTagNameNS(parsererrorNS, 'parsererror').length > 0
+}
+
+export function createEditableModelFromSourceModelAndComponent(modelString, componentName) {
+  if (!modelString || !componentName) {
+    return { xml: null, errors: ['Model or component name not provided'] }
+  }
+  const parser = new _libcellml.Parser(false)
+  const model = parser.parseModel(modelString)
+
+  if (!model || parser.errorCount() > 0) {
+    const errors = []
+    for (let i = 0; i < parser.errorCount(); i++) {
+      const error = parser.error(i)
+      errors.push(error.description())
+      error.delete()
+    }
+    model && model.delete()
+    parser.delete()
+    return { xml: null, errors }
+  }
+
+  const modelName = model.name() || 'UnnamedModel'
+  const component = model.componentByName(componentName, true)
+
+  if (!component) {
+    model.delete()
+    parser.delete()
+    return { xml: null, errors: [`Component '${componentName}' not found in model '${modelName}'`] }
+  }
+
+  const newModel = new _libcellml.Model()
+  newModel.setName('EditModel')
+  const compClone = component.clone()
+  newModel.addComponent(compClone)
+
+  const xmlParser = new DOMParser()
+  // Remove comments from MathML, maybe libCellML can't handle them?
+  const wrappedMathML = `<root>${compClone.math()}</root>`
+  const doc = xmlParser.parseFromString(wrappedMathML, 'application/xml')
+  if (!doc || hasParserError(doc)) {
+    component.delete()
+    compClone.delete()
+    model.delete()
+    parser.delete()
+    newModel.delete()
+
+    return { xml: null, errors: [`Error parsing MathML in '${modelName}' component '${componentName}'`] }
+  }
+
+  removeComments(doc)
+
+  const mathNodes = doc.querySelectorAll('math')
+  let cleanMathML = ''
+  if (mathNodes.length > 0) {
+    const serializer = new XMLSerializer()
+    const primaryMath = mathNodes[0]
+    for (let i = 1; i < mathNodes.length; i++) {
+      const siblingMath = mathNodes[i]
+      while (siblingMath.firstChild) {
+        primaryMath.appendChild(siblingMath.firstChild)
+      }
+    }
+    cleanMathML = serializer.serializeToString(primaryMath)
+    compClone.setMath(cleanMathML)
+  }
+
+  const printer = new _libcellml.Printer()
+  const newModelString = printer.printModel(newModel, false)
+
+  component.delete()
+  compClone.delete()
+  model.delete()
+  parser.delete()
+  printer.delete()
+  newModel.delete()
+
+  return { xml: newModelString, errors: [] }
 }
 
 export function doesComponentExistInModel(modelString, componentName) {
