@@ -54,8 +54,9 @@ Modules interact via specific tools located on the module node itself.
 ![Labelled module node](../assets/images/labelled-module.png){.align-center width="600px"}
 
 * **[Key](../reference/ui-overview#key) (Left):** Assigns a color for visual identification.
-* **[Add Port Node](../reference/ui-overview#add-port-node) (Centre):** adds a <GlossaryLink term="port-node"/> connection point.
-* **[Edit Module](../reference/ui-overview#edit-module) (Right):** Opens the configuration dialog.
+* **[Add Port Node](../reference/ui-overview#add-port-node) (Centre-left):** adds a <GlossaryLink term="port-node"/> connection point.
+* **[Edit Module Configuration](../reference/ui-overview#edit-module) (Centre-right):** Opens the configuration dialog.
+* **[Edit CellML](../guides/writing-cellml) (Right):** Opens the CellML text editor. 
 
 **Managing Connections**
 To connect two modules, both must have at least one **Port Node**.
@@ -81,7 +82,7 @@ Connect the modules placed in [Step 1](#step-1-place-and-rename) as shown below.
 
 Before exporting, the model requires specific data configuration. Click the **Edit Module** (pencil) icon to open the configuration dialog.
 
-![Labelled Edit Module dialogue](../assets/images/edit-module-detail.png){.align-center width="800px"}
+![Labelled Edit Module dialog](../assets/images/edit-module-detail.png){.align-center width="800px"}
 
 Use this dialog to define <GlossaryLink term="ports"/>—collections of variables shared between connected modules. A port definition consists of:
 

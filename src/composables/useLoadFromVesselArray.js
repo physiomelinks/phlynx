@@ -10,6 +10,7 @@ import { runFcoseLayout } from '../services/layouts/cytoscape'
 import { runPortGranularLayout } from '../services/layouts/dagre'
 import { runRescaleLayout } from '../services/layouts/rescale'
 import { notify} from '../utils/notify'
+import { useGtm } from './useGtm'
 
 export function useLoadFromVesselArray() {
   const {
@@ -24,6 +25,7 @@ export function useLoadFromVesselArray() {
   } = useVueFlow()
   const store = useBuilderStore()
   const historyStore = useFlowHistoryStore()
+  const { trackEvent } = useGtm()
 
   const layoutPending = ref(false)
   let pendingEdges = []
@@ -72,8 +74,21 @@ export function useLoadFromVesselArray() {
 
       // Wait for the layout to complete before returning
       await layoutCompletePromise
+
+      trackEvent('workflow_load_action', {
+        category: 'Workflow',
+        action: 'load_from_vessel_array',
+        label: `Vessels: ${configData.vessels.length}`,
+        file_type: 'vessel_array'
+      })
       
     } catch (error) {
+      trackEvent('workflow_load_action', {
+        category: 'Workflow',
+        action: 'load_from_vessel_array',
+        label: `Error: ${error.message}`,
+        file_type: 'vessel_array'
+      })
       notify.error({message: `Failed to load workflow: ${error.message}`})
       layoutPending.value = false
       pendingProgressCallback = null

@@ -4,7 +4,7 @@ When your model requires specific components not found in the default library, y
 
 ## 1. Create Custom Modules
 
-Write your custom CellML modules in your preferred IDE. To ensure compatibility with PhLynx, follow the structure and conventions outlined in the [Module Format Guide](../reference/cellml-module-format).
+Write your custom CellML modules in your preferred IDE. To ensure compatibility with PhLynx, follow the structure and conventions outlined in the [Module Format Guide](../writing-cellml).
 
 ## 2. Import Module Files
 

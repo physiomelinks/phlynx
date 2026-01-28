@@ -3,6 +3,8 @@
     :model-value="modelValue"
     :title="dialogTitle"
     width="80%"
+    top="5vh"
+    class="editor-dialog"
     :before-close="handleBeforeClose"
     @update:model-value="(val) => emit('update:modelValue', val)"
   >
@@ -51,6 +53,7 @@ import { ref, computed, watch } from 'vue'
 import { ElButton, ElDialog, ElMessageBox, ElInput } from 'element-plus'
 import CellMLTextEditor from './CellMLTextEditor.vue'
 import { useBuilderStore } from '../stores/builderStore'
+import { useGtm } from '../composables/useGtm'
 import { USER_MODULES_FILE } from '../utils/constants'
 import {
   areModelsEquivalent,
@@ -74,6 +77,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'save-fork', 'save-update'])
 
 const store = useBuilderStore()
+const { trackEvent } = useGtm()
 const loading = ref(false)
 const currentCode = ref('')
 const originalCode = ref('')
@@ -174,6 +178,12 @@ const handleDirectSave = async () => {
     ElMessageBox.alert(`Failed to merge changes into User Modules.`, 'Save Error', { type: 'error' })
     return
   }
+  trackEvent('editor_action', {
+    category: 'Editor',
+    action: 'save',
+    label: props.nodeData.componentName, // useful context
+    file_type: 'cellml'
+  })
   emit('save-update', formSaveData(componentName, mergedModelString))
   emit('update:modelValue', false)
 }
@@ -197,6 +207,12 @@ const handleForkSave = async () => {
     return
   }
 
+  trackEvent('editor_action', {
+    category: 'Editor',
+    action: 'fork_save',
+    label: trimmedComponentName, // useful context
+    file_type: 'cellml'
+  })
   emit('save-fork', formSaveData(trimmedComponentName, mergedModelString))
   showSaveAsPrompt.value = false
   emit('update:modelValue', false)
@@ -204,6 +220,16 @@ const handleForkSave = async () => {
 </script>
 
 <style scoped>
+.editor-container {
+  height: 75vh; 
+  display: flex;
+  flex-direction: column;
+}
+.editor-wrapper {
+  flex: 1; 
+  overflow: hidden; 
+  position: relative;
+}
 .tag.internal {
   color: orange;
   font-weight: bold;
