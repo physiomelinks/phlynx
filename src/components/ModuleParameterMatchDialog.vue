@@ -220,7 +220,7 @@ async function prepareData() {
     const storedType = props.builderStore.fileAssignmentTypeMap?.get(file.filename)
     const isActive = props.activeFiles.includes(file.filename)
 
-    if (!isActive && !assignedInStore) {
+    if (!isActive) {
         return
     }
 
