@@ -205,10 +205,8 @@ const createValidationStore = () => {
   // Apply staged config files
   stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
     const configs = payload
-
     configs.forEach((config) => {
       let moduleFile = availableModules.find((f) => f.filename === config.module_file)
-
       if (!moduleFile) {
         moduleFile = {
           filename: config.module_file,
@@ -217,9 +215,7 @@ const createValidationStore = () => {
         }
         availableModules.push(moduleFile)
       }
-
       let module = moduleFile.modules.find((m) => m.name === config.module_type || m.type === config.module_type)
-
       if (!module) {
         module = {
           name: config.module_type,
@@ -228,21 +224,17 @@ const createValidationStore = () => {
         }
         moduleFile.modules.push(module)
       }
-
       if (!module.configs) {
         module.configs = []
       }
-
       const configWithMetadata = {
         ...config,
         _sourceFile: filename,
         _loadedAt: new Date().toISOString(),
       }
-
       const existingConfigIndex = module.configs.findIndex(
         (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
       )
-
       if (existingConfigIndex !== -1) {
         module.configs[existingConfigIndex] = configWithMetadata
       } else {
@@ -259,7 +251,6 @@ const createValidationStore = () => {
       if (existingFile.isStub) {
         delete existingFile.isStub
       }
-
       if (existingFile.modules) {
         payload.modules.forEach((newMod) => {
           const oldMod = existingFile.modules.find((m) => m.name === newMod.name)
@@ -268,7 +259,6 @@ const createValidationStore = () => {
           }
         })
       }
-
       Object.assign(existingFile, payload)
     } else {
       availableModules.push(payload)
@@ -362,30 +352,25 @@ const handleFileChange = async (uploadFile, field) => {
 
 async function updateVesselValidation(validation) {
   validationStatus.value = validation
-
   if (validation.isComplete) {
     return
   }
-
   await addDynamicFields(validation)
 }
 
 async function stageFile(field, parsedData, fileName) {
   if (!field.processUpload) return
-
   const data = parsedData.data || parsedData
 
   // Stage the file instead of adding directly to store
   if (field.processUpload === 'cellml') {
     // Parse the module data to get the proper structure
     const result = processModuleData(data)
-
     if (result.type === 'success') {
       const augmentedData = result.data.map((item) => ({
         ...item,
         sourceFile: fileName,
       }))
-
       stagedFiles.value.moduleFiles.push({
         filename: fileName,
         payload: {
@@ -401,24 +386,16 @@ async function stageFile(field, parsedData, fileName) {
       payload: data,
     })
   }
-
   formState[field.key].isValid = true
 
   // Re-validate the Vessel CSV with staged files
   const vesselField = formState[IMPORT_KEYS.VESSEL]
-
   if (vesselField?.payload?.data) {
     const validationStore = createValidationStore()
     const newValidation = validateVesselData(vesselField.payload.data, validationStore)
-
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
     updateVesselValidation(newValidation)
-
-    if (newValidation.isComplete) {
-      console.log('Vessel data is now fully valid.')
-    }
   }
-
   notify.success({
     title: field.processUpload === 'cellml' ? 'CellML File Staged' : 'Config Staged',
     message: `${fileName} ready to import`,
@@ -428,11 +405,9 @@ async function stageFile(field, parsedData, fileName) {
 
 const commitStagedFiles = () => {
   if (!props.builderStore) return
-
   stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
     props.builderStore.addModuleFile(payload)
   })
-
   stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
     props.builderStore.addConfigFile(payload, filename)
   })
@@ -446,6 +421,54 @@ const handleConfirm = async () => {
   await new Promise((resolve) => setTimeout(resolve, 50))
 
   commitStagedFiles()
+  if (props.builderStore && formState[IMPORT_KEYS.PARAMETER]?.isValid) {
+    const paramState = formState[IMPORT_KEYS.PARAMETER]
+    const { fileName, data } = paramState.payload
+
+    const vesselState = formState[IMPORT_KEYS.VESSEL]
+    const vesselData = vesselState?.payload?.data
+
+    if (fileName && data && vesselData) {
+      props.builderStore.addParameterFile(fileName, data)
+
+      const newLinks = new Map(props.builderStore.moduleParameterMap)
+      const newTypes = new Map(props.builderStore.moduleAssignmentTypeMap)
+      const activeModuleNames = new Set()
+      const configToModuleMap = new Map()
+      props.builderStore.availableModules.forEach((f) => {
+        f.modules?.forEach((m) => {
+          m.configs?.forEach((c) => {
+            if (c.vessel_type && c.BC_type) {
+              const key = `${c.vessel_type}:${c.BC_type}`
+              configToModuleMap.set(key, m.name || m.componentName)
+            }
+          })
+        })
+      })
+
+      vesselData.forEach((row) => {
+        const key = `${row.vessel_type}:${row.BC_type}`
+        const moduleName = configToModuleMap.get(key)
+        if (moduleName) {
+          activeModuleNames.add(moduleName)
+        }
+      })
+
+      props.builderStore.availableModules.forEach((file) => {
+        if (file.modules) {
+          file.modules.forEach((module) => {
+            const moduleName = module.name || module.componentName
+            if (moduleName && activeModuleNames.has(moduleName)) {
+              newLinks.set(moduleName, fileName)
+              newTypes.set(moduleName, 'imported')
+            }
+          })
+        }
+      })
+
+      props.builderStore.applyParameterLinks(newLinks, newTypes)
+    }
+  }
 
   const result = {}
   displayFields.value.forEach((field) => {
@@ -515,14 +538,8 @@ defineExpose({
 }
 
 @keyframes breathe {
-  0%,
-  100% {
-    transform: scale(0.95);
-  }
-
-  50% {
-    transform: scale(1.05);
-  }
+  0%, 100% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
 }
 
 :deep(.el-loading-spinner svg) {

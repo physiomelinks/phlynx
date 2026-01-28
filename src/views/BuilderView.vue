@@ -240,7 +240,10 @@
     @edit-node="onOpenEditDialog"
   />
 
-  <ModuleParameterMatchDialog v-model="moduleParameterMatchDialogVisible" />
+  <ModuleParameterMatchDialog 
+    v-model="moduleParameterMatchDialogVisible" 
+    :builder-store="builderStore"
+  />
 
   <ImportDialog
     ref="importDialogRef"

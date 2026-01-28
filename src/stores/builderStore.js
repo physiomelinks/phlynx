@@ -9,6 +9,7 @@ export const useBuilderStore = defineStore('builder', () => {
   const parameterData = ref([])
   const parameterFiles = ref(new Map())
   const moduleParameterMap = ref(new Map())
+  const moduleAssignmentTypeMap = ref(new Map())
   const lastSaveName = ref('phlynx-project')
   const lastExportName = ref('phlynx-export')
 
@@ -35,12 +36,19 @@ export const useBuilderStore = defineStore('builder', () => {
     return true
   }
 
-  function applyParameterLinks(linkMap) {
+  function applyParameterLinks(linkMap, typeMap = null) {
     moduleParameterMap.value = linkMap
+    if (typeMap) {
+      moduleAssignmentTypeMap.value = typeMap
+    }
   }
 
   function getParameterFileNameForModule(moduleName) {
     return moduleParameterMap.value.get(moduleName) || null
+  }
+
+  function getAssignmentTypeForModule(moduleName) {
+    return moduleAssignmentTypeMap.value.get(moduleName) || null
   }
 
   function getParametersForModule(moduleName) {
@@ -73,27 +81,6 @@ export const useBuilderStore = defineStore('builder', () => {
    * Adds configuration(s) to the appropriate module(s)
    * @param {Array} payload - Array of configs
    * @param {string} filename - Optional filename (when first param is array)
-   *
-   * Usage:
-   *   addConfigFile([{...}], 'config.json')
-   *
-   * Structure of availableModules after adding configs:
-   * [
-   *   {
-   *     filename: "module.cellml",
-   *     modules: [
-   *       {
-   *         name: "artery",
-   *         type: "artery",
-   *         configs: [
-   *           { BC_type: "nn", vessel_type: "aorta", ... },
-   *           { BC_type: "pv", vessel_type: "pulmonary", ... }
-   *         ]
-   *       }
-   *     ],
-   *     model: "<?xml..."
-   *   }
-   * ]
    */
   function addConfigFile(payload, filename) {
     const configs = payload
@@ -267,6 +254,7 @@ export const useBuilderStore = defineStore('builder', () => {
     lastExportName,
     lastSaveName,
     moduleParameterMap,
+    moduleAssignmentTypeMap,
     parameterData,
     parameterFiles,
 
@@ -280,6 +268,7 @@ export const useBuilderStore = defineStore('builder', () => {
     getConfigForVessel,
     getModuleContent,
     getParameterFileNameForModule,
+    getAssignmentTypeForModule,
     getParametersForModule,
     hasModuleFile,
     removeModuleFile,
