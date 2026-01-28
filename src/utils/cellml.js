@@ -424,117 +424,89 @@ function prioritizeEnvironmentComponent(xmlString) {
  * 1. Look for specific match: VariableName + "_" + ComponentName (e.g. "R" in "axon_SN" -> "R_axon_SN")
  * 2. Look for global match: VariableName (e.g. "Faraday" -> "Faraday")
  */
-function applyParameterMappings(model, parameterData) {
-  // Build a Map of parameter data for quick lookup
-  const paramMap = new Map()
+/**
+ * Applies parameter data to the model variables with strict unit and value validation.
+ */
+function applyParameterMappings(model, parameterData, ensureUnitImported) {
+  const paramMap = new Map();
   for (const params of parameterData.values()) {
-    for (const param of params) {
-      if (param.variable_name && !paramMap.has(param.variable_name)) {
-        paramMap.set(param.variable_name, param)
-      } else if (param.variable_name && paramMap.has(param.variable_name)) {
-        // Handle duplicate parameter names (e.g., same variable in different components)
-        // For now, we'll keep the first one encountered.
-        console.warn(`Duplicate parameter name found: ${param.variable_name}`)
-      }
+    // Only iterate if params is actually an array of parameter objects
+    if (Array.isArray(params)) {
+      params.forEach((param) => {
+        if (param.variable_name && !paramMap.has(param.variable_name)) {
+          paramMap.set(param.variable_name, param);
+        }
+      });
     }
   }
 
-  // Create a dedicated component to hold these constant values.
-  let paramComponent = model.componentByName('Model_Parameters', true)
+  let paramComponent = model.componentByName('Model_Parameters', true);
   if (!paramComponent) {
-    paramComponent = new _libcellml.Component()
-    paramComponent.setName('Model_Parameters')
-    model.addComponent(paramComponent)
+    paramComponent = new _libcellml.Component();
+    paramComponent.setName('Model_Parameters');
+    model.addComponent(paramComponent);
   }
 
-  // Iterate over every component in the generated model
   for (let i = 0; i < model.componentCount(); i++) {
-    const component = model.componentByIndex(i)
-    const compName = component.name()
+    const component = model.componentByIndex(i);
+    const compName = component.name();
 
-    // Skip the parameter component itself to avoid infinite loops
-    if (compName === 'Model_Parameters') {
-      component.delete()
-      continue
+    if (compName === 'Model_Parameters' || compName === 'environment') {
+      component.delete();
+      continue;
     }
 
     for (let v = 0; v < component.variableCount(); v++) {
-      const variable = component.variableByIndex(v)
-      const varName = variable.name()
+      const variable = component.variableByIndex(v);
+      const varName = variable.name();
 
-      // Attempt 1: Specific (Postfix) Match
-      // e.g. Variable 'g_Na' in component 'soma_SN' looks for 'g_Na_soma_SN'
-      const specificName = `${varName}_${compName}`
+      // Priority: 1. Specific Match (var_comp) 2. Global Match (var)
+      const specificName = `${varName}_${compName}`;
+      const match = paramMap.get(specificName) || paramMap.get(varName);
 
-      // Attempt 2: Exact (Global) Match
-      // e.g. Variable 'T' looks for 'T'
-      const globalName = varName
-
-      let match = null
-
-      if (paramMap.has(specificName)) {
-        match = paramMap.get(specificName)
-      } else if (paramMap.has(globalName)) {
-        match = paramMap.get(globalName)
+      // Skip if no parameter data found or if the variable is already computed (has math)
+      if (!match || !match.value || match.value.trim() === "") {
+        variable.delete();
+        continue;
       }
 
-      // If no match found in CSV, skip this variable
-      if (!match) {
-        variable.delete()
-        continue
+      const matchUnitsTrimmed = match.units ? match.units.trim() : 'dimensionless';
+      
+      // CRITICAL FIX 1: Ensure the unit exists in the model scope before assigning to variable
+      if (ensureUnitImported) {
+        ensureUnitImported(matchUnitsTrimmed);
       }
 
-      // --- UNIT VALIDATION ---
-      // Check if units match.
-      // Warn but proceed, assuming the user knows the units are compatible/converted.
-      const variableUnits = variable.units()
-      const variableUnitsName = variableUnits.name()
-      const matchUnitsTrimmed = match.units ? match.units.trim() : ''
-      const matchUnits = model.unitsByName(matchUnitsTrimmed)
-
-      const compatibleUnits =
-        _libcellml.Units.compatible(variableUnits, matchUnits) ||
-        (isStandardUnit(variableUnitsName) &&
-          isStandardUnit(matchUnitsTrimmed) &&
-          matchUnitsTrimmed === variableUnitsName)
-
-      if (!compatibleUnits) {
-        console.warn(
-          `Unit Mismatch in ${compName}.${varName}: Model uses '${variableUnitsName}', Parameter uses '${matchUnitsTrimmed}'`
-        )
-      }
-
-      // --- CREATION & CONNECTION ---
-
-      // Get or Create the Source Variable in the "Model_Parameters" component
-      // We use the parameter name for the parameter variable to ensure uniqueness
-      // (e.g. one global "T", but separate "R_axon" and "R_soma")
-      let sourceVar = paramComponent.variableByName(match.variable_name)
+      let sourceVar = paramComponent.variableByName(match.variable_name);
 
       if (!sourceVar) {
-        sourceVar = new _libcellml.Variable()
-        sourceVar.setName(match.variable_name)
-        sourceVar.setInitialValueByString(match.value.trim())
+        sourceVar = new _libcellml.Variable();
+        sourceVar.setName(match.variable_name);
+        
+        // CRITICAL FIX 2: Explicitly set initial value to define variable type as 'constant'
+        sourceVar.setInitialValueByString(match.value.trim());
+        
+        const matchUnits = model.unitsByName(matchUnitsTrimmed);
         if (matchUnits) {
-          sourceVar.setUnitsByUnits(matchUnits)
+          sourceVar.setUnitsByUnits(matchUnits);
+          matchUnits.delete();
         } else {
-          sourceVar.setUnitsByName(matchUnitsTrimmed)
+          sourceVar.setUnitsByName(matchUnitsTrimmed);
         }
-        sourceVar.setInterfaceTypeByString('public')
-        paramComponent.addVariable(sourceVar)
+
+        sourceVar.setInterfaceTypeByString('public');
+        paramComponent.addVariable(sourceVar);
       }
 
-      _libcellml.Variable.addEquivalence(sourceVar, variable)
+      // Connect the constant parameter to the module variable
+      _libcellml.Variable.addEquivalence(sourceVar, variable);
 
-      variableUnits.delete()
-      matchUnits && matchUnits.delete()
-      sourceVar.delete()
-      variable.delete()
+      sourceVar.delete();
+      variable.delete();
     }
-    component.delete()
+    component.delete();
   }
-
-  paramComponent.delete()
+  paramComponent.delete();
 }
 
 export function generateFlattenedModel(nodes, edges, builderStore) {
