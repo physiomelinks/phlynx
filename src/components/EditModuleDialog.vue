@@ -52,6 +52,7 @@
 import { computed, reactive, watch } from 'vue'
 import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
+import { useGtm } from '../composables/useGtm'
 import { notify } from '../utils/notify'
 
 const props = defineProps({
@@ -102,6 +103,8 @@ const portTypeOptions = [
   },
 ]
 
+const { trackEvent } = useGtm()
+
 function resetForm() {
   editableData.name = props.initialName
   editableData.portLabels = JSON.parse(
@@ -131,6 +134,12 @@ function handleConfirm() {
     (p) => p.option && p.label && p.label.trim()
   )
 
+  trackEvent('edit_module_action', {
+    category: 'EditModule',
+    action: 'edit_module',
+    label: editableData.name, // useful context
+    file_type: 'JSON'
+  })
   emit('confirm', {
     name: editableData.name,
     nodeId: props.nodeId,
