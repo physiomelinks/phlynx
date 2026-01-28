@@ -199,6 +199,14 @@ export const useBuilderStore = defineStore('builder', () => {
     return ''
   }
 
+  function getModulesModule(filename, moduleName) {
+    const file = this.availableModules.find((f) => f.filename === filename)
+    if (!file) return null
+
+    const module = file.modules.find((m) => m.name === moduleName)
+    return module || null
+  }
+
   /**
    * Adds a new units file and its model.
    * If the units file already exists it will be replaced.
@@ -279,6 +287,7 @@ export const useBuilderStore = defineStore('builder', () => {
     getConfig,
     getConfigForVessel,
     getModuleContent,
+    getModulesModule,
     getParameterFileNameForModule,
     getParametersForModule,
     hasModuleFile,

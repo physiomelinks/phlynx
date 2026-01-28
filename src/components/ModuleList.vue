@@ -1,11 +1,6 @@
 <template>
   <div class="module-list-container">
-    <el-input
-      v-model="filterText"
-      placeholder="Filter modules..."
-      clearable
-      class="filter-input"
-    />
+    <el-input v-model="filterText" placeholder="Filter modules..." clearable class="filter-input" />
     <el-collapse v-model="activeCollapseNames" class="module-list">
       <el-collapse-item
         v-for="file in filteredModuleFiles"
@@ -31,37 +26,31 @@
 
     <el-empty
       v-if="filteredModuleFiles.length === 0"
-      :description="
-        store.availableModules.length === 0
-          ? 'Load a module file'
-          : 'No modules found'
-      "
+      :description="store.availableModules.length === 0 ? 'Load a module file' : 'No modules found'"
       :image-size="80"
     ></el-empty>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue"
-import { useBuilderStore } from "../stores/builderStore"
-import useDragAndDrop from "../composables/useDnD"
+import { computed, ref, watch } from 'vue'
+import { useBuilderStore } from '../stores/builderStore'
+import useDragAndDrop from '../composables/useDnD'
 
 // Lets you optionally make the list selectable (used by ModuleReplacementDialog)
 const props = defineProps({
   selectable: {
     type: Boolean,
-    default: false
+    default: false,
   },
 })
 
-const emit = defineEmits([
-  "select"
-])
+const emit = defineEmits(['select'])
 
 const store = useBuilderStore()
 const { onDragStart } = useDragAndDrop()
 
-const filterText = ref("")
+const filterText = ref('')
 const activeCollapseNames = ref([])
 const knownFilenames = ref(new Set())
 
@@ -75,21 +64,18 @@ const filteredModuleFiles = computed(() => {
   // Filter *inside* each file, and only return files that have matches
   return store.availableModules
     .map((file) => {
-      const filteredModules = file.modules.filter((module) =>
-        module.name.toLowerCase().includes(lowerCaseFilter)
-      )
+      const filteredModules = file.modules.filter((module) => module.name.toLowerCase().includes(lowerCaseFilter))
       return { ...file, modules: filteredModules }
     })
     .filter((file) => file.modules.length > 0)
 })
 
 watch(filteredModuleFiles, (newFiles) => {
-  // If we are filtering, open all panels that have matches
+  // If we are filtering, open all panels that have matches.
   if (filterText.value) {
     activeCollapseNames.value = newFiles.map((f) => f.filename)
-  }
-  // If filter is cleared, you might want to close them all:
-  else {
+  } else {
+    // If filter is cleared, close them all.
     activeCollapseNames.value = []
   }
 })
@@ -116,10 +102,9 @@ watch(
 
 function handleSelect(module) {
   if (props.selectable) {
-    emit("select", module)
+    emit('select', module)
   }
 }
-
 </script>
 
 <style scoped>

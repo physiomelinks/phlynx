@@ -756,11 +756,11 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
       })
       if (broadcaseNotifications) {
         trackEvent('modules_load_action', {
-        category: 'Modules',
-        action: 'load_cellml_module',
-        label: `Modules: ${result.data.length}`,
-        file_type: 'cellml'
-      })
+          category: 'Modules',
+          action: 'load_cellml_module',
+          label: `Modules: ${result.data.length}`,
+          file_type: 'cellml',
+        })
         notify.success({
           title: 'CellML Modules Loaded',
           message: `Loaded ${result.data.length} parameters from ${filename}.`,
@@ -772,7 +772,7 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
           category: 'Modules',
           action: 'load_cellml_module',
           label: `Error: encountered ${result.issues.length} error(s)`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.error({
           title: 'Loading Module Error',
@@ -799,7 +799,7 @@ const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) =
           category: 'Units',
           action: 'load_cellml_units',
           label: `Units: ${result.units.count}`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.success({
           title: 'CellML Units Loaded',
@@ -812,7 +812,7 @@ const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) =
           category: 'Units',
           action: 'load_cellml_units',
           label: `Error: encountered ${result.issues.length} error(s)`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.error({
           title: 'Loading Units Error',
@@ -836,7 +836,7 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         category: 'Parameters',
         action: 'load_parameters',
         label: `Parameters: ${result.length}`,
-        file_type: 'csv'
+        file_type: 'csv',
       })
       notify.success({
         title: 'Parameters Loaded',
@@ -856,7 +856,7 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         category: 'Parameters',
         action: 'load_parameters',
         label: `Error: ${err.message}`,
-        file_type: 'csv'
+        file_type: 'csv',
       })
       notify.error({
         title: 'Loading Parameters Error',
@@ -967,38 +967,54 @@ function onOpenCellMLEditorDialog(eventPayload) {
   cellMLEditorDialogVisible.value = true
 }
 
-async function onCellMLUpdateSave(updatedData) {
+async function propogateCellMLModuleUpdates(updatedData, changeText) {
   await loadCellMLModuleData(updatedData.code, updatedData.sourceFile, false)
+  const updatedModule = builderStore.getModulesModule(updatedData.sourceFile, updatedData.componentName)
+  const validPortNames = new Set(updatedModule.portOptions.map((p) => p.name))
+
+  let updatedCount = 0
+  nodes.value.forEach((node) => {
+    const isTargetNode = node.id === updatedData.nodeId
+    const isMatchingModule =
+      node.data.sourceFile === updatedData.sourceFile && node.data.componentName === updatedData.componentName
+    if (isTargetNode || isMatchingModule) {
+      const cleanLabels = (node.data.portLabels || []).map((labelObj) => {
+        return {
+          ...labelObj,
+          // Filter the internal array: Keep 'opt' only if it exists in validPortNames.
+          option: labelObj.option.filter((opt) => validPortNames.has(opt)),
+        }
+      })
+
+      // Create the new data object
+      const newData = {
+        ...node.data,
+        componentName: updatedModule.componentName,
+        sourceFile: updatedModule.sourceFile, // Essential for the target node
+        label: `${updatedModule.componentName} — ${updatedModule.sourceFile}`,
+        portLabels: cleanLabels, // Cleaned port labels.
+        portOptions: updatedModule.portOptions, // Updates the ports/handles
+      }
+
+      updatedCount++
+      updateNodeData(node.id, newData)
+    }
+  })
 
   notify.success({
-    title: 'CellML Module Updated',
-    message: `Module ${updatedData.componentName} has been updated in ${updatedData.sourceFile}.`,
+    title: 'CellML Module ' + changeText,
+    message: `Updated ${updatedCount} node${updatedCount !== 1 ? 's' : ''} to use ${updatedData.componentName} from ${
+      updatedData.sourceFile
+    }.`,
   })
 }
+
+async function onCellMLUpdateSave(updatedData) {
+  propogateCellMLModuleUpdates(updatedData, 'Updated')
+}
+
 async function onCellMLForkSave(saveData) {
-  if (!saveData.nodeId) return
-
-  const node = findNode(saveData.nodeId)
-  if (!node) return
-
-  const originalSourceFile = node.data.sourceFile || 'unknown_source.cellml'
-  const originalComponentName = node.data.componentName
-  const nodeData = {
-    ...node.data,
-    componentName: saveData.componentName,
-    sourceFile: saveData.sourceFile,
-    label: `${saveData.componentName} — ${saveData.sourceFile}`,
-  }
-
-  await loadCellMLModuleData(saveData.code, saveData.sourceFile, false)
-  await nextTick()
-
-  updateNodeData(saveData.nodeId, nodeData)
-
-  notify.success({
-    title: 'CellML Module Saved As',
-    message: `Module ${originalComponentName} from ${originalSourceFile} has been saved as ${saveData.componentName} in ${saveData.sourceFile}.`,
-  })
+  propogateCellMLModuleUpdates(saveData, 'Forked')
 }
 
 function onOpenMacroBuilderDialog() {
@@ -1065,7 +1081,7 @@ async function handleSaveWorkspace() {
           category: 'Save',
           action: 'save_workflow',
           label: `File: ${result.handle.name}`,
-          file_type: 'json'
+          file_type: 'json',
         })
         notify.success({ message: 'Workflow saved!' })
       } catch (err) {
@@ -1073,7 +1089,7 @@ async function handleSaveWorkspace() {
           category: 'Save',
           action: 'save_workflow',
           label: `Error: ${err.message}`,
-          file_type: 'json'
+          file_type: 'json',
         })
         notify.error({
           title: 'Error Saving Workflow',
@@ -1129,7 +1145,7 @@ async function onExportConfirm(fileName, handle) {
       category: 'Export',
       action: 'export_model',
       label: `File: ${finalName}`,
-      file_type: currentExportMode.value.key
+      file_type: currentExportMode.value.key,
     })
 
     notify.success({
@@ -1155,7 +1171,7 @@ async function onExportConfirm(fileName, handle) {
       category: 'Export',
       action: 'export_model',
       label: `Error: ${error.message}`,
-      file_type: currentExportMode.value.key
+      file_type: currentExportMode.value.key,
     })
     notify.error({ message: `Export failed: ${error.message}` })
   }
@@ -1258,7 +1274,7 @@ function handleLoadWorkspace(file) {
         category: 'Workflow',
         action: 'load_workflow',
         label: `Nodes: ${nodes.value.length}, Edges: ${edges.value.length}`,
-        file_type: 'json'
+        file_type: 'json',
       })
       notify.success({
         message: 'Workflow loaded successfully!',
@@ -1268,7 +1284,7 @@ function handleLoadWorkspace(file) {
         category: 'Workflow',
         action: 'load_workflow',
         label: `Error: ${error.message}`,
-        file_type: 'json'
+        file_type: 'json',
       })
       notify.error({ message: `Failed to load workflow: ${error.message}` })
     }
