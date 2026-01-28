@@ -756,11 +756,11 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
       })
       if (broadcaseNotifications) {
         trackEvent('modules_load_action', {
-        category: 'Modules',
-        action: 'load_cellml_module',
-        label: `Modules: ${result.data.length}`,
-        file_type: 'cellml'
-      })
+          category: 'Modules',
+          action: 'load_cellml_module',
+          label: `Modules: ${result.data.length}`,
+          file_type: 'cellml',
+        })
         notify.success({
           title: 'CellML Modules Loaded',
           message: `Loaded ${result.data.length} parameters from ${filename}.`,
@@ -772,7 +772,7 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
           category: 'Modules',
           action: 'load_cellml_module',
           label: `Error: encountered ${result.issues.length} error(s)`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.error({
           title: 'Loading Module Error',
@@ -799,7 +799,7 @@ const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) =
           category: 'Units',
           action: 'load_cellml_units',
           label: `Units: ${result.units.count}`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.success({
           title: 'CellML Units Loaded',
@@ -812,7 +812,7 @@ const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) =
           category: 'Units',
           action: 'load_cellml_units',
           label: `Error: encountered ${result.issues.length} error(s)`,
-          file_type: 'cellml'
+          file_type: 'cellml',
         })
         notify.error({
           title: 'Loading Units Error',
@@ -836,7 +836,7 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         category: 'Parameters',
         action: 'load_parameters',
         label: `Parameters: ${result.length}`,
-        file_type: 'csv'
+        file_type: 'csv',
       })
       notify.success({
         title: 'Parameters Loaded',
@@ -856,7 +856,7 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         category: 'Parameters',
         action: 'load_parameters',
         label: `Error: ${err.message}`,
-        file_type: 'csv'
+        file_type: 'csv',
       })
       notify.error({
         title: 'Loading Parameters Error',
@@ -1065,7 +1065,7 @@ async function handleSaveWorkspace() {
           category: 'Save',
           action: 'save_workflow',
           label: `File: ${result.handle.name}`,
-          file_type: 'json'
+          file_type: 'json',
         })
         notify.success({ message: 'Workflow saved!' })
       } catch (err) {
@@ -1073,7 +1073,7 @@ async function handleSaveWorkspace() {
           category: 'Save',
           action: 'save_workflow',
           label: `Error: ${err.message}`,
-          file_type: 'json'
+          file_type: 'json',
         })
         notify.error({
           title: 'Error Saving Workflow',
@@ -1100,10 +1100,26 @@ async function onExportConfirm(fileName, handle) {
 
   try {
     let blob = undefined
+    let exportMessage = ''
     if (caExport) {
       blob = await generateExportZip(fileName, nodes.value, edges.value, builderStore)
+      exportMessage = 'Circulatory Autogen export zip generated.'
     } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
       blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
+      exportMessage = h('div', null, [
+        'Model exported to CellML. Drag and drop the file into ',
+        h(
+          'a',
+          {
+            href: 'https://opencor.ws/app/',
+            rel: 'noopener noreferrer',
+            style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
+            target: '_blank',
+          },
+          'OpenCOR'
+        ),
+        ' and run a simulation.',
+      ])
     }
 
     let finalName = undefined
@@ -1129,24 +1145,12 @@ async function onExportConfirm(fileName, handle) {
       category: 'Export',
       action: 'export_model',
       label: `File: ${finalName}`,
-      file_type: currentExportMode.value.key
+      file_type: currentExportMode.value.key,
     })
 
     notify.success({
       title: 'Export successful!',
-      message: h('div', null, [
-        'Model downloaded. ',
-        h(
-          'a',
-          {
-            href: 'https://opencor.ws/app/',
-            rel: 'noopener noreferrer',
-            style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
-            target: '_blank',
-          },
-          'Open in OpenCOR'
-        ),
-      ]),
+      message: exportMessage,
       duration: 5000,
     })
   } catch (error) {
@@ -1155,7 +1159,7 @@ async function onExportConfirm(fileName, handle) {
       category: 'Export',
       action: 'export_model',
       label: `Error: ${error.message}`,
-      file_type: currentExportMode.value.key
+      file_type: currentExportMode.value.key,
     })
     notify.error({ message: `Export failed: ${error.message}` })
   }
@@ -1258,7 +1262,7 @@ function handleLoadWorkspace(file) {
         category: 'Workflow',
         action: 'load_workflow',
         label: `Nodes: ${nodes.value.length}, Edges: ${edges.value.length}`,
-        file_type: 'json'
+        file_type: 'json',
       })
       notify.success({
         message: 'Workflow loaded successfully!',
@@ -1268,7 +1272,7 @@ function handleLoadWorkspace(file) {
         category: 'Workflow',
         action: 'load_workflow',
         label: `Error: ${error.message}`,
-        file_type: 'json'
+        file_type: 'json',
       })
       notify.error({ message: `Failed to load workflow: ${error.message}` })
     }
