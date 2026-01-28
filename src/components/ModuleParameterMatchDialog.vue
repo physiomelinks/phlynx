@@ -244,7 +244,7 @@ async function prepareData() {
       fileRef: file, 
       matchedParameterFile: currentParamFile || null,
       assignmentType: assignmentType,
-      matchStats: calculateStats(file, currentParamFile)
+      matchStats: currentParamFile ? calculateStats(file, currentParamFile) : null
     }
     
     rows.push(row)
