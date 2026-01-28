@@ -306,7 +306,6 @@ import { getImportConfig, parseParametersFile } from '../utils/import'
 import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
 import { generateParameterAssociations } from '../utils/parameters'
 import CellMLEditorDialog from '../components/CellMLEditorDialog.vue'
-import { tr } from 'element-plus/es/locales.mjs'
 
 // import testModuleBGContent from '../assets/bg_modules.cellml?raw'
 // import testModuleColonContent from '../assets/colon_FTU_modules.cellml?raw'
