@@ -84,6 +84,7 @@ import GhostNode from './GhostNode.vue'
 import GhostSetupModal from './GhostSetupDialog.vue'
 import { useBuilderStore } from '../stores/builderStore'
 import { useResizableAside } from '../composables/useResizableAside'
+import { useGtm } from '../composables/useGtm'
 import useDragAndDrop from '../composables/useDnD'
 import {
   edgeLineOptions,
@@ -108,6 +109,7 @@ const {
 const previousNodes = new Set()
 const { onDrop, isGhostSetupOpen, pendingGhostNodeId } =
   useDragAndDrop(previousNodes)
+const { trackEvent } = useGtm()
 
 const { width: asideWidth, startResize } = useResizableAside(200, 150, 400)
 const builderStore = useBuilderStore()
@@ -184,6 +186,12 @@ function generateMacro() {
     repeatCount: multiplier.value,
   }
 
+  trackEvent('macro_action', {
+    category: 'MacroBuilder',
+    action: 'generate_macro',
+    label: `Nodes: ${nodes.value.length}`, // useful context
+    file_type: 'json'
+  })
   emit('generate', macroData)
   closeDialog()
 }

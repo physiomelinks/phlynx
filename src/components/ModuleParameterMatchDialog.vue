@@ -82,6 +82,7 @@ import { useBuilderStore } from '../stores/builderStore'
 import { notify } from '../utils/notify'
 import { generateParameterAssociations } from '../utils/parameters'
 import { useAutoClosingTooltip } from '../composables/useAutoClosingTooltip'
+import { useGtm } from '../composables/useGtm'
 
 const props = defineProps({
   modelValue: {
@@ -94,6 +95,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const builderStore = useBuilderStore()
 const tagTooltip = useAutoClosingTooltip()
+const { trackEvent } = useGtm()
 const associationTable = ref([])
 const currentHoveredId = ref(null)
 
@@ -248,6 +250,14 @@ async function handleConfirm() {
   builderStore.applyParameterLinks(linkMap)
 
   if (missing.length > 0) await nextTick()
+
+  trackEvent('parameter_match_action', {
+    category: 'ModuleParameterMatch',
+    action: 'confirm',
+    label: `${missing.length} missing assignments`, // useful context
+    file_type: 'json'
+  })
+
   notify.success({ title: 'Saved', message: 'Parameter links updated.' })
   closeDialog()
 }

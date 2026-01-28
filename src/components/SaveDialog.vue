@@ -35,6 +35,7 @@
 import { ref, watch } from 'vue'
 import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
 import { notify} from '../utils/notify'
+import { useGtm } from '../composables/useGtm'
 
 const props = defineProps({
   modelValue: {
@@ -60,6 +61,7 @@ const emit = defineEmits([
   'confirm' 
 ])
 
+const { trackEvent } = useGtm()
 const fileName = ref(props.defaultName)
 
 function resetForm() {
@@ -76,6 +78,12 @@ function handleConfirm() {
     return
   }
   
+  trackEvent('save_dialog_action', {
+    category: 'SaveDialog',
+    action: 'confirm',
+    label: `Filename: ${fileName.value}${props.suffix}`, // useful context
+    file_type: 'json'
+  })
   emit('confirm', fileName.value)
   closeDialog()
 }
