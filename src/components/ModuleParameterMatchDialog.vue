@@ -148,12 +148,6 @@ function getRequiredVariablesForFile(fileObj) {
   return Array.from(allVars)
 }
 
-// --- Helper: Check if File is "Active" in Workspace ---
-function isFileActive(fileObj, activeFiles) {
-  if (!fileObj.modules) return false
-  return activeFiles.some((file) => file === fileObj.filename)
-}
-
 // --- Data Preparation ---
 const availableFiles = computed(() => {
   if (!builderStore.parameterFiles) return []
