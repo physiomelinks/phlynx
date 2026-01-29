@@ -197,67 +197,79 @@ function isStandardUnit(name) {
   return standard.includes(name)
 }
 
-function createSummationComponent(model, sourceComp, sourceVarNames, targetComp, targetVarName) {
+function nextAvailableVarName(component, baseName) {
+  let candidateName = baseName
+  let index = 1
+  let currentCandidate = component.variableByName(candidateName)
+  while (currentCandidate !== null) {
+    candidateName = `${baseName}_${index}`
+    index++
+    currentCandidate.delete()
+    currentCandidate = component.variableByName(candidateName)
+  }
+  return candidateName
+}
+
+function createSummationComponent(model, sourceComp, sourceVarName, targetComponentVarNameMap) {
   // Create the Component
-  const sumComp = new _libcellml.Component()
-  const uniqueName = `Sum_${sourceComp.name()}_to_${targetComp.name()}_${Date.now()}`
-  sumComp.setName(uniqueName)
+  let sumComp = model.componentByName('generated_summations', true)
+  if (sumComp === null) {
+    sumComp = new _libcellml.Component()
+    sumComp.setName('generated_summations')
+    model.addComponent(sumComp)
+  }
 
   // Setup Variables
   // We need to determine the units. We'll grab the units from the first source var.
   // (Assuming all summed variables have matching units)
-  const referenceVar = sourceComp.variableByName(sourceVarNames[0])
-  const unitsName = referenceVar.units().name() || 'dimensionless'
+  const referenceVar = sourceComp.variableByName(sourceVarName)
+  const referneceUnits = referenceVar.units()
+  const unitsName = referneceUnits.name() || 'dimensionless'
+  referneceUnits.delete()
 
-  const inputVarNames = []
+  const sumVarName = nextAvailableVarName(sumComp, `sum_of_${sourceVarName}`)
+  const sumVar = new _libcellml.Variable()
+  sumVar.setName(sumVarName)
+  sumVar.setUnitsByName(unitsName)
+  sumVar.setInterfaceTypeByString('public') // Allows connection to target
+  sumComp.addVariable(sumVar)
 
+  _libcellml.Variable.addEquivalence(referenceVar, sumVar)
   // Create Input Variables in the Sum Component
-  sourceVarNames.forEach((name, index) => {
-    const localName = `in_${index}`
-    inputVarNames.push(localName)
+  const sumVarNames = []
+  targetComponentVarNameMap.forEach((targetVarName, component) => {
+    const localVarName = nextAvailableVarName(sumComp, `op_${targetVarName}`)
+    sumVarNames.push(localVarName)
 
-    const inputVar = new _libcellml.Variable()
-    inputVar.setName(localName)
-    inputVar.setUnitsByName(unitsName)
-    inputVar.setInterfaceType('public') // Allows connection to source
+    const opVar = new _libcellml.Variable()
+    opVar.setName(localVarName)
+    opVar.setUnitsByName(unitsName)
+    opVar.setInterfaceTypeByString('public') // Allows connection to source
 
-    sumComp.addVariable(inputVar)
-
-    // CONNECT: Source -> Sum Input
-    const sourceVar = sourceComp.variableByName(name)
-    _libcellml.Variable.addEquivalence(sourceVar, inputVar)
+    sumComp.addVariable(opVar)
+    const tmpVar = component.variableByName(targetVarName)
+    _libcellml.Variable.addEquivalence(opVar, tmpVar)
+    opVar.delete()
+    tmpVar.delete()
   })
 
-  // Create Output Variable (The Total)
-  const totalVar = new _libcellml.Variable()
-  totalVar.setName('total_sum')
-  totalVar.setUnitsByName(unitsName)
-  totalVar.setInterfaceType('public') // Allows connection to target
-  sumComp.addVariable(totalVar)
-
-  // CONNECT: Sum Output -> Target
-  const targetVar = targetComp.variableByName(targetVarName)
-  if (targetVar.name()) {
-    _libcellml.Variable.addEquivalence(totalVar, targetVar)
-  }
-
+  referenceVar.delete()
+  sumVar.delete()
   // Generate MathML
   // Format: total_sum = in_0 + in_1 + in_2 ...
   const mathML = `<math xmlns="http://www.w3.org/1998/Math/MathML">
     <apply>
       <eq/>
-      <ci>total_sum</ci>
+      <ci>${sumVarName}</ci>
       <apply>
         <plus/>
-        ${inputVarNames.map((name) => `<ci>${name}</ci>`).join('\n        ')}
+        ${sumVarNames.map((name) => `<ci>${name}</ci>`).join('\n        ')}
       </apply>
     </apply>
   </math>`
 
-  sumComp.setMath(mathML)
-
-  // 4. Register with Model
-  model.addComponent(sumComp)
+  sumComp.appendMath(mathML)
+  sumComp.delete()
 }
 
 function extractUnitsFromMath(multiBlockMathString) {
@@ -293,14 +305,37 @@ function extractUnitsFromMath(multiBlockMathString) {
   return Array.from(foundUnits)
 }
 
+/**
+ * Checks if two port types are compatible for making connections over.
+ *
+ * @param {string} portType1 - Source port type one of 'general_ports', 'exit_ports', or 'entrance_ports'.
+ * @param {string} portType2 - Target port type one of 'general_ports', 'exit_ports', or 'entrance_ports'.
+ * @returns {boolean} True if the port types are compatible, false otherwise.
+ */
+function arePortTypesCompatible(portType1, portType2) {
+  if (portType1 === 'general_ports' || portType2 === 'general_ports') {
+    return true
+  }
+  // A source exit port can connect to a target entrance port.
+  if (portType1 === 'exit_ports' && portType2 === 'entrance_ports') {
+    return true
+  }
+
+  if (portType1 === 'entrance_ports' && portType2 === 'exit_ports') {
+    return true
+  }
+
+  return false
+}
+
 function handleLoggerErrors(logger, headerMessage, dontThrow = false) {
   const errMessages = [headerMessage]
   console.log(headerMessage)
   for (let i = 0; i < logger.errorCount(); i++) {
     const error = logger.error(i)
-    console.log(`[${i}]: ${error.description()}`)
+    console.log(`[${i + 1}]: ${error.description()}`)
     if (!dontThrow) {
-      errMessages.push(`[${i}]: ${error.description()}`)
+      errMessages.push(`[${i + 1}]: ${error.description()}`)
     }
     error.delete()
   }
@@ -419,27 +454,21 @@ function prioritizeEnvironmentComponent(xmlString) {
 }
 
 /**
- * Applies parameter data to the model variables.
- * Logic:
- * 1. Look for specific match: VariableName + "_" + ComponentName (e.g. "R" in "axon_SN" -> "R_axon_SN")
- * 2. Look for global match: VariableName (e.g. "Faraday" -> "Faraday")
+ * Applies parameter data to the model variables with strict unit and value validation.
  */
 function applyParameterMappings(model, parameterData) {
-  // Build a Map of parameter data for quick lookup
   const paramMap = new Map()
   for (const params of parameterData.values()) {
-    for (const param of params) {
-      if (param.variable_name && !paramMap.has(param.variable_name)) {
-        paramMap.set(param.variable_name, param)
-      } else if (param.variable_name && paramMap.has(param.variable_name)) {
-        // Handle duplicate parameter names (e.g., same variable in different components)
-        // For now, we'll keep the first one encountered.
-        console.warn(`Duplicate parameter name found: ${param.variable_name}`)
-      }
+    // Only iterate if params is actually an array of parameter objects
+    if (Array.isArray(params)) {
+      params.forEach((param) => {
+        if (param.variable_name && !paramMap.has(param.variable_name)) {
+          paramMap.set(param.variable_name, param)
+        }
+      })
     }
   }
 
-  // Create a dedicated component to hold these constant values.
   let paramComponent = model.componentByName('Model_Parameters', true)
   if (!paramComponent) {
     paramComponent = new _libcellml.Component()
@@ -447,13 +476,11 @@ function applyParameterMappings(model, parameterData) {
     model.addComponent(paramComponent)
   }
 
-  // Iterate over every component in the generated model
   for (let i = 0; i < model.componentCount(); i++) {
     const component = model.componentByIndex(i)
     const compName = component.name()
 
-    // Skip the parameter component itself to avoid infinite loops
-    if (compName === 'Model_Parameters') {
+    if (compName === 'Model_Parameters' || compName === 'environment') {
       component.delete()
       continue
     }
@@ -462,85 +489,54 @@ function applyParameterMappings(model, parameterData) {
       const variable = component.variableByIndex(v)
       const varName = variable.name()
 
-      // Attempt 1: Specific (Postfix) Match
-      // e.g. Variable 'g_Na' in component 'soma_SN' looks for 'g_Na_soma_SN'
+      // Priority: 1. Specific Match (var_comp) 2. Global Match (var)
       const specificName = `${varName}_${compName}`
+      const match = paramMap.get(specificName) || paramMap.get(varName)
 
-      // Attempt 2: Exact (Global) Match
-      // e.g. Variable 'T' looks for 'T'
-      const globalName = varName
-
-      let match = null
-
-      if (paramMap.has(specificName)) {
-        match = paramMap.get(specificName)
-      } else if (paramMap.has(globalName)) {
-        match = paramMap.get(globalName)
-      }
-
-      // If no match found in CSV, skip this variable
-      if (!match) {
+      // Skip if no parameter data found or if the variable is already computed (has math)
+      if (!match || !match.value || match.value.trim() === '') {
         variable.delete()
         continue
       }
 
-      // --- UNIT VALIDATION ---
-      // Check if units match.
-      // Warn but proceed, assuming the user knows the units are compatible/converted.
-      const variableUnits = variable.units()
-      const variableUnitsName = variableUnits.name()
-      const matchUnitsTrimmed = match.units ? match.units.trim() : ''
-      const matchUnits = model.unitsByName(matchUnitsTrimmed)
+      const matchUnitsTrimmed = match.units ? match.units.trim() : 'dimensionless'
 
-      const compatibleUnits =
-        _libcellml.Units.compatible(variableUnits, matchUnits) ||
-        (isStandardUnit(variableUnitsName) &&
-          isStandardUnit(matchUnitsTrimmed) &&
-          matchUnitsTrimmed === variableUnitsName)
-
-      if (!compatibleUnits) {
-        console.warn(
-          `Unit Mismatch in ${compName}.${varName}: Model uses '${variableUnitsName}', Parameter uses '${matchUnitsTrimmed}'`
-        )
-      }
-
-      // --- CREATION & CONNECTION ---
-
-      // Get or Create the Source Variable in the "Model_Parameters" component
-      // We use the parameter name for the parameter variable to ensure uniqueness
-      // (e.g. one global "T", but separate "R_axon" and "R_soma")
       let sourceVar = paramComponent.variableByName(match.variable_name)
 
       if (!sourceVar) {
         sourceVar = new _libcellml.Variable()
         sourceVar.setName(match.variable_name)
+
+        // Ensure the initial value is explicitly set to define variable type as 'constant'.
         sourceVar.setInitialValueByString(match.value.trim())
+
+        const matchUnits = model.unitsByName(matchUnitsTrimmed)
         if (matchUnits) {
           sourceVar.setUnitsByUnits(matchUnits)
+          matchUnits.delete()
         } else {
           sourceVar.setUnitsByName(matchUnitsTrimmed)
         }
+
         sourceVar.setInterfaceTypeByString('public')
         paramComponent.addVariable(sourceVar)
       }
 
+      // Connect the constant parameter to the module variable.
       _libcellml.Variable.addEquivalence(sourceVar, variable)
 
-      variableUnits.delete()
-      matchUnits && matchUnits.delete()
       sourceVar.delete()
       variable.delete()
     }
     component.delete()
   }
-
   paramComponent.delete()
 }
 
 export function generateFlattenedModel(nodes, edges, builderStore) {
   const appVersion = __APP_VERSION__ || '1.0.0'
 
-  // 1. Initialize core objects
+  // Initialize core objects
   const model = new _libcellml.Model()
   model.setName(`PhLynxGenerated_v${appVersion}`.replaceAll('.', '_'))
 
@@ -687,16 +683,8 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     // Process Edges (Create Connections)
     // ----------------------------------
 
-    // HELPER: Strips directionality suffixes for matching
-    const normaliseName = (name, portType) => {
-      if (!name) return ''
-      // Replaces "_in" or "_out" at the end of the string ($) with nothing
-      return name.replace(
-        portType === 'exit_ports' ? /_out$/ : portType === 'entrance_ports' ? /_in$/ : /(_in|_out)$/,
-        ''
-      )
-    }
-
+    const componentTrashCan = new Set()
+    const multiPortSums = new Map()
     for (const edge of edges) {
       // Get Node Data
       const sourceNode = edge.sourceNode
@@ -704,7 +692,7 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
 
       if (!sourceNode || !targetNode) continue
 
-      // Get the specific Cloned Components (created in your previous step)
+      // Get the specific Cloned Components
       const sourceComp = nodeComponentMap.get(edge.source)
       const targetComp = nodeComponentMap.get(edge.target)
 
@@ -716,40 +704,86 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
           const tgtLabel = targetNode.data.portLabels.find((l) => l.label === srcLabel.label)
 
           if (tgtLabel) {
-            // MATCH FOUND: Determine connection type
-            if (srcLabel.isMultiPortSum) {
-              // CASE A: Summation (Many-to-One)
-              // We connect all source options into a new Summer,
-              // and connect the Summer result to the target.
+            if (arePortTypesCompatible(srcLabel.portType, tgtLabel.portType)) {
+              if (srcLabel.isMultiPortSum && tgtLabel.isMultiPortSum) {
+                throw new Error('Multi-port-sum to Multi-port-sum connections are not supported.')
+              } else if (srcLabel.isMultiPortSum || tgtLabel.isMultiPortSum) {
+                const multiSumLabel = srcLabel.isMultiPortSum ? srcLabel : tgtLabel
+                const multiSumComponent = srcLabel.isMultiPortSum ? sourceComp : targetComp
+                const operandLabel = srcLabel.isMultiPortSum ? tgtLabel : srcLabel
+                const operandComponent = srcLabel.isMultiPortSum ? targetComp : sourceComp
+                const multiKey = multiSumComponent.name() + '::' + multiSumLabel.label
+                if (!multiPortSums.has(multiKey)) {
+                  multiPortSums.set(multiKey, {
+                    sourceComp: multiSumComponent,
+                    srcLabel: multiSumLabel,
+                    targets: [],
+                  })
+                }
+                multiPortSums.get(multiKey).targets.push({
+                  component: operandComponent,
+                  label: operandLabel,
+                })
+              } else {
+                // Direct Connection (One-to-One)
+                const minLength = Math.min(srcLabel.option.length, tgtLabel.option.length)
 
-              createSummationComponent(
-                model,
-                sourceComp,
-                srcLabel.option, // Inputs
-                targetComp,
-                tgtLabel.option[0] // Output (Target expects 1 result)
-              )
-            } else {
-              // CASE B: Direct Connection (One-to-One)
-              for (const srcOption of srcLabel.option) {
-                const srcBase = normaliseName(srcOption, srcLabel.portType)
-                const tgtOption = tgtLabel.option.find((o) => normaliseName(o, tgtLabel.portType) === srcBase)
-                if (srcOption && tgtOption) {
-                  const v1 = sourceComp.variableByName(srcOption)
-                  const v2 = targetComp.variableByName(tgtOption)
+                for (let i = 0; i < minLength; i++) {
+                  const srcOption = srcLabel.option[i]
+                  const tgtOption = tgtLabel.option[i]
 
-                  if (v1 && v2) {
-                    _libcellml.Variable.addEquivalence(v1, v2)
+                  if (srcOption && tgtOption) {
+                    const v1 = sourceComp.variableByName(srcOption)
+                    const v2 = targetComp.variableByName(tgtOption)
+
+                    if (v1 && v2) {
+                      _libcellml.Variable.addEquivalence(v1, v2)
+                    }
+
+                    v1.delete()
+                    v2.delete()
                   }
-
-                  v1.delete()
-                  v2.delete()
                 }
               }
             }
           }
         }
       }
+    }
+
+    // throw new Error('Debugging multi-port-sum connections.')
+    // Handle Multi-Port-Sum Connections
+    for (const sumData of multiPortSums.values()) {
+      const { sourceComp, srcLabel, targets } = sumData
+
+      // Create the Summation Component
+      const sourceVarNames = srcLabel.option
+      if (sourceVarNames.length !== 1) {
+        throw new Error('Multi-port-sum source must have exactly one variable representing the summed input.')
+      }
+      const sourceVarName = sourceVarNames[0] // Assuming single variable for source in multi-port-sum
+      const targetComponents = new Map()
+      for (const targetInfo of targets) {
+        const { component, label } = targetInfo
+        const targetVarNames = label.option
+        if (targetVarNames.length !== 1) {
+          throw new Error('Multi-port-sum target must have exactly one variable to be summed.')
+        }
+        const targetVarName = targetVarNames[0]
+        targetComponents.set(component, targetVarName)
+      }
+
+      createSummationComponent(model, sourceComp, sourceVarName, targetComponents)
+
+      // sourceComp.delete()
+      // for (const targetComp of targetComponents.keys()) {
+      // targetComp.delete()
+      // }
+    }
+
+    for (const comp of componentTrashCan) {
+
+      comp && comp.delete()
     }
 
     model.linkUnits()

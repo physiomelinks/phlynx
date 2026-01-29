@@ -201,8 +201,14 @@ const domainTypeClass = computed(() => {
     : 'domain-type-default'
 })
 
-const isMissingParameters = computed(() => {
-  return !builderStore.moduleParameterMap.get(props.data.sourceFile)
+const isMissingParameters = computed(() => { 
+  const source = props.data?.sourceFile
+  if (!source) return true // If there's no source file, it's "missing" parameters
+  
+  // This call establishes a reactive dependency on the store's Map
+  const link = builderStore.getParameterFileNameForFile(source)
+  
+  return !link
 })
 
 function handleSetDomainType(typeCommand) {
