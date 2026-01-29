@@ -836,20 +836,18 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
 
 const loadParametersData = async (content, filename, broadcastNotifications = true) => {
   try {
-    const result = await parseParametersFile(content)
-
-    const added = builderStore.addParameterFile(filename, result)
+    const added = builderStore.addParameterFile(filename, content)
 
     if (broadcastNotifications && added) {
       trackEvent('parameters_load_action', {
         category: 'Parameters',
         action: 'load_parameters',
-        label: `Parameters: ${result.length}`,
+        label: `Parameters: ${content.length}`,
         file_type: 'csv',
       })
       notify.success({
         title: 'Parameters Loaded',
-        message: `Loaded ${result.length} parameters from ${filename}.`,
+        message: `Loaded ${content.length} parameters from ${filename}.`,
       })
     } else if (broadcastNotifications && !added) {
       notify.info({
@@ -857,7 +855,6 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         message: `No new parameters were added from ${filename}.`,
       })
     }
-
     return added
   } catch (err) {
     if (broadcastNotifications) {
@@ -872,7 +869,6 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         message: `Failed to load parameters from ${filename}.`,
       })
     }
-
     return false
   }
 }
@@ -1435,7 +1431,10 @@ onMounted(async () => {
   }
 
   for (const [path, content] of Object.entries(parameterFiles)) {
-    promises.push(loadParametersData(content.default, path.split('/').pop(), false))
+    const parsePromise = parseParametersFile(content.default).then((parsed) =>
+      loadParametersData(parsed, path.split('/').pop(), false)
+    )
+    promises.push(parsePromise)
   }
 
   const results = await Promise.all(promises)

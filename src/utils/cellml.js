@@ -219,7 +219,7 @@ function createSummationComponent(model, sourceComp, sourceVarNames, targetComp,
     const inputVar = new _libcellml.Variable()
     inputVar.setName(localName)
     inputVar.setUnitsByName(unitsName)
-    inputVar.setInterfaceType('public') // Allows connection to source
+    inputVar.setInterfaceTypeByString('public') // Allows connection to source
 
     sumComp.addVariable(inputVar)
 
@@ -232,7 +232,7 @@ function createSummationComponent(model, sourceComp, sourceVarNames, targetComp,
   const totalVar = new _libcellml.Variable()
   totalVar.setName('total_sum')
   totalVar.setUnitsByName(unitsName)
-  totalVar.setInterfaceType('public') // Allows connection to target
+  totalVar.setInterfaceTypeByString('public') // Allows connection to target
   sumComp.addVariable(totalVar)
 
   // CONNECT: Sum Output -> Target
