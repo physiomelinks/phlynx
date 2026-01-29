@@ -250,15 +250,23 @@ export function createDynamicFields(validation) {
 
 const configs = {
   [IMPORT_KEYS.VESSEL]: {
-    title: 'Import Vessel Array and CellML Module Configuration',
+    title: 'Import Vessel Array File',
     fields: [
       {
         key: IMPORT_KEYS.VESSEL,
         label: 'Select Vessel Array (.csv)',
         accept: '.csv',
+        required: true,
         parser: parseVesselCsv,
         requiresStore: true,
         isDynamic: true,
+      },
+      {
+        key: IMPORT_KEYS.PARAMETER,
+        label: 'Select Parameter File (.csv)',
+        accept: '.csv',
+        required: false,
+        parser: parseParametersFile,
       },
     ],
   },
