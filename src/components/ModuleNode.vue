@@ -208,7 +208,6 @@ const isMissingParameters = computed(() => {
   // This call establishes a reactive dependency on the store's Map
   const link = builderStore.getParameterFileNameForFile(source)
   
-  console.log(`Checking ${source}:`, link ? 'Linked' : 'Missing')
   return !link
 })
 

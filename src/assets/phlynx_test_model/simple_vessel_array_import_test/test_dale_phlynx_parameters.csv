@@ -81,7 +81,7 @@ mu,Js_per_m3,0.004,known
 rho,Js2_per_m5,1040.0,known
 g,m_per_s2,9.81,known
 beta_g,dimensionless,0,user_defined
-a_vessel,dimensionless,0.2802, Avolio_1980
+a_vessel,dimensionless,0.2802," Avolio_1980"
 b_vessel,per_m,-505.3,Avolio_1980
 c_vessel,dimensionless,0.1324,Avolio_1980
 d_vessel,per_m,-11.14,Avolio_1980

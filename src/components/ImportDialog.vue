@@ -17,6 +17,9 @@
       element-loading-background="rgba(255, 255, 255, 0.9)"
     >
       <el-form label-position="top">
+        <div class="form-header" v-if="requiredFieldsCount > 0">
+    <span style="color: var(--el-color-danger)">*</span> Indicates required field
+  </div>
         <div v-for="field in displayFields" :key="field.key" class="field-container">
           <el-form-item :label="field.label" :required="field?.required ?? true">
             <div class="upload-row">
@@ -79,7 +82,6 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-form-item v-if="requiredFieldsCount > 0" :label="`Required field${requiredFieldsCount > 1 ? 's' : ''}`" :required="true" />
         <el-button @click="closeDialog" :disabled="isLoading">Cancel</el-button>
         <el-button type="primary" @click="handleConfirm" :disabled="!isFormValid || isLoading" :loading="isLoading">
           Import
@@ -456,7 +458,7 @@ const handleConfirm = async () => {
         fileLinkMap.set(cellmlFile, fileName)
         fileTypeMap.set(cellmlFile, 'imported')
       })
-      console.log(fileLinkMap, fileTypeMap)
+
       builderStore.applyFileParameterLinks(fileLinkMap, fileTypeMap)
     }
   }
@@ -562,5 +564,12 @@ defineExpose({
   color: #000000ce;
   font-size: 16px;
   margin-top: 12px;
+}
+
+.form-header {
+  margin-bottom: 16px;       /* Add spacing before the first input field */
+  font-size: 13px;           /* Slightly smaller than label text */
+  color: var(--el-text-color-secondary); /* Use Element Plus muted text color */
+  text-align: right;         /* Aligns it to the right side (optional but recommended) */
 }
 </style>

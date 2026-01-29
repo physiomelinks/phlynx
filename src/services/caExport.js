@@ -224,7 +224,26 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
     })
 
     if (consolidatedParameters.length > 0) {
-      zip.file(`${fileName}_parameters.csv`, Papa.unparse(consolidatedParameters))
+      // Deduplicate parameters by variable_name to avoid duplicate CSV entries
+      const dedupedParameters = []
+      const seenVariableNames = new Set()
+
+      for (const param of consolidatedParameters) {
+        const key = param && typeof param === 'object' ? param.variable_name : undefined
+
+        // Only deduplicate when a variable_name is present; otherwise keep all such entries
+        if (key && seenVariableNames.has(key)) {
+          continue
+        }
+
+        dedupedParameters.push(param)
+
+        if (key) {
+          seenVariableNames.add(key)
+        }
+      }
+
+      zip.file(`${fileName}_parameters.csv`, Papa.unparse(dedupedParameters))
     }
 
     // --- 3. FINALIZING AND COMPRESSING ZIP ---
