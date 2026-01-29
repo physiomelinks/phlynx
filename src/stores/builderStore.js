@@ -234,6 +234,33 @@ export const useBuilderStore = defineStore('builder', () => {
     return ''
   }
 
+  function getModulesModule(filename, moduleName) {
+    const file = this.availableModules.find((f) => f.filename === filename)
+    if (!file) return null
+
+    const module = file.modules.find((m) => m.name === moduleName)
+    return module || null
+  }
+
+  /**
+   * Adds a new units file and its model.
+   * If the units file already exists it will be replaced.
+   * @param {*} payload
+   */
+  function addUnitsFile(payload) {
+    const existingFile = availableUnits.value.find((f) => f.filename === payload.filename)
+    if (existingFile) {
+      existingFile.model = payload.model
+    } else {
+      availableUnits.value.push(payload)
+    }
+  }
+
+  /**
+   * Checks if a module file is already loaded.
+   * @param {string} filename - The name of the file to check.
+   * @returns {boolean} - True if the file is loaded, false otherwise.
+   */
   function hasModuleFile(filename) {
     return this.availableModules.some((f) => f.filename === filename)
   }
@@ -309,14 +336,15 @@ export const useBuilderStore = defineStore('builder', () => {
     setLastSaveName,
 
     // Getters
+    getAssignmentTypeForModule,
     getConfig,
     getConfigForVessel,
     getModuleContent,
-    getParametersForFile,
+    getModulesModule,
     getParameterFileNameForFile,
-    getParametersForModule, // Active module lookup
-    getParameterFileNameForModule, // Active module lookup
-    getAssignmentTypeForModule, // Active assignment lookup
+    getParameterFileNameForModule,
+    getParametersForFile,
+    getParametersForModule,
     getSaveState,
     hasModuleFile,
 
