@@ -741,7 +741,7 @@ const onEdgeChange = (changes) => {
 
 const screenshotDisabled = computed(() => nodes.value.length === 0 && vueFlowRef.value !== null)
 
-const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) => {
+const loadCellMLModuleData = (content, filename, broadcastNotifications = true) => {
   return new Promise((resolve) => {
     const result = processModuleData(content)
     if (result.type === 'success') {
@@ -754,20 +754,16 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
         modules: augmentedData,
         model: result.model,
       })
-      if (broadcaseNotifications) {
+      if (broadcastNotifications) {
         trackEvent('modules_load_action', {
-        category: 'Modules',
-        action: 'load_cellml_module',
-        label: `Modules: ${result.data.length}`,
-        file_type: 'cellml'
-      })
+        })
         notify.success({
           title: 'CellML Modules Loaded',
           message: `Loaded ${result.data.length} parameters from ${filename}.`,
         })
       }
     } else if (result.issues) {
-      if (broadcaseNotifications) {
+      if (broadcastNotifications) {
         trackEvent('modules_load_action', {
           category: 'Modules',
           action: 'load_cellml_module',
@@ -786,7 +782,7 @@ const loadCellMLModuleData = (content, filename, broadcaseNotifications = true) 
   })
 }
 
-const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) => {
+const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) => {
   return new Promise((resolve) => {
     const result = processUnitsData(content)
     if (result.type === 'success') {
@@ -807,7 +803,6 @@ const loadCellMLUnitsData = (content, filename, broadcaseNotifications = true) =
         })
       }
     } else if (result.issues) {
-      if (broadcaseNotifications) {
         trackEvent('units_load_action', {
           category: 'Units',
           action: 'load_cellml_units',
@@ -835,12 +830,12 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
       trackEvent('parameters_load_action', {
         category: 'Parameters',
         action: 'load_parameters',
-        label: `Parameters: ${result.length}`,
+        label: `Parameters: ${content.length}`,
         file_type: 'csv'
       })
       notify.success({
         title: 'Parameters Loaded',
-        message: `Loaded ${result.length} parameters from ${filename}.`,
+        message: `Loaded ${content.length} parameters from ${filename}.`,
       })
     } else if (broadcastNotifications && !added) {
       notify.info({
@@ -848,7 +843,6 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         message: `No new parameters were added from ${filename}.`,
       })
     }
-
     return added
   } catch (err) {
     if (broadcastNotifications) {
@@ -863,7 +857,6 @@ const loadParametersData = async (content, filename, broadcastNotifications = tr
         message: `Failed to load parameters from ${filename}.`,
       })
     }
-
     return false
   }
 }
@@ -1456,7 +1449,10 @@ onMounted(async () => {
   }
 
   for (const [path, content] of Object.entries(parameterFiles)) {
-    promises.push(loadParametersData(content.default, path.split('/').pop(), false))
+    const parsePromise = parseParametersFile(content.default).then((parsed) =>
+      loadParametersData(parsed, path.split('/').pop(), false)
+    )
+    promises.push(parsePromise)
   }
 
   const results = await Promise.all(promises)
