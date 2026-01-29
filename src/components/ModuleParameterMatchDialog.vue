@@ -159,9 +159,29 @@ const availableFiles = computed(() => {
 function calculateStats(fileObj, fileName) {
   const requiredVars = getRequiredVariablesForFile(fileObj)
   const fileData = builderStore.parameterFiles.get(fileName) || []
-  
+
+  // Normalize parameter records to use a single canonical field: `variable_name`
+  const normalizedFileData = Array.isArray(fileData)
+    ? fileData.map((d) => {
+        if (!d || typeof d !== 'object') return d
+        if (d.variable_name) return d
+        const variableName =
+          d.variable !== undefined
+            ? d.variable
+            : d.name !== undefined
+            ? d.name
+            : d.Variable !== undefined
+            ? d.Variable
+            : d.Name
+        if (variableName === undefined) return d
+        return { ...d, variable_name: variableName }
+      })
+    : []
+
   const availableVars = new Set(
-    fileData.map((d) => d.variable || d.name || d.Variable || d.variable_name || d.Name)
+    normalizedFileData
+      .map((d) => (d && typeof d === 'object' ? d.variable_name : undefined))
+      .filter((v) => v !== undefined && v !== null)
   )
 
   const total = requiredVars.length
