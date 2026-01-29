@@ -756,6 +756,10 @@ const loadCellMLModuleData = (content, filename, broadcastNotifications = true) 
       })
       if (broadcastNotifications) {
         trackEvent('modules_load_action', {
+          category: 'Modules',
+          action: 'load_cellml_module',
+          label: `Modules: ${result.data.length}`,
+          file_type: 'cellml'
         })
         notify.success({
           title: 'CellML Modules Loaded',
@@ -790,7 +794,7 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
         filename: filename,
         model: result.model,
       })
-      if (broadcaseNotifications) {
+      if (broadcastNotifications) {
         trackEvent('units_load_action', {
           category: 'Units',
           action: 'load_cellml_units',
@@ -803,6 +807,7 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
         })
       }
     } else if (result.issues) {
+      if (broadcastNotifications) {
         trackEvent('units_load_action', {
           category: 'Units',
           action: 'load_cellml_units',
@@ -822,9 +827,7 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
 
 const loadParametersData = async (content, filename, broadcastNotifications = true) => {
   try {
-    const result = await parseParametersFile(content)
-
-    const added = builderStore.addParameterFile(filename, result)
+    const added = builderStore.addParameterFile(filename, content)
 
     if (broadcastNotifications && added) {
       trackEvent('parameters_load_action', {
