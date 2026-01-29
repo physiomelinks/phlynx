@@ -219,7 +219,7 @@ function createSummationComponent(model, sourceComp, sourceVarNames, targetComp,
     const inputVar = new _libcellml.Variable()
     inputVar.setName(localName)
     inputVar.setUnitsByName(unitsName)
-    inputVar.setInterfaceType('public') // Allows connection to source
+    inputVar.setInterfaceTypeByString('public') // Allows connection to source
 
     sumComp.addVariable(inputVar)
 
@@ -232,7 +232,7 @@ function createSummationComponent(model, sourceComp, sourceVarNames, targetComp,
   const totalVar = new _libcellml.Variable()
   totalVar.setName('total_sum')
   totalVar.setUnitsByName(unitsName)
-  totalVar.setInterfaceType('public') // Allows connection to target
+  totalVar.setInterfaceTypeByString('public') // Allows connection to target
   sumComp.addVariable(totalVar)
 
   // CONNECT: Sum Output -> Target
@@ -440,8 +440,8 @@ function prioritizeEnvironmentComponent(xmlString) {
 /**
  * Applies parameter data to the model variables with strict unit and value validation.
  */
-function applyParameterMappings(model, parameterData, ensureUnitImported) {
-  const paramMap = new Map()
+function applyParameterMappings(model, parameterData, ensureUnitImported = () => {}) {
+  const paramMap = new Map();
   for (const params of parameterData.values()) {
     // Only iterate if params is actually an array of parameter objects
     if (Array.isArray(params)) {
