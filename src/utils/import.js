@@ -99,7 +99,7 @@ const parseVesselCsv = (file, builderStore = null) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      trimHeaders: true,
+      transformHeader: (header) => header.trim(),
       transform: (v) => v.trim(),
       complete: (results) => {
         if (
