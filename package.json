@@ -45,7 +45,7 @@
     "@vue-flow/core": "^1.47.0",
     "@vue-flow/minimap": "^1.5.4",
     "@vue-flow/node-resizer": "^1.5.0",
-    "cellml-text-editor": "^0.1.7",
+    "cellml-text-editor": "^0.1.8",
     "cytoscape": "^3.33.1",
     "cytoscape-fcose": "^2.2.0",
     "element-plus": "^2.11.5",
