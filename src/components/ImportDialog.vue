@@ -40,7 +40,7 @@
                 <el-button type="success">Browse</el-button>
               </el-upload>
 
-              <el-icon v-if="formState[field.key]?.isValid" color="#67C23A" size="20">
+              <el-icon v-if="isFieldValid(field.key)" color="#67C23A" size="20">
                 <Check />
               </el-icon>
             </div>
@@ -58,13 +58,26 @@
             <template #default> All necessary modules and configurations are available. </template>
           </el-alert>
 
-          <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
+          <el-alert 
+            v-else 
+            title="Additional Files Required" 
+            type="warning" 
+            :closable="false" 
+            show-icon
+          >
             <template #default>
               <div>Please provide the following files to complete the import:</div>
               <ul class="missing-resources">
                 <li v-if="validationStatus.needsModuleFile">
-                  <strong>CellML Module File</strong> containing:
-                  {{ validationStatus.missingResources?.moduleTypes?.join(', ') }}
+                  <strong>CellML Module File</strong>
+                  <div v-if="validationStatus.missingResources?.moduleFileIssues?.length > 0" style="margin-top: 4px;">
+                    <div v-for="moduleFileIssue in validationStatus.missingResources.moduleFileIssues" :key="moduleFileIssue.file" style="font-size: 0.9em; margin: 2px 0;">
+                      • {{ moduleFileIssue.message }}
+                    </div>
+                  </div>
+                  <div v-else-if="validationStatus.missingResources?.moduleTypes?.length > 0">
+                    containing: {{ validationStatus.missingResources.moduleTypes.join(', ') }}
+                  </div>
                 </li>
                 <li v-if="validationStatus.needsConfigFile">
                   <strong>Module Configurations</strong> for vessel_types:bc_types:
@@ -75,6 +88,9 @@
               <div v-if="validationStatus.needsConfigFile">
                 <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
               </div>
+              <div v-if="validationStatus.hasModuleFileMismatch" style="margin-top: 8px; color: #E6A23C;">
+                <strong>⚠ Warning:</strong> Some modules are not in the CellML files specified by their configurations.
+              </div>
             </template>
           </el-alert>
         </div>
@@ -83,7 +99,7 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog" :disabled="isLoading">Cancel</el-button>
-        <el-button type="primary" @click="handleConfirm" :disabled="!isFormValid || isLoading" :loading="isLoading">
+        <el-button type="primary" @click="handleConfirm" :disabled="!isFormValid || isLoading || !(validationStatus.isComplete)" :loading="isLoading">
           Import
         </el-button>
       </span>
@@ -127,6 +143,37 @@ const stagedFiles = ref({
   moduleFiles: [], // { filename: string, payload: object }
   configFiles: [], // { filename: string, payload: object }
 })
+
+// Determine if a specific field should show as valid based on validation status
+const isFieldValid = (fieldKey) => {
+  const fieldState = formState[fieldKey]
+  if (!fieldState?.fileName) {
+    return false // No file selected
+  }
+  
+  // For non-dynamic fields (like vessel CSV), use the basic isValid flag
+  if (fieldKey === IMPORT_KEYS.VESSEL || fieldKey === IMPORT_KEYS.PARAMETER || fieldKey === IMPORT_KEYS.UNITS) {
+    return fieldState.isValid
+  }
+  
+  // For dynamic fields, check against validation status
+  if (!validationStatus.value) {
+    return fieldState.isValid // Fallback to basic validation
+  }
+  
+  // CellML file is valid if needsModuleFile is false
+  if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
+    return !validationStatus.value.needsModuleFile
+  }
+  
+  // Config file is valid if needsConfigFile is false
+  if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
+    return !validationStatus.value.needsConfigFile
+  }
+  
+  // Default to basic validation
+  return fieldState.isValid
+}
 
 function resetFormState() {
   Object.keys(formState).forEach((key) => {
@@ -333,6 +380,13 @@ const handleFileChange = async (uploadFile, field) => {
     // Vessel-specific validation
     if (field.key === IMPORT_KEYS.VESSEL && validation) {
       await updateVesselValidation(validation)
+    } else if (field.key !== IMPORT_KEYS.VESSEL) {
+        // For other fields, just update the validation status
+        validationStatus.value = {
+        isComplete: true,
+        errors: [],
+        warnings: []
+      }
     }
 
     // Surface warnings (notifications only once)
@@ -399,7 +453,6 @@ async function stageFile(field, parsedData, fileName) {
       payload: data,
     })
   }
-  formState[field.key].isValid = true
 
   // Re-validate the Vessel CSV with staged files
   const vesselField = formState[IMPORT_KEYS.VESSEL]
