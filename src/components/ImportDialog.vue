@@ -65,8 +65,8 @@
                 <li v-if="validationStatus.needsModuleFile">
                   <strong>CellML Module File</strong>
                   <div v-if="validationStatus.missingResources?.moduleFileIssues?.length > 0" style="margin-top: 4px;">
-                    <div v-for="issue in validationStatus.missingResources.moduleFileIssues" :key="issue.config" style="font-size: 0.9em; margin: 2px 0;">
-                      • {{ issue.message }}
+                    <div v-for="moduleFileIssue in validationStatus.missingResources.moduleFileIssues" :key="moduleFileIssue.file" style="font-size: 0.9em; margin: 2px 0;">
+                      • {{ moduleFileIssue.message }}
                     </div>
                   </div>
                   <div v-else-if="validationStatus.missingResources?.moduleTypes?.length > 0">

@@ -68,7 +68,6 @@ export const validateVesselData = (vesselData, builderStore) => {
       missingConfigs.push(key)
       missingResources.configs.add(key)
     } else {
-      // Config exists - now validate module_file association
       const moduleFileIssue = validateModuleFileAssociation(config, builderStore)
       
       if (moduleFileIssue) {
@@ -122,7 +121,7 @@ export const validateVesselData = (vesselData, builderStore) => {
     missingResources: {
       configs: [...missingResources.configs],
       moduleTypes: [...missingResources.moduleTypes],
-      moduleFileIssues: [...missingResources.moduleFileIssues.values()],
+      moduleFileIssues: groupModuleFileIssues([...missingResources.moduleFileIssues.values()]),
     },
     needsConfigFile,
     needsModuleFile,
@@ -200,6 +199,69 @@ function validateModuleFileAssociation(config, builderStore) {
   
   // All checks passed - the module comes from the correct file as specified in the config
   return null
+}
+
+/**
+ * Groups module file issues by file for cleaner display
+ * @param {Array} moduleFileIssues - Array of issue objects
+ * @returns {Array} Grouped issues with consolidated messages
+ */
+export function groupModuleFileIssues(moduleFileIssues) {
+  if (!moduleFileIssues || moduleFileIssues.length === 0) {
+    return []
+  }
+
+  const issuesByFile = new Map()
+  
+  moduleFileIssues.forEach(issue => {
+    const file = issue.expectedFile
+    if (!issuesByFile.has(file)) {
+      issuesByFile.set(file, {
+        file,
+        issue: issue.issue,
+        configs: [],
+        moduleTypes: new Set(),
+      })
+    }
+    
+    const group = issuesByFile.get(file)
+    group.configs.push(issue.config)
+    if (issue.moduleType) {
+      group.moduleTypes.add(issue.moduleType)
+    }
+  })
+  
+  // Convert to array and format messages
+  return Array.from(issuesByFile.values()).map(group => {
+    let message = ''
+    
+    switch (group.issue) {
+      case 'missing_file':
+        message = `Module file "${group.file}" not found`
+        break
+      case 'stub_file':
+        message = `Module file "${group.file}" needs to be uploaded`
+        break
+      case 'module_not_in_file':
+        message = `Module file "${group.file}" missing modules: ${[...group.moduleTypes].join(', ')}`
+        break
+      case 'no_file_specified':
+        message = `Module config doesn't specify a module file`
+        break
+      default:
+        message = `Issue with "${group.file}"`
+    }
+    
+    message += ` (needed for: ${group.configs.join(', ')})`
+    
+    return {
+      file: group.file,
+      issue: group.issue,
+      message,
+      configs: group.configs,
+      moduleTypes: [...group.moduleTypes],
+    }
+  })
 }
 
 const parseVesselCsv = (file, builderStore = null) => {
@@ -337,14 +399,14 @@ export function createDynamicFields(validation) {
       helpTexts.push(`Required module types: ${validation.missingResources.moduleTypes.join(', ')}`)
     }
     
-    // Add specific file issues
+    // Add specific file issues 
     if (validation.missingResources.moduleFileIssues && validation.missingResources.moduleFileIssues.length > 0) {
-      const fileIssues = validation.missingResources.moduleFileIssues
-        .filter(issue => issue.issue === 'missing_file' || issue.issue === 'stub_file')
-        .map(issue => issue.expectedFile)
+      const fileNames = validation.missingResources.moduleFileIssues
+        .filter(group => group.issue === 'missing_file' || group.issue === 'stub_file')
+        .map(group => group.file)
       
-      if (fileIssues.length > 0) {
-        helpTexts.push(`Required files: ${[...new Set(fileIssues)].join(', ')}`)
+      if (fileNames.length > 0) {
+        helpTexts.push(`Required files: ${[...new Set(fileNames)].join(', ')}`)
       }
     }
 
