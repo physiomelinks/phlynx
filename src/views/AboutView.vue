@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import ChangelogViewer from '../components/ChangelogViewer.vue'
+import ChangelogViewer from '../components/ChangeLogViewer.vue'
 
 const activeTab = ref('overview')
 
