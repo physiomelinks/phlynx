@@ -27,3 +27,5 @@ dist-applications
 *.sw?
 .yarn/install-state.gz
 docs/glossary.json
+
+.changelog/

@@ -5,6 +5,10 @@
     "name": "Hugh Sorby",
     "email": "h.sorby@auckland.ac.nz"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/physiomelinks/phlynx.git"
+  },
   "contributors": [
     {
       "name": "Jarrah Dowrick"
@@ -14,7 +18,7 @@
     }
   ],
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "src/electron/main.js",
   "scripts": {
@@ -24,7 +28,8 @@
     "app:pack": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder --dir",
     "app:build": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder",
     "build:glossary": "node src/services/generate/generateGlossaryIndex.js",
-    "preview": "yarn build:glossary && vite preview"
+    "preview": "yarn build:glossary && vite preview",
+    "update-docs-changelog": "node scripts/build-changelog.js"
   },
   "build": {
     "appId": "nz.ac.auckland.physiome-links.phlynx",
@@ -57,11 +62,13 @@
     "papaparse": "^5.5.3",
     "pinia": "^3.0.3",
     "sass-embedded": "^1.97.1",
+    "semver": "^7.7.3",
     "vue": "^3.5.22",
     "vue-router": "^4.6.4",
     "vue3-libcellml.js": "^0.5.1"
   },
   "devDependencies": {
+    "@hsorby/changelog": "^3.0.2",
     "@vitejs/plugin-vue": "^6.0.1",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12",
@@ -73,5 +80,16 @@
     "vite": "^7.1.7",
     "vite-plugin-electron": "^0.29.0"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.12.0",
+  "changelog": {
+    "labels": {
+      "uncategorized": "Not Specified",
+      "breaking": "Breaking Changes",
+      "feature": "New Features",
+      "bug": "Fixed Bugs",
+      "documentation": "Documentation Updates",
+      "maintenance": "Maintenance Work"
+    },
+    "cacheDir": ".changelog"
+  }
 }

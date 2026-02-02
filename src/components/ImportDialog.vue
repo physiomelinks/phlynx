@@ -2,8 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     :title="config.title || 'Import File'"
-    width="500px"
-    @closed="closeDialog"
+    width="500px" @closed="closeDialog"
     @update:model-value="closeDialog"
     :close-on-click-modal="!isLoading"
     :close-on-press-escape="!isLoading"
@@ -14,12 +13,12 @@
       :element-loading-text="loadingText"
       :element-loading-svg="phlynxspinner"
       element-loading-svg-view-box="0, 0, 100, 100"
-      element-loading-background="rgba(255, 255, 255, 0.9)"
+      element-loading-background="var(--el-mask-color-extra-light)"
     >
-      <el-form label-position="top">
+      <el-form label-position="top" :class="{ 'is-loading-content': isLoading }">
         <div class="form-header" v-if="requiredFieldsCount > 0">
-    <span style="color: var(--el-color-danger)">*</span> Indicates required field
-  </div>
+          <span class="required-asterisk">*</span> Indicates required field
+        </div>
         <div v-for="field in displayFields" :key="field.key" class="field-container">
           <el-form-item :label="field.label" :required="field?.required ?? true">
             <div class="upload-row">
@@ -40,7 +39,7 @@
                 <el-button type="success">Browse</el-button>
               </el-upload>
 
-              <el-icon v-if="formState[field.key]?.isValid" color="#67C23A" size="20">
+              <el-icon v-if="isFieldValid(field.key)" color="var(--el-color-success)" size="20">
                 <Check />
               </el-icon>
             </div>
@@ -58,22 +57,54 @@
             <template #default> All necessary modules and configurations are available. </template>
           </el-alert>
 
-          <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
+          <el-alert
+            v-else
+            title="Additional Files Required"
+            type="warning"
+            :closable="false"
+            show-icon
+          >
             <template #default>
               <div>Please provide the following files to complete the import:</div>
               <ul class="missing-resources">
-                <li v-if="validationStatus.needsModuleFile">
-                  <strong>CellML Module File</strong> containing:
-                  {{ validationStatus.missingResources?.moduleTypes?.join(', ') }}
+                <li v-if="validationStatus.needsModuleFile" class="config-note">
+                  <strong>CellML Module File</strong>
+                  <div 
+                    v-if="validationStatus.missingResources?.moduleFileIssues?.length > 0" 
+                    class="issue-list-container"
+                  >
+                    <div
+                      v-for="moduleFileIssue in validationStatus.missingResources.moduleFileIssues"
+                      :key="moduleFileIssue.uniqueKey"
+                      class="module-issue-item"
+                    >
+                      • {{ moduleFileIssue.message }}
+                    </div>
+                  </div>
+                  <div 
+                    v-else-if="validationStatus.missingResources?.moduleTypes?.length > 0"
+                    class="module-type-list"
+                  >
+                    containing: {{ validationStatus.missingResources.moduleTypes.join(', ') }}
+                  </div>
                 </li>
-                <li v-if="validationStatus.needsConfigFile">
+                <li v-if="validationStatus.needsConfigFile" class="config-note">
                   <strong>Module Configurations</strong> for vessel_types:bc_types:
                   {{ validationStatus.missingResources?.configs?.join(', ') }} and possibly CellML modules.
                 </li>
               </ul>
               <br />
-              <div v-if="validationStatus.needsConfigFile">
+              <div
+                v-if="validationStatus.needsConfigFile"
+                class="config-note"
+              >
                 <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
+              </div>
+              <div
+                v-if="validationStatus.hasModuleFileMismatch"
+                class="mismatch-warning"
+              >
+                Warning: Some modules are not in the CellML files specified by their configurations.
               </div>
             </template>
           </el-alert>
@@ -83,7 +114,8 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog" :disabled="isLoading">Cancel</el-button>
-        <el-button type="primary" @click="handleConfirm" :disabled="!isFormValid || isLoading" :loading="isLoading">
+        <el-button type="primary" @click="handleConfirm"
+          :disabled="!isFormValid || isLoading || !validationStatus?.isComplete" :loading="isLoading">
           Import
         </el-button>
       </span>
@@ -127,12 +159,46 @@ const stagedFiles = ref({
   moduleFiles: [], // { filename: string, payload: object }
   configFiles: [], // { filename: string, payload: object }
 })
+const isVesselReset = ref(false)
+
+// Determine if a specific field should show as valid based on validation status
+const isFieldValid = (fieldKey) => {
+  const fieldState = formState[fieldKey]
+  if (!fieldState?.fileName) {
+    return false // No file selected
+  }
+
+  // For non-dynamic fields (like vessel CSV), use the basic isValid flag
+  if (fieldKey === IMPORT_KEYS.VESSEL || fieldKey === IMPORT_KEYS.PARAMETER || fieldKey === IMPORT_KEYS.UNITS) {
+    return fieldState.isValid
+  }
+
+  // For dynamic fields, check against validation status
+  if (!validationStatus.value) {
+    return fieldState.isValid // Fallback to basic validation
+  }
+
+  // CellML file is valid if needsModuleFile is false
+  if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
+    return !validationStatus.value.needsModuleFile
+  }
+
+  // Config file is valid if needsConfigFile is false
+  if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
+    return !validationStatus.value.needsConfigFile
+  }
+
+  // Default to basic validation
+  return fieldState.isValid
+}
 
 function resetFormState() {
-  Object.keys(formState).forEach((key) => {
-    formState[key] = createEmptyFieldState()
-  })
   dynamicFields.value = []
+  Object.keys(formState).forEach((key) => {
+    if (!(isVesselReset.value && key === IMPORT_KEYS.VESSEL)) {
+      formState[key] = createEmptyFieldState()
+    }
+  })
   validationStatus.value = null
 }
 
@@ -144,12 +210,16 @@ function initFormFromConfig(fields = []) {
   })
 }
 
-const resetForm = () => {
-  resetFormState()
+const unstageFiles = () => {
   stagedFiles.value = {
     moduleFiles: [],
     configFiles: [],
   }
+}
+
+const resetForm = () => {
+  resetFormState()
+  unstageFiles()
 }
 
 // Initialize formState when config changes
@@ -302,6 +372,38 @@ const handleFileChange = async (uploadFile, field) => {
   const rawFile = uploadFile.raw
   const state = formState[field.key]
 
+  if (field.processUpload === 'cellml') {
+    const vesselValidation = formState[IMPORT_KEYS.VESSEL]?.validation
+    if (vesselValidation?.missingResources?.moduleFileIssues) {
+      
+      // Get the list of filenames the Vessel Config is actually looking for
+      const expectedFilenames = Array.from(vesselValidation.missingResources.moduleFileIssues
+        .filter(issue => issue.file)
+        .map(issue => issue.file)
+      )
+
+      // If there are requirements and this file name isn't one of them, reject immediately
+      if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
+        notify.error({
+          title: 'Incorrect File Provided',
+          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
+          duration: 6000
+        })
+        return 
+      }
+    }
+  }
+
+  if (field.key === IMPORT_KEYS.VESSEL) {
+    const currentFileName = formState[IMPORT_KEYS.VESSEL]?.fileName
+
+    if (currentFileName && currentFileName !== rawFile.name) {
+      isVesselReset.value = true
+      resetForm()
+      isVesselReset.value = false
+    }
+  }
+  
   state.fileName = rawFile.name
   state.isValid = false
   state.payload = null
@@ -313,6 +415,12 @@ const handleFileChange = async (uploadFile, field) => {
     const data = parsed?.data ?? parsed
     const warnings = parsed?.warnings ?? []
     let validation = parsed?.validation ?? null
+
+    // Re-validate using local staged files if using vessel array
+    if (field.key === IMPORT_KEYS.VESSEL) {
+      const validationStore = createValidationStore()
+      validation = validateVesselData(data, validationStore)
+    }
 
     state.payload = { data, fileName: rawFile.name }
     state.validation = validation
@@ -333,6 +441,21 @@ const handleFileChange = async (uploadFile, field) => {
     // Vessel-specific validation
     if (field.key === IMPORT_KEYS.VESSEL && validation) {
       await updateVesselValidation(validation)
+    } else if (field.key !== IMPORT_KEYS.VESSEL) {
+      // For other fields:
+      // - If a vessel has been uploaded and we have a validation result (e.g. after staging),
+      //   propagate that vessel validation instead of overwriting the status.
+      // - If no vessel payload exists, preserve existing behavior and mark validation as complete.
+      const hasVesselPayload = !!formState[IMPORT_KEYS.VESSEL]?.payload
+      if (hasVesselPayload && validation) {
+        await updateVesselValidation(validation)
+      } else if (!hasVesselPayload) {
+        validationStatus.value = {
+          isComplete: true,
+          errors: [],
+          warnings: []
+        }
+      }
     }
 
     // Surface warnings (notifications only once)
@@ -375,9 +498,8 @@ async function stageFile(field, parsedData, fileName) {
   if (!field.processUpload) return
   const data = parsedData.data || parsedData
 
-  // Stage the file instead of adding directly to store
+  // Perform the staging logic
   if (field.processUpload === 'cellml') {
-    // Parse the module data to get the proper structure
     const result = processModuleData(data)
     if (result.type === 'success') {
       const augmentedData = result.data.map((item) => ({
@@ -399,21 +521,61 @@ async function stageFile(field, parsedData, fileName) {
       payload: data,
     })
   }
-  formState[field.key].isValid = true
 
-  // Re-validate the Vessel CSV with staged files
+  // Re-validate the Vessel CSV with staged files to see if requirements are met
   const vesselField = formState[IMPORT_KEYS.VESSEL]
   if (vesselField?.payload?.data) {
     const validationStore = createValidationStore()
     const newValidation = validateVesselData(vesselField.payload.data, validationStore)
+    
+    // Update state
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
     updateVesselValidation(newValidation)
+
+    // Specific check for CellML failures
+    if (field.processUpload === 'cellml') {
+      const moduleIssues = newValidation.missingResources.moduleFileIssues
+      
+      // Look for issues related to the file we just uploaded
+      const relevantIssue = moduleIssues.find(issue => issue.file === fileName)
+
+      if (relevantIssue) {
+        // The file was uploaded, but it failed for a specific reason
+        let errorMsg = `File "${fileName}" was staged, but has issues: `
+        
+        if (relevantIssue.issue === 'module_not_in_file') {
+          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(', ')}.`
+        } else if (relevantIssue.issue === 'filename_mismatch') {
+          errorMsg = `The modules were found, but the file name must be exactly "${relevantIssue.expectedFile}" as defined in your config.`
+        }
+
+        notify.error({
+          title: 'Import Requirement Not Met',
+          message: errorMsg,
+          duration: 6000
+        })
+      } else if (newValidation.needsModuleFile) {
+        // The file was fine, but we still need MORE files
+        notify.warning({
+          title: 'Partial Success',
+          message: `"${fileName}" is valid, but additional CellML files are still required.`
+        })
+      } else {
+        notify.success({ title: 'CellML Ready', message: `${fileName} staged successfully.` })
+      }
+    } 
+    // Simplified check for Config files
+    else if (field.processUpload === 'config') {
+      if (newValidation.needsConfigFile) {
+        notify.warning({
+          title: 'Config Staged',
+          message: `"${fileName}" added, but more configurations are still missing.`
+        })
+      } else {
+        notify.success({ title: 'Success', message: 'All configurations provided.' })
+      }
+    }
   }
-  notify.success({
-    title: field.processUpload === 'cellml' ? 'CellML File Staged' : 'Config Staged',
-    message: `${fileName} ready to import`,
-    duration: 3000,
-  })
 }
 
 const commitStagedFiles = () => {
@@ -495,57 +657,94 @@ defineExpose({
 </script>
 
 <style scoped>
+.field-container {
+  margin-bottom: var(--el-spacing-large);
+}
+
 .upload-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--el-spacing-small);
 }
 
 .file-input {
   width: 320px;
 }
 
-.warning-text {
-  font-size: 12px;
-  color: #e6a23c;
-  margin-top: 4px;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
+.form-header {
+  margin-bottom: var(--el-spacing-base);
+  font-size: var(--el-font-size-extra-small);
+  color: var(--el-text-color-secondary);
+  text-align: right;
 }
 
-.warning-text div {
-  flex: 1;
-}
-
-.field-container {
-  margin-bottom: 20px;
-}
-
+/* Validation & Alerts */
 .validation-status {
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin-top: var(--el-spacing-large);
+  margin-bottom: var(--el-spacing-base);
+}
+
+.required-asterisk {
+  color: var(--el-color-danger);
 }
 
 .missing-resources {
-  margin: 8px 0 0 0;
+  margin: var(--el-spacing-small) 0 0 0;
   padding-left: 20px;
+  color: var(--el-text-color-regular);
 }
 
 .missing-resources li {
   margin: 4px 0;
 }
 
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(0.95);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+.issue-list-container {
+  margin-top: var(--el-spacing-mini, 4px);
 }
 
+.warning-text {
+  font-size: var(--el-font-size-extra-small);
+  color: var(--el-color-warning);
+  margin-top: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.module-issue-item {
+  font-size: var(--el-font-size-extra-small);
+  margin: 2px 0;
+  color: var(--el-color-warning);
+}
+
+.module-issue-item::first-letter {
+  color: var(--el-color-warning);
+}
+
+.module-type-list {
+  font-size: var(--el-font-size-extra-small);
+  color: var(--el-text-color-secondary);
+}
+
+.config-note {
+  margin-top: var(--el-spacing-base);
+  font-size: var(--el-font-size-small);
+  color: var(--el-color-warning);
+}
+
+.mismatch-warning {
+  margin-top: var(--el-spacing-small);
+  color: var(--el-color-warning);
+  font-weight: bold;
+  font-size: var(--el-font-size-small);
+}
+
+:deep(.el-alert__description) {
+  margin-top: 5px;
+  line-height: 1.6;
+}
+/* Loading/Spinner Customization */
+/* Deep selectors remain necessary to override Element Plus internal classes */
 :deep(.el-loading-spinner svg) {
   width: 120px;
   height: 120px;
@@ -561,15 +760,27 @@ defineExpose({
 }
 
 :deep(.el-loading-text) {
-  color: #000000ce;
-  font-size: 16px;
-  margin-top: 12px;
+  color: var(--el-text-color-primary);
+  font-size: var(--el-font-size-base);
+  margin-top: var(--el-spacing-small);
 }
 
-.form-header {
-  margin-bottom: 16px;       /* Add spacing before the first input field */
-  font-size: 13px;           /* Slightly smaller than label text */
-  color: var(--el-text-color-secondary); /* Use Element Plus muted text color */
-  text-align: right;         /* Aligns it to the right side (optional but recommended) */
+.is-loading-content {
+  opacity: 0.2; /* Decreases the visibility of the form fields */
+  pointer-events: none; /* Prevents users from clicking anything while loading */
+  filter: grayscale(40%); /* Optional: adds a slight "disabled" look */
+  transition: opacity var(--el-transition-duration), filter var(--el-transition-duration);
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    transform: scale(0.95);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 </style>
