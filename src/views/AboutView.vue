@@ -4,7 +4,7 @@ import ChangelogViewer from '../components/ChangeLogViewer.vue'
 
 const activeTab = ref('overview')
 
-const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'Dev'
+const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ + (__RELEASE_BUILD__ ? '' : '*') : 'Dev'
 const commitHash = typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : 'N/A'
 const branch = typeof __BRANCH__ !== 'undefined' ? __BRANCH__ : 'N/A'
 const buildDate = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : new Date().toISOString()

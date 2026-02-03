@@ -1,0 +1,98 @@
+name: Create Staging PR
+
+on: 
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Critical: Must fetch all history to find tags
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Enable corepack
+        run: corepack enable yarn
+
+      - name: Enable yarn cache
+        uses: actions/setup-node@v6
+        with:
+          cache: 'yarn'
+ 
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Generate Changelog
+        id: gen_changelog
+        env: 
+          GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls
+          ls changelogs
+          yarn gen-changelog -q
+          yarn gen-changelog -q >> changelogs/latest.md
+
+          # Check if latest.md is empty or only whitespace.
+          if [ -s "changelogs/latest.md" ]; then
+             echo "has_content=true" >> $GITHUB_OUTPUT
+          else
+             echo "has_content=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and Push Staging Branch
+        id: create_branch
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_NAME="staging-${SHORT_SHA}"
+          
+          # Configure git identity
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create branch.
+          git checkout -b "$BRANCH_NAME"
+
+          # Commit the updated latest.md if it has content.
+          if [ "${{ steps.gen_changelog.outputs.has_content }}" == "true" ]; then
+            git add changelogs/latest.md
+            git commit -m "ci: update latest.md with unreleased changes"
+          fi
+
+          # Push branch
+          git push origin "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.gen_changelog.outputs.has_content == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PAT_CREATE_PR }}
+        run: |
+          BRANCH_NAME=${{ steps.create_branch.outputs.branch_name }}
+          LAST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "")
+          TITLE="Staging for release: $LAST_TAG"
+          
+          if [ "${{ steps.gen_changelog.outputs.has_content }}" == "true" ]; then
+            # Read the file content into a variable for the PR body
+            BODY_CONTENT=$(cat changelogs/latest.md)
+            TITLE+=" + Unreleased Changes"
+          else
+            BODY_CONTENT="Release $LAST_TAG of PhLynx."
+          fi
+          
+          gh pr create \
+            --base production \
+            --head "$BRANCH_NAME" \
+            --title "$TITLE" \
+            --body "$BODY_CONTENT" \
+            --draft=false

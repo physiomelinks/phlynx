@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-const appVersion = __APP_VERSION__
+const appVersion = __APP_VERSION__ + (__RELEASE_BUILD__ ? '' : '*')
 const route = useRoute()
 
 const isDocsActive = computed(() => {

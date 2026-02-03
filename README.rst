@@ -81,3 +81,31 @@ with hot-reloading for the Vue frontend.
 .. code-block:: bash
 
     yarn dev
+
+Deployment
+~~~~~~~~~~
+
+To build the application for production, use the following command:
+
+.. code-block:: bash
+
+    yarn build
+
+This will create a production-ready build in the ``dist`` directory.
+We can also use the `update-docs-changelog` script to generate the complete changelog before building the application:
+
+.. code-block:: bash
+
+    yarn update-docs-changelog
+    yarn build
+
+To update the changelogs in the changelogs/ directory based on linked pull requests issue information we have to run:
+
+..  code-block:: bash
+
+    # For a specific range.
+    yarn gen-changelog -q --from v0.2.0 --to v0.2.1
+    # For all since the last tag.
+    yarn gen-changelog -q
+
+This will generate markdown to the terminal and this will need to be saved in the changelogs/ directory under the to version number (v0.2.1.md if following on from the command given above) or latest.md if not generating a specific version.
