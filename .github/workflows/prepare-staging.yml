@@ -1,6 +1,6 @@
 name: Create Staging PR
 
-on: 
+on:
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Critical: Must fetch all history to find tags
+          fetch-depth: 0 # Critical: Must fetch all history to find tags
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -29,25 +29,43 @@ jobs:
         uses: actions/setup-node@v6
         with:
           cache: 'yarn'
- 
+
       - name: Install Dependencies
         run: yarn
 
       - name: Generate Changelog
         id: gen_changelog
-        env: 
+        env:
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ls
-          ls changelogs
-          yarn gen-changelog -q
-          yarn gen-changelog -q >> changelogs/latest.md
+          # Configure git identity
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git pull origin production --no-rebase
+          if [ -f "changelogs/latest.md" ]; then
+            git rm changelogs/latest.md
+            echo "Deleted changelogs/latest.md"
+          fi
+
+          yarn gen-changelog -q > changelogs/latest.md
 
           # Check if latest.md is empty or only whitespace.
           if [ -s "changelogs/latest.md" ]; then
-             echo "has_content=true" >> $GITHUB_OUTPUT
+            echo "has_content=true" >> $GITHUB_OUTPUT
           else
-             echo "has_content=false" >> $GITHUB_OUTPUT
+            echo "has_content=false" >> $GITHUB_OUTPUT
+            if [ -f "changelogs/latest.md" ]; then
+              git rm changelogs/latest.md
+            fi
+          fi
+
+          yarn update-docs-changelog
+
+          # Commit any changes in changelogs if there are changes.
+          if [ -n "$(git status --porcelain)" ]; then
+            git add changelogs/ docs/reference/change-log.md
+            git commit -m "ci: commit changes to changelogs."
           fi
 
       - name: Create and Push Staging Branch
@@ -55,19 +73,9 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           BRANCH_NAME="staging-${SHORT_SHA}"
-          
-          # Configure git identity
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Create branch.
           git checkout -b "$BRANCH_NAME"
-
-          # Commit the updated latest.md if it has content.
-          if [ "${{ steps.gen_changelog.outputs.has_content }}" == "true" ]; then
-            git add changelogs/latest.md
-            git commit -m "ci: update latest.md with unreleased changes"
-          fi
 
           # Push branch
           git push origin "$BRANCH_NAME"
@@ -81,7 +89,7 @@ jobs:
           BRANCH_NAME=${{ steps.create_branch.outputs.branch_name }}
           LAST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "")
           TITLE="Staging for release: $LAST_TAG"
-          
+
           if [ "${{ steps.gen_changelog.outputs.has_content }}" == "true" ]; then
             # Read the file content into a variable for the PR body
             BODY_CONTENT=$(cat changelogs/latest.md)
@@ -89,7 +97,7 @@ jobs:
           else
             BODY_CONTENT="Release $LAST_TAG of PhLynx."
           fi
-          
+
           gh pr create \
             --base production \
             --head "$BRANCH_NAME" \
