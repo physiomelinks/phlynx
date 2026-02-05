@@ -12,7 +12,7 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" />
+        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleCtrlSave" />
       </div>
 
       <div class="status-bar">
@@ -100,6 +100,18 @@ const isDirty = computed(() => {
 const dialogTitle = computed(() => {
   return `Editing: ${props.nodeData.name} (${props.nodeData.componentName} - ${props.nodeData.sourceFile})`
 })
+
+const handleCtrlSave = () => {
+  if (isInternalModule.value) {
+    if (isDirty.value) {
+      showSaveAsPrompt.value = true
+    }
+  } else {
+    if (isDirty.value) {
+      handleDirectSave()
+    }
+  }
+}
 
 // Load Data when Dialog Opens
 watch(

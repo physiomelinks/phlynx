@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, ref, watch, onMounted, onUnmounted } from 'vue'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
@@ -56,7 +56,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'save'])
 
 const cellmlText = ref('')
 
@@ -113,6 +113,12 @@ const equationAlignedWrap = ViewPlugin.fromClass(
           const text = line.text
 
           if (text.trimStart().startsWith("//")) {
+            pos = line.to + 1
+            continue
+          }
+
+          // Skip alignment for ode lines
+          if (text.trimStart().startsWith("ode")) {
             pos = line.to + 1
             continue
           }
@@ -202,6 +208,17 @@ const handleStateUpdate = (viewUpdate) => {
     cursorLine.value = line.number
     updatePreview()
   }
+}
+
+const handleKeyDown = (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault()
+    handleSave()
+  }
+}
+
+const handleSave = () => {
+  emit('save')
 }
 
 const updatePreview = () => {
@@ -306,6 +323,15 @@ watch(
   },
   { immediate: true }
 )
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
+
 </script>
 
 <style scoped>
