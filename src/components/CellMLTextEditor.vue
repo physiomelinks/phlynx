@@ -10,13 +10,15 @@
 
       <div class="panel">
         <h3>CellML Text</h3>
-        <textarea
+        <codemirror
           v-model="cellmlText"
-          class="code-view"
-          @click="onCursorMove"
-          @keyup="onCursorMove"
-          spellcheck="false"
-        ></textarea>
+          :style="{ height: '400px' }"
+          :autofocus="true"
+          :indent-with-tab="true"
+          :tab-size="2"
+          :extensions="extensions"
+          @update="handleStateUpdate">
+        </codemirror>
       </div>
     </div>
   </div>
@@ -27,6 +29,9 @@ import { nextTick, ref, watch } from 'vue'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
+import { Codemirror } from 'vue-codemirror'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { indentOnInput, StreamLanguage } from '@codemirror/language'
 import { CellMLTextGenerator } from 'cellml-text-editor'
 import { CellMLTextParser } from 'cellml-text-editor'
 import { CellMLLatexGenerator } from 'cellml-text-editor'
@@ -46,6 +51,23 @@ const emit = defineEmits(['update:modelValue'])
 
 const cellmlText = ref('')
 
+const cellmlLanguage = StreamLanguage.define({
+  token: (stream) => {
+    if (stream.match(/(?:def|model|as|var|comp|enddef|ode|units|interface|public|private|none)\b/)) return "keyword"
+    if (stream.match(/(?:second|dimensionless|metre|per_m|Js_per_m3|J_per_m3)\b/)) return "type"
+    if (stream.match(/\d+(?:\.\d+)?/)) return "number"
+    stream.next()
+    return null
+  },
+  indent: (state, textAfter) => {
+    // Basic indentation logic: if the line starts with 'enddef', unindent
+    if (textAfter.startsWith("enddef")) return 0
+    return null // use default
+  }
+})
+
+const extensions = [oneDark, cellmlLanguage, indentOnInput()]
+
 const generator = new CellMLTextGenerator()
 const parser = new CellMLTextParser()
 const latexGen = new CellMLLatexGenerator()
@@ -58,13 +80,16 @@ let currentDoc = null
 const cursorLine = ref(1)
 const latexPreview = ref('')
 
-const onCursorMove = (e) => {
-  const textarea = e.target
-  // Calculate line number from selectionStart.
-  const textUpToCursor = textarea.value.substr(0, textarea.selectionStart)
-  cursorLine.value = textUpToCursor.split('\n').length
+const handleStateUpdate = (viewUpdate) => {
+  if (viewUpdate.selectionSet || viewUpdate.docChanged) {
+    const state = viewUpdate.state
+    const pos = state.selection.main.head
+    const line = state.doc.lineAt(pos)
 
-  updatePreview()
+    // Update cursorLine for your LaTeX preview logic
+    cursorLine.value = line.number
+    updatePreview()
+  }
 }
 
 const updatePreview = () => {
@@ -148,36 +173,40 @@ watch(
 </script>
 
 <style scoped>
+/* Main layout container */
 .container {
   display: flex;
   height: 100%;
   gap: 20px;
   padding: 20px;
   font-family: sans-serif;
-  box-sizing: border-box; 
+  box-sizing: border-box;
 }
+
+/* Panel structure for Preview and Editor */
 .panel {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Prevents panels from expanding beyond container */
 }
-textarea,
-.code-view {
+
+/* CodeMirror Specific Styles */
+/* Use :deep to target the internal editor structure */
+:deep(.cm-editor) {
   flex: 1;
-  background: #f4f4f4;
   border: 1px solid #ccc;
-  padding: 10px;
-  font-family: monospace;
+  font-family: 'Fira Code', monospace; /* Or your preferred mono font */
   font-size: 14px;
-  white-space: pre;
+  outline: none !important;
+}
+
+/* Ensure the content area fills the editor space */
+:deep(.cm-scroller) {
   overflow: auto;
-  outline: none;
-  resize: none;
 }
-.code-view {
-  background: #1e1e1e;
-  color: #d4d4d4;
-}
+
+/* Formatting for the LaTeX Preview area */
 .preview-pane {
   height: 100px;
   background: white;
@@ -186,12 +215,16 @@ textarea,
   align-items: center;
   justify-content: center;
   font-size: 1.5em;
+  margin-bottom: 10px;
 }
+
 .placeholder {
   color: #ccc;
   font-style: italic;
   font-size: 0.8em;
 }
+
+/* Error banner styling */
 .error-banner {
   background-color: #ffebee;
   color: #c62828;
@@ -199,9 +232,15 @@ textarea,
   border-bottom: 2px solid #ef9a9a;
   font-family: monospace;
   font-size: 0.9em;
-  min-height: 40px; /* Prevent jumpiness */
+  min-height: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  margin-bottom: 10px;
+}
+
+/* Optional: Syntax highlighting color overrides if needed */
+:deep(.cm-keyword) {
+  font-weight: bold;
 }
 </style>
