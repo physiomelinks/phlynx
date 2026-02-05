@@ -15,7 +15,7 @@
           :style="{ height: '400px' }"
           :autofocus="true"
           :indent-with-tab="true"
-          :tab-size="2"
+          :tab-size="4"
           :extensions="extensions"
           @update="handleStateUpdate">
         </codemirror>
@@ -52,17 +52,39 @@ const emit = defineEmits(['update:modelValue'])
 const cellmlText = ref('')
 
 const cellmlLanguage = StreamLanguage.define({
-  token: (stream) => {
+  startState: () => ({ indentLevel: 0 }),
+
+  token: (stream, state) => {
+
+    // Detect structural keywords
+    if (stream.match(/\b(def)\b/)) {
+      state.indentLevel++ // Increase indent for the NEXT line
+      return "keyword"
+    }
+
+    if (stream.match(/\b(enddef)\b/)) {
+      state.indentLevel-- // Decrease indent
+      return "keyword"
+    }
+
     if (stream.match(/(?:def|model|as|var|comp|enddef|ode|units|interface|public|private|none)\b/)) return "keyword"
     if (stream.match(/(?:second|dimensionless|metre|per_m|Js_per_m3|J_per_m3)\b/)) return "type"
     if (stream.match(/\d+(?:\.\d+)?/)) return "number"
     stream.next()
     return null
   },
-  indent: (state, textAfter) => {
-    // Basic indentation logic: if the line starts with 'enddef', unindent
-    if (textAfter.startsWith("enddef")) return 0
-    return null // use default
+  indent: (state, textAfter, context) => {
+    // context.unit is the value from your :tab-size="2" prop
+    const unit = context.unit 
+    
+    // Check if the user is currently typing the closing keyword on THIS line
+    const isClosing = textAfter.trim().startsWith("enddef")
+
+    // If we are currently on an 'enddef' line, we temporarily subtract 1 
+    // so it aligns with its parent 'def' instead of the content inside.
+    const currentIndent = isClosing ? Math.max(0, state.indentLevel - 1) : state.indentLevel
+    
+    return currentIndent * unit
   }
 })
 
@@ -189,6 +211,49 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 0; /* Prevents panels from expanding beyond container */
+}
+
+:deep(.cm-editor) {
+  flex: 1;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  background-color: #282c34 !important; /* One Dark Background */
+}
+
+/* Custom Syntax Colors */
+
+/* 1. Structural Keywords (def, var, model) - Soft Blue/Purple */
+:deep(.cm-keyword) {
+  color: #c678dd !important;
+  font-weight: bold;
+}
+
+/* 2. Units / Types - Bright Yellow/Orange */
+:deep(.cm-type) {
+  color: #e5c07b !important;
+}
+
+/* 3. Numbers - Light Red/Salmon */
+:deep(.cm-number) {
+  color: #d19a66 !important;
+}
+
+/* 4. Visibility (public, private, interface) - Cyan/Teal */
+:deep(.cm-atom) {
+  color: #56b6c2 !important;
+  font-style: italic;
+}
+
+/* 5. Variable names (default text) - Off White */
+:deep(.cm-content) {
+  color: #abb2bf;
+}
+
+/* 6. Active line highlight */
+:deep(.cm-activeLine) {
+  background-color: #2c313c !important;
 }
 
 /* CodeMirror Specific Styles */
