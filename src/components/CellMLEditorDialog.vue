@@ -12,7 +12,7 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleCtrlSave" />
+        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleCtrlSave" @update:model-value="handleEditorUpdate" />
       </div>
 
       <div class="status-bar">
@@ -100,6 +100,10 @@ const isDirty = computed(() => {
 const dialogTitle = computed(() => {
   return `Editing: ${props.nodeData.name} (${props.nodeData.componentName} - ${props.nodeData.sourceFile})`
 })
+
+const handleEditorUpdate = (updatedCode) => {
+  currentCode.value = updatedCode
+}
 
 const handleCtrlSave = () => {
   if (isInternalModule.value) {
