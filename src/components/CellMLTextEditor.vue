@@ -13,14 +13,8 @@
     <!-- Editor Panel with top padding to account for fixed preview -->
     <div class="panel editor-panel">
       <h3>CellML Text</h3>
-      <codemirror
-        v-model="cellmlText"
-        :style="{ height: '400px' }"
-        :autofocus="true"
-        :indent-with-tab="true"
-        :tab-size="4"
-        :extensions="extensions"
-        @update="handleStateUpdate">
+      <codemirror v-model="cellmlText" :style="{ height: '400px' }" :autofocus="true" :indent-with-tab="true"
+        :tab-size="4" :extensions="extensions" @update="handleStateUpdate">
       </codemirror>
     </div>
   </div>
@@ -33,9 +27,9 @@ import 'katex/dist/katex.min.css'
 
 import { Codemirror } from 'vue-codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { EditorView, ViewPlugin, Decoration, DecorationSet } from '@codemirror/view'
-import { indentUnit } from '@codemirror/language'
-import { 
+import { EditorView, ViewPlugin, Decoration } from '@codemirror/view'
+
+import {
   LanguageSupport,
   LRLanguage,
   indentNodeProp,
@@ -72,7 +66,7 @@ const cellmlLanguage = LRLanguage.define({
           const lineText = context.textAfter.trim();
 
           if (lineText.startsWith("enddef")) {
-             return context.baseIndent; 
+            return context.baseIndent;
           }
 
           return context.baseIndent + context.unit;
@@ -93,57 +87,94 @@ function cellml() {
   return new LanguageSupport(cellmlLanguage)
 }
 
-// Plugin to add hanging indent to wrapped lines
-const hangingIndent = ViewPlugin.fromClass(class {
-  constructor(view) {
-    this.decorations = this.buildDecorations(view)
-  }
-
-  update(update) {
-    if (update.docChanged || update.viewportChanged) {
-      this.decorations = this.buildDecorations(update.view)
+const equationAlignedWrap = ViewPlugin.fromClass(
+  class {
+    constructor(view) {
+      this.decorations = this.build(view)
     }
-  }
 
-  buildDecorations(view) {
-    const decorations = []
-    for (let { from, to } of view.visibleRanges) {
-      for (let pos = from; pos <= to;) {
-        const line = view.state.doc.lineAt(pos)
-        const text = line.text
-        
-        // Count leading spaces/tabs
-        let indent = 0
-        for (let i = 0; i < text.length; i++) {
-          if (text[i] === ' ') indent++
-          else if (text[i] === '\t') indent += 4
-          else break
-        }
-        
-        // Add decoration with padding for wrapped lines
-        if (indent > 0) {
-          const indentPx = indent * 0.6 // Approximate character width in 'ch' units
-          decorations.push(
-            Decoration.line({
-              attributes: { style: `padding-left: ${indentPx}ch; text-indent: -${indentPx}ch;` }
-            }).range(line.from)
-          )
-        }
-        
-        pos = line.to + 1
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.build(update.view)
       }
     }
-    return Decoration.set(decorations)
+
+    build(view) {
+      const decorations = []
+      const charWidth = view.defaultCharacterWidth
+      const tabSize = view.state.tabSize
+
+      for (const { from, to } of view.visibleRanges) {
+        for (let pos = from; pos <= to;) {
+          const line = view.state.doc.lineAt(pos)
+          const text = line.text
+
+          if (text.trimStart().startsWith("//")) {
+            pos = line.to + 1
+            continue
+          }
+
+          let column = 0
+          let eqColumn = null
+
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i]
+
+            if (ch === " ") {
+              column++
+            } else if (ch === "\t") {
+              column += tabSize
+            } else {
+              // First non-whitespace reached
+              break
+            }
+          }
+
+          // Continue scanning for '='
+          let scanColumn = column
+          for (let i = column; i < text.length; i++) {
+            const ch = text[i]
+
+            if (ch === "=") {
+              eqColumn = scanColumn + 1 // align after '='
+              break
+            }
+
+            if (ch === "\t") scanColumn += tabSize
+            else scanColumn++
+          }
+
+          if (eqColumn !== null) {
+            const px = eqColumn * charWidth
+            decorations.push(
+              Decoration.line({
+                attributes: {
+                  style: `
+                    padding-left:${px}px !important;
+                    text-indent:-${px}px !important;
+                  `
+                }
+              }).range(line.from)
+            )
+          }
+
+          pos = line.to + 1
+        }
+      }
+
+      return Decoration.set(decorations)
+    }
+  },
+  {
+    decorations: v => v.decorations
   }
-}, {
-  decorations: v => v.decorations
-})
+)
 
 const extensions = [
-  oneDark, 
-  cellml(), 
+  oneDark,
+  cellml(),
   EditorView.lineWrapping,
-  hangingIndent
+  equationAlignedWrap
 ]
 
 const generator = new CellMLTextGenerator()
@@ -210,21 +241,21 @@ const updatePreview = () => {
     const latex = latexGen.convert(bestMatch)
     latexPreview.value = latex
     if (latexContainer.value) {
-      katex.render(latex, latexContainer.value, { 
-        throwOnError: false, 
+      katex.render(latex, latexContainer.value, {
+        throwOnError: false,
         displayMode: true,
         maxSize: 10 // Limit font size to prevent overflow (default is 10, can adjust lower)
       })
-      
+
       // Check if content overflows width and scale down if needed
       nextTick(() => {
         const container = latexContainer.value
         const content = container.querySelector('.katex-html')
-        
+
         if (content) {
           const containerWidth = container.clientWidth - 30 // width minus padding
           const contentWidth = content.scrollWidth
-          
+
           // Calculate scale to fit width
           if (contentWidth > containerWidth) {
             const scale = containerWidth / contentWidth
@@ -293,7 +324,7 @@ watch(
   z-index: 10;
   background: white;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Panel structure for Editor */
@@ -301,7 +332,8 @@ watch(
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Prevents panels from expanding beyond container */
+  min-height: 0;
+  /* Prevents panels from expanding beyond container */
 }
 
 .editor-panel {
@@ -313,7 +345,9 @@ watch(
   flex: 1;
   border-radius: 4px;
   font-size: 14px;
-  overflow: hidden; /* Ensure border-radius is applied to scrolling content */
+  overflow: hidden;
+  /* Ensure border-radius is applied to scrolling content */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :deep(.cm-scroller) {
@@ -323,6 +357,10 @@ watch(
 /* Preserve indentation spacing */
 :deep(.cm-content) {
   tab-size: 4;
+}
+
+.cm-line {
+  white-space: pre-wrap !important;
 }
 
 /* Formatting for the LaTeX Preview area */
