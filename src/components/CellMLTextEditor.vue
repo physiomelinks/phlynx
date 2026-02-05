@@ -30,7 +30,7 @@ import { Codemirror } from 'vue-codemirror'
 // import { githubLight } from '@uiw/codemirror-theme-github'
 //import { monokai } from '@uiw/codemirror-theme-monokai'
 import { sublime } from '@uiw/codemirror-theme-sublime'
-import { EditorView, ViewPlugin, Decoration } from '@codemirror/view'
+import { EditorView, ViewPlugin, Decoration, keymap } from '@codemirror/view'
 
 import {
   LanguageSupport,
@@ -59,6 +59,15 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'save'])
 
 const cellmlText = ref('')
+
+const shiftSpaceKeymap = keymap.of([
+  {
+    key: "Shift-Space",
+    run: (view) => {
+      view.dispatch(view.state.replaceSelection(" "))
+    }
+  }
+])
 
 const cellmlLanguage = LRLanguage.define({
   parser: syntaxParser.configure({
@@ -181,6 +190,7 @@ const equationAlignedWrap = ViewPlugin.fromClass(
 
 const extensions = [
   sublime,
+  shiftSpaceKeymap,
   cellml(),
   EditorView.lineWrapping,
   equationAlignedWrap
