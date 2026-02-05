@@ -1,21 +1,21 @@
 import { styleTags, tags as t } from "@lezer/highlight"
 
 export const cellmlHighlight = styleTags({
-  "def enddef model var units as": t.keyword,
-  "comp": t.keyword,
-  "ode": t.keyword,
+  "def enddef var ode comp model as": t.keyword,
   
+  "units": t.propertyName,
+
   "ComponentName": t.className,
   "VariableName": t.variableName,
   
-  "MathFunction": t.function(t.keyword),
-  "MathConstant": t.atom,
+  "MathFunction": t.function(t.string),
+  "MathConstant": t.string,
   
-  "UnitName": t.typeName,
-  "UnitValue": t.typeName,
+  "UnitName": t.atom,      // Teal/cyan - visually distinct
+  "UnitValue": t.atom,
   
-  "AnnotationKey": t.attributeName,
-  "AnnotationValue": t.atom,
+  "AnnotationKey": t.propertyName,    // Muted, not as prominent
+  "AnnotationValue": t.string,        // Subdued color for metadata values
   
   "Number": t.number,
   "Operator": t.operator,

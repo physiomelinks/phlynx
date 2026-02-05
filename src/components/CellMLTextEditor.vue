@@ -26,7 +26,10 @@ import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
 import { Codemirror } from 'vue-codemirror'
-import { oneDark } from '@codemirror/theme-one-dark'
+//import { oneDark } from '@codemirror/theme-one-dark'
+// import { githubLight } from '@uiw/codemirror-theme-github'
+//import { monokai } from '@uiw/codemirror-theme-monokai'
+import { sublime } from '@uiw/codemirror-theme-sublime'
 import { EditorView, ViewPlugin, Decoration } from '@codemirror/view'
 
 import {
@@ -171,7 +174,7 @@ const equationAlignedWrap = ViewPlugin.fromClass(
 )
 
 const extensions = [
-  oneDark,
+  sublime,
   cellml(),
   EditorView.lineWrapping,
   equationAlignedWrap

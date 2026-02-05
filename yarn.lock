@@ -37,6 +37,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.28.6":
+  version: 7.28.6
+  resolution: "@babel/runtime@npm:7.28.6"
+  checksum: 10c0/358cf2429992ac1c466df1a21c1601d595c46930a13c1d4662fde908d44ee78ec3c183aaff513ecb01ef8c55c3624afe0309eeeb34715672dbfadb7feedb2c0d
+  languageName: node
+  linkType: hard
+
 "@babel/types@npm:^7.28.5":
   version: 7.28.5
   resolution: "@babel/types@npm:7.28.5"
@@ -128,7 +135,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/state@npm:6.x, @codemirror/state@npm:^6.0.0, @codemirror/state@npm:^6.4.0, @codemirror/state@npm:^6.5.0":
+"@codemirror/state@npm:6.x, @codemirror/state@npm:^6.0.0, @codemirror/state@npm:^6.4.0, @codemirror/state@npm:^6.5.0, @codemirror/state@npm:^6.5.4":
   version: 6.5.4
   resolution: "@codemirror/state@npm:6.5.4"
   dependencies:
@@ -149,7 +156,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/view@npm:6.x, @codemirror/view@npm:^6.0.0, @codemirror/view@npm:^6.17.0, @codemirror/view@npm:^6.23.0, @codemirror/view@npm:^6.27.0, @codemirror/view@npm:^6.35.0, @codemirror/view@npm:^6.37.0":
+"@codemirror/view@npm:6.x, @codemirror/view@npm:^6.0.0, @codemirror/view@npm:^6.17.0, @codemirror/view@npm:^6.23.0, @codemirror/view@npm:^6.27.0, @codemirror/view@npm:^6.35.0, @codemirror/view@npm:^6.37.0, @codemirror/view@npm:^6.39.12":
   version: 6.39.12
   resolution: "@codemirror/view@npm:6.39.12"
   dependencies:
@@ -1332,6 +1339,57 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/f1b7c1b99fef9f2fe7f1985ef7426d0cebe48cd031f1780fcdc7451eec7e31ac97028f16f50121a59bcf53086a1fc8c856fd5b7d3e00970e43d92ae27d6b43dc
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-theme-github@npm:^4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-theme-github@npm:4.25.4"
+  dependencies:
+    "@uiw/codemirror-themes": "npm:4.25.4"
+  checksum: 10c0/9ee7fbb0edba250677f36795d56d6f327f4863e59338263d5a45ad3b960c9a1debcec3f3fefd1947ea11df443f3d6053239501c1a33473bff0587ef929a4797d
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-theme-monokai@npm:^4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-theme-monokai@npm:4.25.4"
+  dependencies:
+    "@uiw/codemirror-themes": "npm:4.25.4"
+  checksum: 10c0/2df4fce9616de16ea9a3c6d111d2de1a1806d786a5bd2b51edf3ee927c03b1b1b902a9d2faf72a231126a6ced8d4910d08c316838a8b76fd9d34c259fd85500b
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-theme-nord@npm:^4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-theme-nord@npm:4.25.4"
+  dependencies:
+    "@uiw/codemirror-themes": "npm:4.25.4"
+  checksum: 10c0/c86a7110bd5794a0b390eb3f55e8238eece20329bb96624a9b0cb91d4bdf521290ce447939bb0e1c386953d29250296a507a8c541e82e4751992a59e2521a101
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-theme-sublime@npm:^4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-theme-sublime@npm:4.25.4"
+  dependencies:
+    "@uiw/codemirror-themes": "npm:4.25.4"
+  checksum: 10c0/4593a147db8d86fca832dfa0616ccfe93aa15d601def60e6d13a07aa69d893c4a4b741c0892733ae9f027f07ef79a2ea6ac4f7195ddfe0dc6c5540a8c6a422c1
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-themes@npm:4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-themes@npm:4.25.4"
+  dependencies:
+    "@codemirror/language": "npm:^6.0.0"
+    "@codemirror/state": "npm:^6.0.0"
+    "@codemirror/view": "npm:^6.0.0"
+  peerDependencies:
+    "@codemirror/language": ">=6.0.0"
+    "@codemirror/state": ">=6.0.0"
+    "@codemirror/view": ">=6.0.0"
+  checksum: 10c0/34a2d00fbd84795ee0b0d67c0ec2cc907afc2e85a053fe8f94ed35b149e46df07bda9967c47c8aa92fba5011ead54c1c6f9e073efb78cc9f05e2f2c863a4d8a8
   languageName: node
   linkType: hard
 
@@ -4739,11 +4797,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "phlynx@workspace:."
   dependencies:
+    "@babel/runtime": "npm:^7.28.6"
     "@codemirror/lang-xml": "npm:^6.1.0"
+    "@codemirror/state": "npm:^6.5.4"
     "@codemirror/theme-one-dark": "npm:^6.1.3"
+    "@codemirror/view": "npm:^6.39.12"
     "@dagrejs/dagre": "npm:^1.1.8"
     "@hsorby/changelog": "npm:^3.0.2"
     "@lezer/generator": "npm:^1.8.0"
+    "@uiw/codemirror-theme-github": "npm:^4.25.4"
+    "@uiw/codemirror-theme-monokai": "npm:^4.25.4"
+    "@uiw/codemirror-theme-nord": "npm:^4.25.4"
+    "@uiw/codemirror-theme-sublime": "npm:^4.25.4"
     "@vitejs/plugin-vue": "npm:^6.0.1"
     "@vue-flow/background": "npm:^1.3.2"
     "@vue-flow/controls": "npm:^1.1.3"

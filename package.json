@@ -28,7 +28,7 @@
     "app:pack": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder --dir",
     "app:build": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder",
     "build:glossary": "node src/services/generate/generateGlossaryIndex.js",
-    "build-grammar": "lezer-generator src/syntax/cellml.grammar -o src/syntax/parser.js",    
+    "build-grammar": "lezer-generator src/syntax/cellml.grammar -o src/syntax/parser.js",
     "preview": "yarn build:glossary && vite preview",
     "update-docs-changelog": "node scripts/build-changelog.js"
   },
@@ -45,9 +45,16 @@
     }
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.6",
     "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/state": "^6.5.4",
     "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.39.12",
     "@dagrejs/dagre": "^1.1.8",
+    "@uiw/codemirror-theme-github": "^4.25.4",
+    "@uiw/codemirror-theme-monokai": "^4.25.4",
+    "@uiw/codemirror-theme-nord": "^4.25.4",
+    "@uiw/codemirror-theme-sublime": "^4.25.4",
     "@vue-flow/background": "^1.3.2",
     "@vue-flow/controls": "^1.1.3",
     "@vue-flow/core": "^1.47.0",
