@@ -28,6 +28,7 @@
     "app:pack": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder --dir",
     "app:build": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder",
     "build:glossary": "node src/services/generate/generateGlossaryIndex.js",
+    "build-grammar": "lezer-generator src/syntax/cellml.grammar -o src/syntax/parser.js",    
     "preview": "yarn build:glossary && vite preview",
     "update-docs-changelog": "node scripts/build-changelog.js"
   },
@@ -73,6 +74,7 @@
   },
   "devDependencies": {
     "@hsorby/changelog": "^3.0.2",
+    "@lezer/generator": "^1.8.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12",
