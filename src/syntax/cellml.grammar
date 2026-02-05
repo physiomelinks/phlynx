@@ -115,7 +115,7 @@ MathConstant {
   // Handles integer (10), decimal (10.5), and scientific (1e-5)
   Number { $[0-9]+ ($[.] $[0-9]+)? ($[eE] $[+\-]? $[0-9]+)? }
   
-  Operator { $[+\-*^/] }
+  Operator { $[+-*/] }
   
   space { $[ \t\n\r]+ }
   
