@@ -1,25 +1,27 @@
 <template>
   <div class="container">
-    <div class="panel">
+    <!-- Fixed LaTeX Preview/Error Banner at top -->
+    <div class="fixed-preview">
       <div v-if="errors.length > 0" class="error-banner">
         <div v-for="(err, index) in errors" :key="index">
           <strong>Line {{ err.line }}:</strong> {{ err.message }}
         </div>
       </div>
       <div v-else class="preview-pane" ref="latexContainer"></div>
+    </div>
 
-      <div class="panel">
-        <h3>CellML Text</h3>
-        <codemirror
-          v-model="cellmlText"
-          :style="{ height: '400px' }"
-          :autofocus="true"
-          :indent-with-tab="true"
-          :tab-size="4"
-          :extensions="extensions"
-          @update="handleStateUpdate">
-        </codemirror>
-      </div>
+    <!-- Editor Panel with top padding to account for fixed preview -->
+    <div class="panel editor-panel">
+      <h3>CellML Text</h3>
+      <codemirror
+        v-model="cellmlText"
+        :style="{ height: '400px' }"
+        :autofocus="true"
+        :indent-with-tab="true"
+        :tab-size="4"
+        :extensions="extensions"
+        @update="handleStateUpdate">
+      </codemirror>
     </div>
   </div>
 </template>
@@ -31,6 +33,8 @@ import 'katex/dist/katex.min.css'
 
 import { Codemirror } from 'vue-codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { EditorView, ViewPlugin, Decoration, DecorationSet } from '@codemirror/view'
+import { indentUnit } from '@codemirror/language'
 import { 
   LanguageSupport,
   LRLanguage,
@@ -89,7 +93,58 @@ function cellml() {
   return new LanguageSupport(cellmlLanguage)
 }
 
-const extensions = [oneDark, cellml()]
+// Plugin to add hanging indent to wrapped lines
+const hangingIndent = ViewPlugin.fromClass(class {
+  constructor(view) {
+    this.decorations = this.buildDecorations(view)
+  }
+
+  update(update) {
+    if (update.docChanged || update.viewportChanged) {
+      this.decorations = this.buildDecorations(update.view)
+    }
+  }
+
+  buildDecorations(view) {
+    const decorations = []
+    for (let { from, to } of view.visibleRanges) {
+      for (let pos = from; pos <= to;) {
+        const line = view.state.doc.lineAt(pos)
+        const text = line.text
+        
+        // Count leading spaces/tabs
+        let indent = 0
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] === ' ') indent++
+          else if (text[i] === '\t') indent += 4
+          else break
+        }
+        
+        // Add decoration with padding for wrapped lines
+        if (indent > 0) {
+          const indentPx = indent * 0.6 // Approximate character width in 'ch' units
+          decorations.push(
+            Decoration.line({
+              attributes: { style: `padding-left: ${indentPx}ch; text-indent: -${indentPx}ch;` }
+            }).range(line.from)
+          )
+        }
+        
+        pos = line.to + 1
+      }
+    }
+    return Decoration.set(decorations)
+  }
+}, {
+  decorations: v => v.decorations
+})
+
+const extensions = [
+  oneDark, 
+  cellml(), 
+  EditorView.lineWrapping,
+  hangingIndent
+]
 
 const generator = new CellMLTextGenerator()
 const parser = new CellMLTextParser()
@@ -155,7 +210,31 @@ const updatePreview = () => {
     const latex = latexGen.convert(bestMatch)
     latexPreview.value = latex
     if (latexContainer.value) {
-      katex.render(latex, latexContainer.value, { throwOnError: false, displayMode: true })
+      katex.render(latex, latexContainer.value, { 
+        throwOnError: false, 
+        displayMode: true,
+        maxSize: 10 // Limit font size to prevent overflow (default is 10, can adjust lower)
+      })
+      
+      // Check if content overflows width and scale down if needed
+      nextTick(() => {
+        const container = latexContainer.value
+        const content = container.querySelector('.katex-html')
+        
+        if (content) {
+          const containerWidth = container.clientWidth - 30 // width minus padding
+          const contentWidth = content.scrollWidth
+          
+          // Calculate scale to fit width
+          if (contentWidth > containerWidth) {
+            const scale = containerWidth / contentWidth
+            content.style.transform = `scale(${scale * 0.95})` // 95% for margin
+            content.style.transformOrigin = 'center center'
+          } else {
+            content.style.transform = 'none'
+          }
+        }
+      })
     }
   } else {
     latexPreview.value = ''
@@ -199,14 +278,25 @@ watch(
 /* Main layout container */
 .container {
   display: flex;
+  flex-direction: column;
   height: 100%;
-  gap: 20px;
   padding: 20px;
   font-family: sans-serif;
   box-sizing: border-box;
+  position: relative;
 }
 
-/* Panel structure for Preview and Editor */
+/* Fixed preview at the top */
+.fixed-preview {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Panel structure for Editor */
 .panel {
   flex: 1;
   display: flex;
@@ -214,40 +304,47 @@ watch(
   min-height: 0; /* Prevents panels from expanding beyond container */
 }
 
+.editor-panel {
+  flex: 1;
+  overflow: hidden;
+}
+
 :deep(.cm-editor) {
   flex: 1;
-  border: 1px solid #333;
   border-radius: 4px;
-  font-family: 'Fira Code', 'Consolas', monospace;
   font-size: 14px;
-  background-color: #282c34 !important; /* One Dark Background */
+  overflow: hidden; /* Ensure border-radius is applied to scrolling content */
 }
 
-/* CodeMirror Specific Styles */
-/* Use :deep to target the internal editor structure */
-:deep(.cm-editor) {
-  flex: 1;
-  border: 1px solid #ccc;
-  font-family: 'Fira Code', monospace; /* Or your preferred mono font */
-  font-size: 14px;
-  outline: none !important;
-}
-
-/* Ensure the content area fills the editor space */
 :deep(.cm-scroller) {
-  overflow: auto;
+  border-radius: 4px;
+}
+
+/* Preserve indentation spacing */
+:deep(.cm-content) {
+  tab-size: 4;
 }
 
 /* Formatting for the LaTeX Preview area */
 .preview-pane {
-  height: 100px;
+  height: 120px;
+  padding: 15px;
   background: white;
-  border-bottom: 2px solid #ddd;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5em;
-  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.preview-pane :deep(.katex-display) {
+  margin: 0;
+}
+
+.preview-pane :deep(.katex-html) {
+  display: inline-block;
 }
 
 .placeholder {
@@ -261,18 +358,14 @@ watch(
   background-color: #ffebee;
   color: #c62828;
   padding: 10px 15px;
-  border-bottom: 2px solid #ef9a9a;
+  border: 1px solid #ef9a9a;
+  border-radius: 4px;
   font-family: monospace;
   font-size: 0.9em;
-  min-height: 40px;
+  height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-bottom: 10px;
-}
-
-/* Optional: Syntax highlighting color overrides if needed */
-:deep(.cm-keyword) {
-  font-weight: bold;
+  overflow-y: auto;
 }
 </style>
