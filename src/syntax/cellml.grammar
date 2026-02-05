@@ -1,0 +1,123 @@
+@top Program { expression* }
+
+@skip { space }
+
+expression {
+  Definition |
+  VariableDeclaration |
+  OdeEquation |
+  Equation |
+  Model |
+  Units
+}
+
+// --- EQUATION LOGIC ---
+
+// 1. ODE Rule (Explicit ode(var, var) = ...)
+OdeEquation {
+  kw<"ode"> "(" identifier "," identifier ")" "=" MathExpression ";"?
+}
+
+// 2. Standard Equation Rule
+Equation {
+  identifier "=" MathExpression ";"?
+}
+
+// 3. Recursive Math Expressions
+MathExpression {
+  MathTerm (Operator MathTerm)*
+}
+
+MathTerm {
+  (
+    CallExpression | 
+    MathConstant   | 
+    Number         | 
+    identifier     | 
+    ParenExpression
+  ) 
+  UnitAnnotation?
+}
+
+ParenExpression {
+  "(" MathExpression ")"
+}
+
+// 4. Function Calls (e.g., power(a, b), sin(x))
+CallExpression {
+  (MathFunction | identifier) "(" ArgList ")"
+}
+
+ArgList {
+  (MathExpression ("," MathExpression)*)?
+}
+
+// 5. Inline Unit Annotations
+UnitAnnotation {
+  "{" kw<"units"> ":" UnitValue { identifier } "}"
+}
+
+// --- STRUCTURES ---
+
+Definition {
+  kw<"def"> kw<"comp"> ComponentName { identifier } kw<"as"> expression* kw<"enddef">
+}
+
+VariableDeclaration {
+  kw<"var"> VariableName { identifier } ":" UnitName { identifier } ( Annotations )? ";"
+}
+
+Annotations {
+  "{" AnnotationPair ("," AnnotationPair)* "}"
+}
+
+AnnotationPair {
+  AnnotationKey { identifier } ":" (AnnotationValue { identifier } | Number)
+}
+
+Model { 
+  kw<"model"> kw<"as"> identifier expression* kw<"enddef"> 
+}
+
+Units { 
+  kw<"units"> identifier kw<"as"> identifier ( "{" expression* "}" )? 
+}
+
+// --- KEYWORDS & SPECIALIZATION Helpers ---
+
+// Helper for generic keywords (def, var, model, etc.)
+kw<word> { @specialize[@name={word}]<identifier, word> }
+
+// Helper for Math Functions (forces node name to be "MathFunction")
+fn<word> { @specialize[@name=MathFunction]<identifier, word> }
+
+// Helper for Constants (forces node name to be "MathConstant")
+const<word> { @specialize[@name=MathConstant]<identifier, word> }
+
+// --- SPECIFIC LISTS ---
+
+MathFunction { 
+  fn<"sin"> | fn<"cos"> | fn<"tan"> | fn<"sec"> | fn<"csc"> | fn<"cot"> | 
+  fn<"sinh"> | fn<"cosh"> | fn<"tanh"> | fn<"sech"> | fn<"csch"> | fn<"coth"> |
+  fn<"arcsin"> | fn<"arccos"> | fn<"arctan"> | fn<"arcsec"> | fn<"arccsc"> | fn<"arccot"> |
+  fn<"arcsinh"> | fn<"arccosh"> | fn<"arctanh"> | fn<"arcsech"> | fn<"arccsch"> | fn<"arccoth"> |
+  fn<"exp"> | fn<"log"> | fn<"ln"> | fn<"power"> | fn<"sqrt"> | fn<"abs"> | 
+  fn<"floor"> | fn<"ceiling"> | fn<"min"> | fn<"max"> | fn<"rem"> | fn<"diff"> | fn<"mode">
+}
+
+MathConstant {
+  const<"pi"> | const<"exponentiale"> | const<"true"> | const<"false"> | const<"infinity"> | const<"NaN">
+}
+
+@tokens {
+  identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+  
+  // Handles integer (10), decimal (10.5), and scientific (1e-5)
+  Number { $[0-9]+ ($[.] $[0-9]+)? ($[eE] $[+\-]? $[0-9]+)? }
+  
+  Operator { $[+\-*^/] }
+  
+  space { $[ \t\n\r]+ }
+  
+  "(" ")" "{" "}" "=" ":" ";" ","
+}

@@ -31,7 +31,15 @@ import 'katex/dist/katex.min.css'
 
 import { Codemirror } from 'vue-codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { indentOnInput, StreamLanguage } from '@codemirror/language'
+import { 
+  LanguageSupport,
+  LRLanguage,
+  indentNodeProp,
+  foldNodeProp,
+  foldInside,
+} from '@codemirror/language'
+import { parser as syntaxParser } from '../syntax/parser.js'
+import { cellmlHighlight } from "../syntax/highlight.js"
 import { CellMLTextGenerator } from 'cellml-text-editor'
 import { CellMLTextParser } from 'cellml-text-editor'
 import { CellMLLatexGenerator } from 'cellml-text-editor'
@@ -51,44 +59,37 @@ const emit = defineEmits(['update:modelValue'])
 
 const cellmlText = ref('')
 
-const cellmlLanguage = StreamLanguage.define({
-  startState: () => ({ indentLevel: 0 }),
+const cellmlLanguage = LRLanguage.define({
+  parser: syntaxParser.configure({
+    props: [
+      cellmlHighlight,
+      indentNodeProp.add({
+        "Definition Model": context => {
+          const lineText = context.textAfter.trim();
 
-  token: (stream, state) => {
+          if (lineText.startsWith("enddef")) {
+             return context.baseIndent; 
+          }
 
-    // Detect structural keywords
-    if (stream.match(/\b(def)\b/)) {
-      state.indentLevel++ // Increase indent for the NEXT line
-      return "keyword"
-    }
-
-    if (stream.match(/\b(enddef)\b/)) {
-      state.indentLevel-- // Decrease indent
-      return "keyword"
-    }
-
-    if (stream.match(/(?:def|model|as|var|comp|enddef|ode|units|interface|public|private|none)\b/)) return "keyword"
-    if (stream.match(/(?:second|dimensionless|metre|per_m|Js_per_m3|J_per_m3)\b/)) return "type"
-    if (stream.match(/\d+(?:\.\d+)?/)) return "number"
-    stream.next()
-    return null
-  },
-  indent: (state, textAfter, context) => {
-    // context.unit is the value from your :tab-size="2" prop
-    const unit = context.unit 
-    
-    // Check if the user is currently typing the closing keyword on THIS line
-    const isClosing = textAfter.trim().startsWith("enddef")
-
-    // If we are currently on an 'enddef' line, we temporarily subtract 1 
-    // so it aligns with its parent 'def' instead of the content inside.
-    const currentIndent = isClosing ? Math.max(0, state.indentLevel - 1) : state.indentLevel
-    
-    return currentIndent * unit
+          return context.baseIndent + context.unit;
+        }
+      }),
+      foldNodeProp.add({
+        "Definition": foldInside
+      })
+    ]
+  }),
+  languageData: {
+    commentTokens: { line: "//" },
+    indentOnInput: /^\s*enddef$/ // Helps with auto-indenting when typing 'enddef'
   }
 })
 
-const extensions = [oneDark, cellmlLanguage, indentOnInput()]
+function cellml() {
+  return new LanguageSupport(cellmlLanguage)
+}
+
+const extensions = [oneDark, cellml()]
 
 const generator = new CellMLTextGenerator()
 const parser = new CellMLTextParser()
@@ -220,40 +221,6 @@ watch(
   font-family: 'Fira Code', 'Consolas', monospace;
   font-size: 14px;
   background-color: #282c34 !important; /* One Dark Background */
-}
-
-/* Custom Syntax Colors */
-
-/* 1. Structural Keywords (def, var, model) - Soft Blue/Purple */
-:deep(.cm-keyword) {
-  color: #c678dd !important;
-  font-weight: bold;
-}
-
-/* 2. Units / Types - Bright Yellow/Orange */
-:deep(.cm-type) {
-  color: #e5c07b !important;
-}
-
-/* 3. Numbers - Light Red/Salmon */
-:deep(.cm-number) {
-  color: #d19a66 !important;
-}
-
-/* 4. Visibility (public, private, interface) - Cyan/Teal */
-:deep(.cm-atom) {
-  color: #56b6c2 !important;
-  font-style: italic;
-}
-
-/* 5. Variable names (default text) - Off White */
-:deep(.cm-content) {
-  color: #abb2bf;
-}
-
-/* 6. Active line highlight */
-:deep(.cm-activeLine) {
-  background-color: #2c313c !important;
 }
 
 /* CodeMirror Specific Styles */
