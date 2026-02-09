@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     title="Edit Parameters"
-    width="850px"
+    width="800px"
     @closed="closeDialog"
     teleported
     :close-on-click-modal="!isLoading"
@@ -28,6 +28,20 @@
               <el-option label="Units" value="units" />
               <el-option label="Type" value="type" /> </el-select></template
         ></el-input>
+        <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center">
+          <span>Bulk Update Type:</span>
+          <el-select v-model="bulkTypeValue" placeholder="Select type..." style="width: 200px">
+            <el-option
+              v-for="types in parameterTypeOptions"
+              :key="types.value"
+              :label="types.label"
+              :value="types.value"
+            />
+          </el-select>
+          <el-button type="primary" :disabled="selectedRows.length === 0" @click="applyBulkType">
+            Apply to {{ selectedRows.length }} selected
+          </el-button>
+        </div>
         <el-table
           ref="parametersTable"
           :data="filteredParameterRows"
@@ -36,10 +50,12 @@
           :default-sort="{ prop: 'value', order: 'ascending' }"
           @sort-change="handleSortChange"
           @change="handleEntryChange"
+          @selection-change="handleSelectionChange"
         >
+          <el-table-column type="selection" width="55" />
           <el-table-column prop="name" label="Variable" width="180" sortable="custom" />
 
-          <el-table-column prop="value" label="Value" min-width="250" sortable="custom">
+          <el-table-column prop="value" label="Value" min-width="50" sortable="custom">
             <template #default="scope">
               <el-input
                 v-if="!isEditableVariableType(scope.row.type)"
@@ -112,6 +128,7 @@ import {
   ElButton,
   ElAlert,
   ElTooltip,
+  ElMessageBox,
 } from 'element-plus'
 import { Warning } from '@element-plus/icons-vue'
 import { useVueFlow } from '@vue-flow/core'
@@ -136,6 +153,8 @@ const loadingText = ref('Loading parameters...')
 const hasVariables = ref(false)
 const parametersTable = ref(null)
 const somethingChanged = ref(false)
+const selectedRows = ref([])
+const bulkTypeValue = ref('')
 let variables = []
 
 const { getNodes, updateNodeData } = useVueFlow()
@@ -235,6 +254,8 @@ watch(
       isLoading.value = true
       hasVariables.value = true
       somethingChanged.value = false
+      selectedRows.value = []
+      bulkTypeValue.value = ''
 
       await new Promise((resolve) => setTimeout(resolve, 50))
 
@@ -264,6 +285,25 @@ function handleTypeChange(row) {
 
 function handleEntryChange() {
   somethingChanged.value = true
+}
+
+function handleSelectionChange(selection) {
+  selectedRows.value = selection
+}
+
+function applyBulkType() {
+  if (!bulkTypeValue.value || selectedRows.value.length === 0) return
+
+  selectedRows.value.forEach((row) => {
+    row.type = bulkTypeValue.value
+    handleTypeChange(row)
+  })
+
+  handleEntryChange()
+  
+  // Clear selections and bulk type after applying
+  parametersTable.value.clearSelection()
+  bulkTypeValue.value = ''
 }
 
 /**
@@ -334,7 +374,25 @@ function closeDialog() {
   emit('update:modelValue', false)
 }
 
-function handleConfirm() {
+async function handleConfirm() {
+  // Check if user has selections and a bulk type chosen but hasn't applied
+  if (selectedRows.value.length > 0 && bulkTypeValue.value) {
+    try {
+      await ElMessageBox.confirm(
+        `You have ${selectedRows.value.length} row(s) selected with bulk type "${bulkTypeValue.value}" that hasn't been applied. Do you want to continue without applying these changes?`,
+        'Unapplied Bulk Changes',
+        {
+          confirmButtonText: 'Save Without Applying',
+          cancelButtonText: 'Go Back',
+          type: 'warning',
+        }
+      )
+    } catch {
+      // User clicked "Go Back" or closed the dialog
+      return
+    }
+  }
+
   parameterRows.value.forEach((row) => {
     // Only save if it's a parameter type and has a value
     if (isEditableVariableType(row.type)) {
