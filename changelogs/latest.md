@@ -1,13 +1,37 @@
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-03
+###### Includes changes up to 2026-02-09
+
+#### Not Specified
+* Temp disable of limited port option selection by [@jmdowrick](https://github.com/jmdowrick) in [#223](https://github.com/physiomelinks/phlynx/pull/223)
+* Add report issue link to the work bench by [@jmdowrick](https://github.com/jmdowrick) in [#212](https://github.com/physiomelinks/phlynx/pull/212)
+* Fix screenshot bug by [@jmdowrick](https://github.com/jmdowrick) in [#216](https://github.com/physiomelinks/phlynx/pull/216)
+* Adjust border of module nodes by [@jmdowrick](https://github.com/jmdowrick) in [#211](https://github.com/physiomelinks/phlynx/pull/211)
+
+
+#### New Features
+* Load resources externally using Jsdelivr by [@hsorby](https://github.com/hsorby) in [#230](https://github.com/physiomelinks/phlynx/pull/230)
+* Add tool tips to module node by [@jmdowrick](https://github.com/jmdowrick) in [#210](https://github.com/physiomelinks/phlynx/pull/210)
+* Add clear workspace button by [@jmdowrick](https://github.com/jmdowrick) in [#208](https://github.com/physiomelinks/phlynx/pull/208)
+* Add edit parameter dialog by [@jmdowrick](https://github.com/jmdowrick) in [#199](https://github.com/physiomelinks/phlynx/pull/199)
+* OpenCORr ready link by [@hsorby](https://github.com/hsorby) in [#198](https://github.com/physiomelinks/phlynx/pull/198)
+
 
 #### Fixed Bugs
+* Bug fix positionless vessel array by [@jmdowrick](https://github.com/jmdowrick) in [#228](https://github.com/physiomelinks/phlynx/pull/228)
+* Allow shift + space to enter a space in CellML Text Editor. by [@hsorby](https://github.com/hsorby) in [#227](https://github.com/physiomelinks/phlynx/pull/227)
+* Add public and private to import parser by [@jmdowrick](https://github.com/jmdowrick) in [#219](https://github.com/physiomelinks/phlynx/pull/219)
+* Add edit parameter dialog by [@jmdowrick](https://github.com/jmdowrick) in [#199](https://github.com/physiomelinks/phlynx/pull/199)
+* Fix alignment between selection box and module node by [@jmdowrick](https://github.com/jmdowrick) in [#205](https://github.com/physiomelinks/phlynx/pull/205)
+* Bug fix module name equivalence check by [@jmdowrick](https://github.com/jmdowrick) in [#204](https://github.com/physiomelinks/phlynx/pull/204)
 * Fix bug with using asteisk in version for non-release state by [@hsorby](https://github.com/hsorby) in [#192](https://github.com/physiomelinks/phlynx/pull/192)
 * Use changelogs/latest.md to determine if application is not at a release point by [@hsorby](https://github.com/hsorby) in [#189](https://github.com/physiomelinks/phlynx/pull/189)
 
 
 #### Maintenance Work
+* Use syntax highlighting from CellML Text library by [@hsorby](https://github.com/hsorby) in [#225](https://github.com/physiomelinks/phlynx/pull/225)
+* Add clear workspace button by [@jmdowrick](https://github.com/jmdowrick) in [#208](https://github.com/physiomelinks/phlynx/pull/208)
+* Add select all on ctrl+A command by [@jmdowrick](https://github.com/jmdowrick) in [#201](https://github.com/physiomelinks/phlynx/pull/201)
 * Add a workflow to prepare a staging branch for release. by [@hsorby](https://github.com/hsorby) in [#194](https://github.com/physiomelinks/phlynx/pull/194)
 
 
@@ -17,6 +41,11 @@
   <a href="https://github.com/hsorby">
     <img src="https://avatars.githubusercontent.com/u/778048?u=31d6ee5b17c95630c61a61e7cfe0c008b138b769&v=4&s=100" width="50" height="50"><br>
     <sub>@hsorby</sub>
+  </a>
+</kbd> <kbd>
+  <a href="https://github.com/jmdowrick">
+    <img src="https://avatars.githubusercontent.com/u/146781982?u=94c7295b017c61161e81ba34c929524b31a423c2&v=4&s=100" width="50" height="50"><br>
+    <sub>@jmdowrick</sub>
   </a>
 </kbd>
 
