@@ -11,12 +11,10 @@
 
     <el-card :class="[domainTypeClass, 'module-card']" shadow="hover">
       <div v-if="isMissingParameters" class="status-indicator">
-        <el-tooltip
-          content="No parameter file assigned"
-          placement="top"
-          effect="light"
-        >
-          <el-icon class="warning-icon"><WarningFilled /></el-icon>
+        <el-tooltip content="At least one parameter has not been assigned a value" placement="top" effect="light">
+          <el-icon class="warning-icon">
+            <WarningFilled />
+          </el-icon>
         </el-tooltip>
       </div>
 
@@ -24,79 +22,117 @@
         <span v-if="!isEditing">
           {{ data.name }}
         </span>
-        <el-input
-          v-else
-          ref="inputRef"
-          v-model="editingName"
-          size="small"
-          @blur="saveEdit"
-          @keyup.enter="saveEdit"
-        />
+        <el-input v-else ref="inputRef" v-model="editingName" size="small" @blur="saveEdit" @keyup.enter="saveEdit" />
       </div>
       <!-- non-editable label showing CellML component and source file (no white box) -->
       <div v-if="data.label" class="module-label">{{ data.label }}</div>
       <div class="button-group">
-        <el-dropdown trigger="click" @command="handleSetDomainType">
-          <el-button size="small" circle class="module-button">
-            <el-icon><Key /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="membrane">Membrane</el-dropdown-item>
-              <el-dropdown-item command="process">Process</el-dropdown-item>
-              <el-dropdown-item command="compartment"
-                >Compartment</el-dropdown-item
-              >
-              <el-dropdown-item command="protein">Protein</el-dropdown-item>
-              <el-dropdown-item command="undefined" divided
-                >Reset to Default</el-dropdown-item
-              >
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-
-        <el-dropdown trigger="click" @command="addPort({ side: $event })">
-          <el-button size="small" circle class="module-button">
-            <el-icon><Place /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="left">Left</el-dropdown-item>
-              <el-dropdown-item command="right">Right</el-dropdown-item>
-              <el-dropdown-item command="top">Top</el-dropdown-item>
-              <el-dropdown-item command="bottom">Bottom</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-
-        <el-button
-          size="small"
-          circle
-          @click="openEditDialog"
-          class="module-button"
+        <el-tooltip
+          effect="dark"
+          content="Set key (colour)"
+          placement="bottom"
+          :show-after="300"
+          :auto-close="1200"
         >
-          <el-icon><Edit /></el-icon>
-        </el-button>
+          <el-dropdown trigger="click" @command="handleSetDomainType" @visible-change="(val) => isDropdownOpen = val">
+            <el-button size="small" circle class="module-button">
+              <el-icon><Key /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="membrane">Membrane</el-dropdown-item>
+                <el-dropdown-item command="process">Process</el-dropdown-item>
+                <el-dropdown-item command="compartment"
+                  >Compartment</el-dropdown-item
+                >
+                <el-dropdown-item command="protein">Protein</el-dropdown-item>
+                <el-dropdown-item command="undefined" divided
+                  >Reset to Default</el-dropdown-item
+                >
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-tooltip>
 
-        <el-button
-          size="small"
-          circle
-          @click="openCellMLEditDialog"
-          class="module-button"
+        <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="Add port node"
+            placement="bottom"
+            :show-after="300"
+            :auto-close="1200"
         >
-          <el-icon><CellMLIcon /></el-icon>
-        </el-button>
+          <el-dropdown trigger="click" @command="addPort({ side: $event })">
+          
+            <el-button size="small" circle class="module-button">
+              <el-icon><Place /></el-icon>
+            </el-button>
+          
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="left">Left</el-dropdown-item>
+                <el-dropdown-item command="right">Right</el-dropdown-item>
+                <el-dropdown-item command="top">Top</el-dropdown-item>
+                <el-dropdown-item command="bottom">Bottom</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-tooltip>
+        <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="Edit port labels"
+            placement="bottom"
+            :show-after="300"
+            :auto-close="1200"
+        >
+          <el-button
+            size="small"
+            circle
+            @click="openEditDialog"
+            class="module-button"
+          >
+            <el-icon><Edit /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="Edit parameters"
+            placement="bottom"
+            :show-after="300"
+            :auto-close="1200"
+        >
+          <el-button size="small" circle @click="openEditParameterDialog" class="module-button">
+            <el-icon><Operation /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-tooltip
+            class="box-item"
+            effect="dark"
+            content="Edit CellML Text"
+            placement="bottom"
+            :show-after="300"
+            :auto-close="1200"
+        >
+          <el-button
+            size="small"
+            circle
+            @click="openCellMLEditDialog"
+            class="module-button"
+            :show-after="300"
+            :auto-close="1200"
+          >
+            <el-icon><CellMLIcon /></el-icon>
+          </el-button>
+        </el-tooltip>
       </div>
     </el-card>
 
     <template v-for="port in data.ports" :key="port.uid" class="port">
-      <el-tooltip
-        class="box-item"
-        effect="dark"
-        :content="port.name"
-        placement="bottom"
-        :show-after="1000"
-      >
+      <el-tooltip class="box-item" effect="dark" :content="port.name" placement="bottom" :show-after="1000">
         <Handle
           :id="getHandleId(port)"
           :ref="'handle_' + port.side + '_' + port.uid"
@@ -138,22 +174,17 @@
 import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import { Handle, useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
-import {
-  Delete,
-  Edit,
-  Key,
-  Place,
-  WarningFilled,
-} from '@element-plus/icons-vue'
+import { Delete, Edit, Key, Place, WarningFilled, Operation } from '@element-plus/icons-vue'
 import CellMLIcon from './icons/CellMLIcon.vue'
 import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
 import { getHandleId, getHandleStyle, portPosition } from '../utils/ports'
-
+import { sanitiseModuleName } from '../utils/nodes'
+import { notify } from '../utils/notify'
+import { isEditableVariableType, isEmpty } from '../utils/variables'
 import '../assets/vueflownode.css'
 
-const { addEdges, edges, removeEdges, updateNodeData, updateNodeInternals } =
-  useVueFlow()
+const { addEdges, edges, removeEdges, updateNodeData, updateNodeInternals, nodes } = useVueFlow()
 const historyStore = useFlowHistoryStore()
 const builderStore = useBuilderStore()
 
@@ -172,7 +203,12 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['open-cellml-editor-dialog', 'open-edit-dialog', 'open-replacement-dialog'])
+const emit = defineEmits([
+  'open-cellml-editor-dialog',
+  'open-edit-dialog',
+  'open-replacement-dialog',
+  'open-parameter-editor-dialog',
+])
 
 const moduleNode = ref(null)
 
@@ -192,23 +228,41 @@ function openCellMLEditDialog() {
     name: props.data.name,
     sourceFile: props.data.sourceFile,
     componentName: props.data.componentName,
+    configIndex: props.data.configIndex,
+  })
+}
+
+function openEditParameterDialog() {
+  emit('open-parameter-editor-dialog', {
+    nodeId: props.id,
+    instanceName: props.data.name,
+    componentName: props.data.componentName,
+    sourceFile: props.data.sourceFile,
   })
 }
 
 const domainTypeClass = computed(() => {
-  return props.data.domainType
-    ? `domain-type-${props.data.domainType}`
-    : 'domain-type-default'
+  return props.data.domainType ? `domain-type-${props.data.domainType}` : 'domain-type-default'
 })
 
-const isMissingParameters = computed(() => { 
-  const source = props.data?.sourceFile
-  if (!source) return true // If there's no source file, it's "missing" parameters
-  
-  // This call establishes a reactive dependency on the store's Map
-  const link = builderStore.getParameterFileNameForFile(source)
-  
-  return !link
+const isMissingParameters = computed(() => {
+  const name = props.data?.name
+  if (!name) return true // If there's no source file, it's "missing" parameters
+
+  for (const variable of props.data.variables || []) {
+    if (isEditableVariableType(variable.type)) {
+      if (variable.type === 'global_constant') {
+        const globalConstant = builderStore.getGlobalConstant(variable.name)
+        if (isEmpty(globalConstant?.value)) {
+          return true
+        }
+      } else if (isEmpty(variable.value)) {
+        return true
+      }
+    }
+  }
+
+  return false
 })
 
 function handleSetDomainType(typeCommand) {
@@ -240,9 +294,7 @@ async function removePort(portIdToRemove) {
       (edge.target === props.id && edge.targetHandle === handleId)
   )
 
-  const edgesSnapshot = connectedEdges.map((edge) =>
-    JSON.parse(JSON.stringify(edge))
-  )
+  const edgesSnapshot = connectedEdges.map((edge) => JSON.parse(JSON.stringify(edge)))
 
   // Define New Ports (for Redo)
   const newPorts = props.data.ports.filter((p) => p.uid !== portIdToRemove)
@@ -325,13 +377,37 @@ function StopDrag(event) {
 // This is triggered by pressing Enter or clicking away
 function saveEdit() {
   if (!editingName.value || editingName.value.trim() === '') {
-    isEditing.value = false // Cancel edit if name is empty
+    isEditing.value = false
+    return
+  }
+
+  const sanitisedName = sanitiseModuleName(editingName.value)
+
+  if (!sanitisedName) {
+    isEditing.value = false
+    return
+  }
+
+  const nameExists = nodes.value.some((node) => node.id !== props.id && node.data && node.data.name === sanitisedName)
+
+  if (nameExists) {
+    notify.error({ message: 'A module with this name already exists.' })
     return
   }
 
   // Update the node's data in the store
-  updateNodeData(props.id, { name: editingName.value })
+  updateNodeData(props.id, { name: sanitisedName })
   isEditing.value = false
+  setTimeout(() => {
+    builderStore.setVariableParameterValuesForInstance(
+      sanitisedName,
+      props.data.variables,
+      props.data.sourceFile,
+      props.data.componentName,
+      props.data.configIndex
+    )
+    updateNodeData(props.id, { variables: props.data.variables })
+  }, 100) // Delay to ensure the DOM has updated
 }
 
 const contextMenuVisible = ref(false)
@@ -433,15 +509,31 @@ function handleDocumentContextmenu(e) {
 <style lang="scss" scoped>
 @import '../assets/vueflowhandle.css';
 
+.module-node {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+.module-node > .el-card,
 .module-card {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 10px;
+  box-sizing: border-box;
   position: relative;
+  border: 3px solid rgba(0,0,0,0.04);
 }
 
 .status-indicator {
   position: absolute;
   top: 0px;
   right: 0px;
-  z-index: 10; /* Ensure it sits above other card content */
+  z-index: 10;
+  /* Ensure it sits above other card content */
 
   /* Optional: Add a white background circle so the icon pops 
      if it overlaps a border or busy background */
@@ -456,7 +548,8 @@ function handleDocumentContextmenu(e) {
 }
 
 .warning-icon {
-  color: var(--el-color-warning); /* Standard Element Plus Orange */
+  color: var(--el-color-warning);
+  /* Standard Element Plus Orange */
   font-size: 18px;
   cursor: help;
 
@@ -468,5 +561,4 @@ function handleDocumentContextmenu(e) {
 .module-button {
   margin: 0;
 }
-
 </style>

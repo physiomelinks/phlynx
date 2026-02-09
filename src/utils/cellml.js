@@ -1,8 +1,12 @@
+import { isEmpty } from './variables.js'
+
 let _libcellml = null
 
 // Define the Namespaces.
 const CELLML_NS = 'http://www.cellml.org/cellml/2.0#'
 const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
+const GLOBAL_PARAMETERS = 'parameters_global'
+const MODEL_PARAMETERS = 'parameters'
 
 export function initLibCellML(instance) {
   _libcellml = instance
@@ -53,14 +57,23 @@ export function processModuleData(cellmlString) {
   for (i = 0; i < model.componentCount(); i++) {
     let comp = model.componentByIndex(i)
     let options = []
+    let variables = []
     for (let j = 0; j < comp.variableCount(); j++) {
       let varr = comp.variableByIndex(j)
-      if (varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC)) {
+      
+      if (varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC) ||
+    varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC_AND_PRIVATE)) {
         let units = varr.units()
         options.push({
           name: varr.name(),
           units: units.name(),
         })
+        if (isPossibleParameter(varr)) {
+          variables.push({
+            name: varr.name(),
+            units: units.name(),
+          })
+        }
         units.delete()
       }
       varr.delete()
@@ -70,6 +83,7 @@ export function processModuleData(cellmlString) {
       portOptions: options,
       ports: [],
       componentName: comp.name(),
+      variables
     })
     comp.delete()
   }
@@ -344,46 +358,6 @@ function handleLoggerErrors(logger, headerMessage, dontThrow = false) {
   }
 }
 
-function separateGlobalParameters(model) {
-  // Get the source component
-  const paramComp = model.componentByName('Model_Parameters', true)
-  if (!paramComp) {
-    paramComp.delete()
-    return // Nothing to do if parameters aren't loaded
-  }
-
-  // Create the destination component for globals
-  const globalComp = new _libcellml.Component()
-  globalComp.setName('Global_Parameters')
-  model.addComponent(globalComp)
-
-  // Iterate BACKWARDS through the variables
-  // We loop backwards because we are removing items from the list we are iterating over.
-  for (let i = paramComp.variableCount() - 1; i >= 0; i--) {
-    const variable = paramComp.variableByIndex(i)
-
-    // Check how many connections this variable has.
-    // > 1 means it is connected to multiple modules (e.g. Temperature T)
-    // 1 means it is connected to a specific module (e.g. g_Na_soma)
-    if (variable.equivalentVariableCount() > 1) {
-      // Detach from the old component (Model_Parameters)
-      // Note: This does NOT delete the variable or break its equivalences,
-      // it just un-registers it from this component.
-      paramComp.removeVariableByVariable(variable)
-
-      // Attach to the new component (Global_Parameters)
-      globalComp.addVariable(variable)
-    } else if (variable.equivalentVariableCount() === 0) {
-      paramComp.removeVariableByVariable(variable)
-    }
-
-    variable.delete()
-  }
-
-  globalComp.delete()
-  paramComp.delete()
-}
-
 function addEnvironmentComponent(model) {
   const environmentComp = new _libcellml.Component()
   environmentComp.setName('environment')
@@ -450,91 +424,50 @@ function prioritizeEnvironmentComponent(xmlString) {
 
   // Serialize back to string.
   const serializer = new XMLSerializer()
-  return serializer.serializeToString(doc)
+  const updatedXmlString = serializer.serializeToString(doc)
+
+  // Pretty print using libCellML to ensure valid formatting.
+  const parserCellML = new _libcellml.Parser(true)
+  const modelCheck = parserCellML.parseModel(updatedXmlString)
+  const printerCellML = new _libcellml.Printer()
+  const finalXmlString = printerCellML.printModel(modelCheck, false)
+
+  parserCellML.delete()
+  modelCheck.delete()
+  printerCellML.delete()
+
+  return finalXmlString
 }
 
-/**
- * Applies parameter data to the model variables with strict unit and value validation.
- */
-function applyParameterMappings(model, parameterData) {
-  const paramMap = new Map()
-  for (const params of parameterData.values()) {
-    // Only iterate if params is actually an array of parameter objects
-    if (Array.isArray(params)) {
-      params.forEach((param) => {
-        if (param.variable_name && !paramMap.has(param.variable_name)) {
-          paramMap.set(param.variable_name, param)
-        }
-      })
-    }
-  }
+function addVariableToParameterComponent(model, variable, parameterComponent, parameterData) {
+  let sourceVar = parameterComponent.variableByName(parameterData.name)
 
-  let paramComponent = model.componentByName('Model_Parameters', true)
-  if (!paramComponent) {
-    paramComponent = new _libcellml.Component()
-    paramComponent.setName('Model_Parameters')
-    model.addComponent(paramComponent)
-  }
+  if (!sourceVar) {
+    sourceVar = new _libcellml.Variable()
+    sourceVar.setName(parameterData.name)
+    // Ensure the initial value is explicitly set to define variable type as 'constant'.
+    sourceVar.setInitialValueByString(parameterData.value)
 
-  for (let i = 0; i < model.componentCount(); i++) {
-    const component = model.componentByIndex(i)
-    const compName = component.name()
-
-    if (compName === 'Model_Parameters' || compName === 'environment') {
-      component.delete()
-      continue
+    const matchUnits = model.unitsByName(parameterData.units)
+    if (matchUnits) {
+      sourceVar.setUnitsByUnits(matchUnits)
+      matchUnits.delete()
+    } else {
+      sourceVar.setUnitsByName(parameterData.units)
     }
 
-    for (let v = 0; v < component.variableCount(); v++) {
-      const variable = component.variableByIndex(v)
-      const varName = variable.name()
-
-      // Priority: 1. Specific Match (var_comp) 2. Global Match (var)
-      const specificName = `${varName}_${compName}`
-      const match = paramMap.get(specificName) || paramMap.get(varName)
-
-      // Skip if no parameter data found or if the variable is already computed (has math)
-      if (!match || !match.value || match.value.trim() === '') {
-        variable.delete()
-        continue
-      }
-
-      const matchUnitsTrimmed = match.units ? match.units.trim() : 'dimensionless'
-
-      let sourceVar = paramComponent.variableByName(match.variable_name)
-
-      if (!sourceVar) {
-        sourceVar = new _libcellml.Variable()
-        sourceVar.setName(match.variable_name)
-
-        // Ensure the initial value is explicitly set to define variable type as 'constant'.
-        sourceVar.setInitialValueByString(match.value.trim())
-
-        const matchUnits = model.unitsByName(matchUnitsTrimmed)
-        if (matchUnits) {
-          sourceVar.setUnitsByUnits(matchUnits)
-          matchUnits.delete()
-        } else {
-          sourceVar.setUnitsByName(matchUnitsTrimmed)
-        }
-
-        sourceVar.setInterfaceTypeByString('public')
-        paramComponent.addVariable(sourceVar)
-      }
-
-      // Connect the constant parameter to the module variable.
-      _libcellml.Variable.addEquivalence(sourceVar, variable)
-
-      sourceVar.delete()
-      variable.delete()
-    }
-    component.delete()
+    sourceVar.setInterfaceTypeByString('public')
+    parameterComponent.addVariable(sourceVar)
   }
-  paramComponent.delete()
+
+  // Connect the constant parameter to the module variable.
+  _libcellml.Variable.addEquivalence(sourceVar, variable)
+
+  sourceVar.delete()
 }
 
 export function generateFlattenedModel(nodes, edges, builderStore) {
-  const appVersion = __APP_VERSION__ || '1.0.0'
+  const appVersion = __APP_VERSION__ || '0.0.0'
 
   // Initialize core objects
   const model = new _libcellml.Model()
@@ -545,12 +478,16 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
   const parser = new _libcellml.Parser(false)
   const importer = new _libcellml.Importer(true)
   const analyser = new _libcellml.Analyser()
+  const globalParameterComponent = new _libcellml.Component()
+  const parameterComponent = new _libcellml.Component()
 
   // --- Helper State ---
   const modelCache = new Map() // Key: sourceFileName, Value: libcellml.Model
   const nodeComponentMap = new Map() // Key: NodeID, Value: libcellml.Component
   const unitsLibraryCache = new Map() // Key: filename, Value: libcellml.Model
   const unitsImportSourceMap = new Map() // Key: filename, Value: libcellml.ImportSource
+
+  const globalVariables = builderStore.getGlobalVariables()
 
   // ------------------------------
   // HELPER: Reusable Unit Importer
@@ -617,23 +554,20 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
   }
 
   try {
+    globalParameterComponent.setName(GLOBAL_PARAMETERS)
+    model.addComponent(globalParameterComponent)
+
+    parameterComponent.setName(MODEL_PARAMETERS)
+    model.addComponent(parameterComponent)
+
     // ---------------------------------
     // Process Nodes (Create Components)
     // ---------------------------------
-    const parameterData = new Map()
-    const seenParameterFiles = new Set()
     for (const node of nodes) {
       const fileName = node.data?.sourceFile
       const componentName = node.data?.componentName
-      const parameterFileName = builderStore.getParameterFileNameForModule(fileName)
-      if (parameterFileName && !seenParameterFiles.has(parameterFileName)) {
-        const parameters = builderStore.getParametersForModule(fileName)
-        seenParameterFiles.add(parameterFileName)
-        parameterData.set(parameterFileName, parameters)
-      }
-      parameterData.set(componentName, parameterFileName)
 
-      // ... (Load and Cache Source Model Logic - Unchanged) ...
+      // Load and cache source model if not already done.
       if (!modelCache.has(fileName)) {
         if (!builderStore.hasModuleFile(fileName)) throw new Error(`Missing file: ${fileName}`)
         const parsedModel = parser.parseModel(builderStore.getModuleContent(fileName))
@@ -670,6 +604,24 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
 
         const units = variable.units()
         const unitsName = units.name()
+
+        const nodeVariable = node.data.variables.find((v) => v.name === variable.name())
+        if (nodeVariable) {
+          if (nodeVariable.type === 'global_constant') {
+            const v = globalVariables.get(variable.name())
+            if (!isEmpty(v?.value)) {
+              addVariableToParameterComponent(model, variable, globalParameterComponent, {
+                ...v,
+                name: variable.name(),
+              })
+            }
+          } else if (nodeVariable.type === 'constant') {
+            const v = node.data.variables.find((cv) => cv.name === nodeVariable.name)
+            if (!isEmpty(v?.value)) {
+              addVariableToParameterComponent(model, variable, parameterComponent, v)
+            }
+          }
+        }
 
         // Use our helper
         ensureUnitImported(unitsName)
@@ -774,25 +726,23 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
       }
 
       createSummationComponent(model, sourceComp, sourceVarName, targetComponents)
-
-      // sourceComp.delete()
-      // for (const targetComp of targetComponents.keys()) {
-      // targetComp.delete()
-      // }
     }
 
     for (const comp of componentTrashCan) {
-
       comp && comp.delete()
     }
 
     model.linkUnits()
 
-    applyParameterMappings(model, parameterData)
-
-    separateGlobalParameters(model)
-
     addEnvironmentComponent(model)
+
+    if (globalParameterComponent.variableCount() === 0) {
+      model.removeComponentByName(GLOBAL_PARAMETERS, true)
+    }
+
+    if (parameterComponent.variableCount() === 0) {
+      model.removeComponentByName(MODEL_PARAMETERS, true)
+    }
 
     // ------------------
     // Validate and Print
@@ -842,6 +792,8 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     for (const importSource of unitsImportSourceMap.values()) importSource.delete()
 
     // Delete Main Objects.
+    parameterComponent.delete()
+    globalParameterComponent.delete()
     analyser.delete()
     model.delete()
     printer.delete()
@@ -851,30 +803,47 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
   }
 }
 
+function isPossibleParameter(variable) {
+  // A variable is possibly a parameter if it does not have an initial value (i.e. it's set externally)
+  // and it's not the time variable.
+  const varName = variable.name()
+  return variable.initialValue() === '' && varName !== 't' && varName !== 'time'
+}
+
 /**
  * Extracts unique variable names from a CellML model/component
  */
-export function extractVariablesFromModule(module) {
-  const names = new Set()
-  if (module.model) {
-    const parser = new _libcellml.Parser(false)
-    const model = parser.parseModel(module.model)
-    // Iterate all components in the model,
-    // assumes flat model hierarchy.
-    for (let c = 0; c < model.componentCount(); c++) {
-      const comp = model.componentByIndex(c)
+export function extractVariablesFromModule(modelString, componentName, includeInitialisedVariables = false) {
+  const garbageCollector = new Set() // To track created objects for cleanup
+  try {
+    const variables = new Set()
+    if (modelString) {
+      const parser = new _libcellml.Parser(false)
+      garbageCollector.add(parser)
+      const model = parser.parseModel(modelString)
+      garbageCollector.add(model)
+      // Iterate all components in the model,
+      // assumes flat model hierarchy.
+      const comp = model.componentByName(componentName, true)
+      garbageCollector.add(comp)
       for (let v = 0; v < comp.variableCount(); v++) {
         const variable = comp.variableByIndex(v)
-        names.add(variable.name())
-        variable.delete()
+        garbageCollector.add(variable)
+        const units = variable.units()
+        garbageCollector.add(units)
+        if (isPossibleParameter(variable)) {
+           variables.add({ name: variable.name(), units: units.name() })
+        }
+       
       }
-      comp.delete()
     }
-    model.delete()
-    parser.delete()
-  }
 
-  return names
+    return Array.from(variables)
+  } finally {
+    for (const obj of garbageCollector) {
+      obj && obj.delete()
+    }
+  }
 }
 
 function removeComments(node) {
@@ -1058,15 +1027,36 @@ export function areModelsEquivalent(modelAString, modelBString) {
     return false
   }
 
-  const parser = new _libcellml.Parser(true)
-  const modelA = parser.parseModel(modelAString)
-  const modelB = parser.parseModel(modelBString)
+  const garbageCollector = new Set() // To track created objects for cleanup
+  try {
+    const parser = new _libcellml.Parser(true)
+    garbageCollector.add(parser)
+    const modelA = parser.parseModel(modelAString)
+    garbageCollector.add(modelA)
+    const modelB = parser.parseModel(modelBString)
+    garbageCollector.add(modelB)
+    const equal = modelA.equals(modelB)
 
-  const equal = modelA.equals(modelB)
+    return equal
+  } finally {
+    for (const obj of garbageCollector) {
+      obj &&obj.delete()
+    }
+  }
+}
 
-  modelA.delete()
-  modelB.delete()
-  parser.delete()
-
-  return equal
+export function getModelComponentNames(modelString) {
+  const componentNames = []
+  if (modelString) {
+    const parser = new _libcellml.Parser(false)
+    const model = parser.parseModel(modelString)
+    for (let i = 0; i < model.componentCount(); i++) {
+      const component = model.componentByIndex(i)
+      componentNames.push(component.name())
+      component.delete()
+    }
+    model.delete()
+    parser.delete()
+  }
+  return componentNames
 }

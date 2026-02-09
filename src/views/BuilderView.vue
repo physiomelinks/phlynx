@@ -22,6 +22,28 @@
             Save Workspace
           </el-button>
 
+          <el-divider direction="vertical" style="margin: 10 15px" />
+
+          <el-button
+            type="warning"
+            plain
+            @click="handleAutoLayout"
+            style="margin-left: 0px"
+            :disabled="!somethingAvailable"
+          >
+            Auto Layout
+          </el-button>
+
+          <el-button
+            type="danger"
+            plain
+            @click="handleClearWorkspace"
+            style="margin-left: 10px"
+            :disabled="!somethingAvailable"
+          >
+            Clear
+          </el-button>
+
           <el-divider direction="vertical" style="margin: 0 15px" />
 
           <el-button type="info" @click="handleUndo" :disabled="!historyStore.canUndo"> Undo </el-button>
@@ -34,15 +56,6 @@
 
           <el-button type="primary" @click="onOpenMacroBuilderDialog"> Macro Build </el-button>
 
-          <el-button
-            type="primary"
-            style="margin-left: 10px"
-            @click="moduleParameterMatchDialogVisible = true"
-            :disabled="builderStore.parameterFiles.length === 0"
-          >
-            Match Parameters
-          </el-button>
-
           <el-divider direction="vertical" style="margin: 0 15px" />
 
           <el-dropdown
@@ -54,12 +67,8 @@
           >
             <el-tooltip :disabled="!currentImportMode.disabled" placement="bottom">
               <div>
-                <el-tooltip placement="bottom" :visible="importTooltip.visible.value" trigger="manual">
-                  <span
-                    class="import-button-content"
-                    @mouseenter="importTooltip.onMouseEnter"
-                    @mouseleave="importTooltip.onMouseLeave"
-                  >
+                <el-tooltip placement="bottom" :auto-close="1200">
+                  <span class="import-button-content">
                     Import
                     <el-icon class="el-icon--right">
                       <component :is="currentImportMode.icon" />
@@ -102,14 +111,10 @@
             @command="handleExportCommand"
             :disabled="!somethingAvailable"
           >
-            <el-tooltip :disabled="!currentExportMode.disabled" placement="bottom">
+            <el-tooltip :disabled="!currentExportMode.disabled" placement="bottom" :auto-close="2400">
               <div>
-                <el-tooltip placement="bottom" :visible="exportTooltip.visible.value">
-                  <span
-                    class="export-button-content"
-                    @mouseenter="exportTooltip.onMouseEnter"
-                    @mouseleave="exportTooltip.onMouseLeave"
-                  >
+                <el-tooltip placement="bottom" :disabled="currentExportMode.disabled" :auto-close="1200">
+                  <span class="export-button-content">
                     Export
                     <el-icon class="el-icon--right">
                       <component :is="currentExportMode.icon" />
@@ -119,12 +124,7 @@
                 </el-tooltip>
               </div>
               <template #content>
-                <p>
-                  The
-                  <strong>{{ currentExportMode.label }}</strong>
-                  import option is disabled because the CellML library is not ready yet. Please wait a moment and try
-                  again.
-                </p>
+                {{ cellMlExportTooltip }}
               </template>
             </el-tooltip>
 
@@ -143,6 +143,11 @@
             </template>
           </el-dropdown>
         </div>
+      </div>
+      <div>
+        <el-link type="primary" href="https://github.com/physiomelinks/phlynx/issues/new" target="_blank">
+          Report Issue
+        </el-link>
       </div>
     </el-header>
 
@@ -185,6 +190,7 @@
                 :selected="props.selected"
                 @open-edit-dialog="onOpenEditDialog"
                 @open-cellml-editor-dialog="onOpenCellMLEditorDialog"
+                @open-parameter-editor-dialog="onOpenParameterEditorDialog"
                 @open-replacement-dialog="onOpenReplacementDialog"
                 :ref="(el) => (nodeRefs[props.id] = el)"
               />
@@ -215,6 +221,8 @@
     @save-fork="onCellMLForkSave"
   />
 
+  <EditParameterDialog v-model="editParameterDialogVisible" :nodeData="currentEditingNode" />
+
   <SaveDialog v-model="saveDialogVisible" @confirm="onSaveConfirm" :default-name="builderStore.lastSaveName" />
 
   <SaveDialog
@@ -239,8 +247,6 @@
     @generate="onMacroBuilderGenerate"
     @edit-node="onOpenEditDialog"
   />
-
-  <ModuleParameterMatchDialog v-model="moduleParameterMatchDialogVisible" :activeFiles="activeWorkspaceFiles" />
 
   <ImportDialog
     ref="importDialogRef"
@@ -280,7 +286,6 @@ import { useFlowHistoryStore } from '../stores/historyStore'
 import useDragAndDrop from '../composables/useDnD'
 import { useLoadFromVesselArray } from '../composables/useLoadFromVesselArray'
 import { useResizableAside } from '../composables/useResizableAside'
-import { useAutoClosingTooltip } from '../composables/useAutoClosingTooltip'
 import { useGtm } from '../composables/useGtm'
 import ModuleList from '../components/ModuleList.vue'
 import Workbench from '../components/WorkbenchArea.vue'
@@ -290,21 +295,31 @@ import ImportDialog from '../components/ImportDialog.vue'
 import ModuleReplacementDialog from '../components/ModuleReplacementDialog.vue'
 import SaveDialog from '../components/SaveDialog.vue'
 import MacroBuilderDialog from '../components/MacroBuilderDialog.vue'
-import ModuleParameterMatchDialog from '../components/ModuleParameterMatchDialog.vue'
 import HelperLines from '../components/HelperLines.vue'
 import { useScreenshot } from '../services/useScreenshot'
 import { generateExportZip } from '../services/caExport'
+import { createCellMLDataFragment } from '../services/cellml'
 import { useMacroGenerator } from '../services/generate/generateWorkflow'
 import { notify } from '../utils/notify'
 import { getHelperLines } from '../utils/helperLines'
+import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
+import { useClearWorkspace } from '../utils/workspace'
+import { relayoutNodes } from '../services/layouts/physics'
 import { generateFlattenedModel, initLibCellML, processModuleData, processUnitsData } from '../utils/cellml'
-import { edgeLineOptions, FLOW_IDS, IMPORT_KEYS, EXPORT_KEYS, JSON_FILE_TYPES } from '../utils/constants'
+import {
+  edgeLineOptions,
+  CELLML_FILE_TYPES,
+  FLOW_IDS,
+  IMPORT_KEYS,
+  EXPORT_KEYS,
+  JSON_FILE_TYPES,
+} from '../utils/constants'
 import { getId as getNextNodeId, generateUniqueModuleName } from '../utils/nodes'
 import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig, parseParametersFile } from '../utils/import'
 import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
-import { generateParameterAssociations } from '../utils/parameters'
 import CellMLEditorDialog from '../components/CellMLEditorDialog.vue'
+import EditParameterDialog from '../components/EditParameterDialog.vue'
 
 // import testModuleBGContent from '../assets/bg_modules.cellml?raw'
 // import testModuleColonContent from '../assets/colon_FTU_modules.cellml?raw'
@@ -345,37 +360,16 @@ const { capture } = useScreenshot()
 const { trackEvent } = useGtm()
 const { width: asideWidth, startResize } = useResizableAside(200, 150, 400)
 
-const cellmlModules = import.meta.glob('../assets/cellml/*.cellml', {
-  query: 'raw',
-  eager: true,
-})
-const cellmlUnits = import.meta.glob('../assets/units/*.cellml', {
-  query: 'raw',
-  eager: true,
-})
-const parameterFiles = import.meta.glob('../assets/parameters/*.csv', {
-  query: 'raw',
-  eager: true,
-})
-const moduleConfigs = import.meta.glob('../assets/moduleconfig/*.json', {
-  eager: true,
-})
-
 const helperLineHorizontal = ref(null)
 const helperLineVertical = ref(null)
 const alignment = ref('edge')
 const importDropdownRef = ref(null)
 
-// const testData = {
-//   filename: 'CB_network_modules.cellml',
-//   content: testModuleContent,
-// }
-
 const builderStore = useBuilderStore()
 
 const libcellmlReadyPromise = inject('$libcellml_ready')
 const libcellml = inject('$libcellml')
-const configDialogVisible = ref(false)
+const editParameterDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const cellMLEditorDialogVisible = ref(false)
 const saveDialogVisible = ref(false)
@@ -383,7 +377,6 @@ const importDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
 const replacementDialogVisible = ref(false)
 const macroBuilderDialogVisible = ref(false)
-const moduleParameterMatchDialogVisible = ref(false)
 const currentEditingNode = ref({
   nodeId: '',
   instanceId: '',
@@ -395,7 +388,7 @@ const importDialogRef = ref(null)
 const currentImportMode = ref(null)
 const currentImportConfig = ref({})
 
-const currentExportMode = ref(null)
+const currentExportKey = ref(EXPORT_KEYS.CELLML)
 
 const activeInteractionBuffer = new Map()
 const undoRedoSelection = false
@@ -403,12 +396,9 @@ const undoRedoSelection = false
 const clipboard = ref({ nodes: [], edges: [] })
 const mousePosition = ref({ x: 0, y: 0 })
 
-const importTooltip = useAutoClosingTooltip(1500)
-const exportTooltip = useAutoClosingTooltip(1500)
-
 const allNodeNames = computed(() => nodes.value.map((n) => n.data.name))
 
-const somethingAvailable = computed(() => nodes.value.length > 0 && builderStore.parameterFiles.size > 0)
+const somethingAvailable = computed(() => nodes.value.length > 0)
 
 const importOptions = computed(() => [
   {
@@ -449,18 +439,34 @@ const exportOptions = computed(() => [
     key: EXPORT_KEYS.CELLML,
     label: 'CellML',
     icon: markRaw(CellMLIcon),
-    disabled: libcellml.status !== 'ready',
     suffix: '.cellml',
+    disabled: libcellml.status !== 'ready' || !somethingAvailable.value,
   },
   {
     key: EXPORT_KEYS.CA,
     label: 'Circulatory Autogen',
     icon: markRaw(IconVessel),
-    disabled: false,
+    disabled: !somethingAvailable.value,
     suffix: '.zip',
   },
 ])
-currentExportMode.value = exportOptions.value[0]
+const cellMlExportTooltip = computed(() => {
+  const prefix = 'The CellML export option is disabled because '
+  if (libcellml.status !== 'ready') {
+    return prefix + 'the CellML library is not ready yet. Please wait a moment and try again.'
+  }
+  if (!somethingAvailable.value) {
+    return prefix + 'there is nothing to export. Please add some modules to the workspace first.'
+  }
+  return 'This should not be shown when CellML export is enabled.'
+})
+
+const currentExportMode = computed(() => {
+  // Find the selected option in the current list
+  const found = exportOptions.value.find((opt) => opt.key === currentExportKey.value)
+  // Fallback to the first option if nothing is found
+  return found || exportOptions.value[0]
+})
 
 onConnect((connection) => {
   // Match what we specify in connectionLineOptions.
@@ -488,6 +494,17 @@ const createSelectCommand = (changes, findFn) => {
       })
     },
   }
+}
+
+function selectAllNodes() {
+  nodes.value.forEach((node) => {
+    node.selected = true
+  })
+}
+
+function handleClearWorkspace() {
+  const { clearWorkspace } = useClearWorkspace()
+  clearWorkspace()
 }
 
 function updateHelperLines(changes, nodes) {
@@ -740,16 +757,6 @@ const onEdgeChange = (changes) => {
 
 const screenshotDisabled = computed(() => nodes.value.length === 0 && vueFlowRef.value !== null)
 
-const activeWorkspaceFiles = computed(() => {
-  const fileSet = new Set()
-  nodes.value.forEach((node) => {
-    if (node.data?.sourceFile) {
-      fileSet.add(node.data.sourceFile)
-    }
-  })
-  return Array.from(fileSet)
-})
-
 const loadCellMLModuleData = (content, filename, broadcastNotifications = true) => {
   return new Promise((resolve) => {
     const result = processModuleData(content)
@@ -931,7 +938,7 @@ async function onImportConfirm(importPayload, updateProgress) {
     const unitsPayload = importPayload[IMPORT_KEYS.UNITS]
     loadCellMLUnitsData(unitsPayload?.data, unitsPayload?.fileName)
   } else {
-    console.log('Handle this import:', currentImportMode.value.key)
+    console.log("Cannot get here this shouldn't be an import:", currentImportMode.value.key)
   }
   if (importDialogRef.value) {
     importDialogRef.value.finishLoading()
@@ -939,7 +946,11 @@ async function onImportConfirm(importPayload, updateProgress) {
 }
 
 const performExport = async () => {
-  const result = await saveFileHandle(builderStore.lastSaveName, JSON_FILE_TYPES)
+  currentExportKey.value = currentExportMode.value.key
+  const result = await saveFileHandle(
+    builderStore.lastExportName,
+    currentExportKey.value === EXPORT_KEYS.CELLML ? CELLML_FILE_TYPES : JSON_FILE_TYPES
+  )
   if (result.status) {
     if (result.handle) {
       onExportConfirm(undefined, result.handle)
@@ -954,7 +965,7 @@ const triggerCurrentExport = () => {
 }
 
 const handleExportCommand = (option) => {
-  currentExportMode.value = option
+  currentExportKey.value = option.key
   performExport(option)
 }
 
@@ -970,6 +981,13 @@ function onOpenCellMLEditorDialog(eventPayload) {
     ...eventPayload,
   }
   cellMLEditorDialogVisible.value = true
+}
+
+function onOpenParameterEditorDialog(eventPayload) {
+  currentEditingNode.value = {
+    ...eventPayload,
+  }
+  editParameterDialogVisible.value = true
 }
 
 async function propogateCellMLModuleUpdates(updatedData, changeText) {
@@ -990,15 +1008,20 @@ async function propogateCellMLModuleUpdates(updatedData, changeText) {
           option: labelObj.option.filter((opt) => validPortNames.has(opt)),
         }
       })
+      const existingVariableNames = new Set(node.data.variables.map((item) => item.name))
+      const cleanVariables = (node.data.variables || []).filter((v) => validPortNames.has(v.name))
+      const newItems = updatedModule.variables.filter((item) => !existingVariableNames.has(item.name))
+      cleanVariables.push(...newItems)
 
       // Create the new data object
       const newData = {
-        ...node.data,
-        componentName: updatedModule.componentName,
-        sourceFile: updatedModule.sourceFile, // Essential for the target node
-        label: `${updatedModule.componentName} — ${updatedModule.sourceFile}`,
+        ...JSON.parse(JSON.stringify(node.data)), // Deep copy to avoid mutating existing data
+        componentName: updatedData.componentName,
+        sourceFile: updatedData.sourceFile, // Essential for the target node
+        label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
         portLabels: cleanLabels, // Cleaned port labels.
         portOptions: updatedModule.portOptions, // Updates the ports/handles
+        variables: cleanVariables, // Cleaned variables list.
       }
 
       updatedCount++
@@ -1012,14 +1035,51 @@ async function propogateCellMLModuleUpdates(updatedData, changeText) {
       updatedData.sourceFile
     }.`,
   })
+  return validPortNames
+}
+
+function filterConfig(config, validNamesSet) {
+  // Clean the Ports (Nested arrays).
+  const portFields = ['entrance_ports', 'exit_ports', 'general_ports']
+
+  portFields.forEach((field) => {
+    if (config[field]) {
+      config[field] = config[field].map((port) => ({
+        ...port,
+        // Filter the variables list inside this specific port.
+        variables: (port.variables || []).filter((name) => validNamesSet.has(name)),
+      }))
+    }
+  })
+
+  // Clean the Definitions (Array of arrays).
+  if (config.variables_and_units) {
+    config.variables_and_units = config.variables_and_units.filter((entry) => validNamesSet.has(entry[0]))
+  }
 }
 
 async function onCellMLUpdateSave(updatedData) {
-  propogateCellMLModuleUpdates(updatedData, 'Updated')
+  const validPortNames = await propogateCellMLModuleUpdates(updatedData, 'Updated')
+  const targetModule = builderStore.getModulesModule(updatedData.sourceFile, updatedData.componentName)
+  // Strip new config port settings down to only those that are valid for the new module.
+  filterConfig(targetModule.configs[updatedData.configIndex], validPortNames)
 }
 
 async function onCellMLForkSave(saveData) {
-  propogateCellMLModuleUpdates(saveData, 'Forked')
+  const originalModule = builderStore.getModulesModule(saveData.originalSourceFile, saveData.originalComponentName)
+  const newConfig = JSON.parse(
+    JSON.stringify(originalModule.configs ? originalModule.configs[saveData.originalConfigIndex] : {})
+  )
+  newConfig.module_file = saveData.sourceFile
+  newConfig.module_type = saveData.componentName
+  const validPortNames = await propogateCellMLModuleUpdates(saveData, 'Forked')
+  // Strip new config port settings down to only those that are valid for the new module.
+  filterConfig(newConfig, validPortNames)
+  const targetModule = builderStore.getModulesModule(saveData.sourceFile, saveData.componentName)
+  const configs = targetModule.configs || []
+  targetModule.configIndex = configs.length
+  configs.push(newConfig)
+  targetModule.configs = configs
 }
 
 function onOpenMacroBuilderDialog() {
@@ -1074,6 +1134,10 @@ async function onReplaceConfirm(updatedData) {
   replacementDialogVisible.value = false
 }
 
+function handleAutoLayout() {
+  relayoutNodes(nodes.value, edges.value)
+}
+
 async function handleSaveWorkspace() {
   const result = await saveFileHandle(builderStore.lastSaveName, JSON_FILE_TYPES)
   if (result.status) {
@@ -1108,7 +1172,7 @@ async function handleSaveWorkspace() {
 }
 
 /**
- * Collects all state and processes it into a the current export format.
+ * Collects all state and processes it into the current export format.
  */
 async function onExportConfirm(fileName, handle) {
   const caExport = currentExportMode.value.key === EXPORT_KEYS.CA
@@ -1127,19 +1191,24 @@ async function onExportConfirm(fileName, handle) {
       exportMessage = 'Circulatory Autogen export zip generated.'
     } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
       blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
+
+      const dataUri = await createCellMLDataFragment(blob, fileName)
+
+      const openCorProtocol = 'opencor://'
+      const openCorUrl = `https://opencor.ws/app/?${openCorProtocol}openFile/#${dataUri}`
+
       exportMessage = h('div', null, [
-        'Model exported to CellML. Drag and drop the file into ',
+        'Model exported to CellML. Open this model directly in ',
         h(
           'a',
           {
-            href: 'https://opencor.ws/app/',
+            href: openCorUrl,
             rel: 'noopener noreferrer',
             style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
             target: '_blank',
           },
           'OpenCOR'
         ),
-        ' and run a simulation.',
       ])
     }
 
@@ -1192,7 +1261,7 @@ async function onExportConfirm(fileName, handle) {
 function createSaveBlob() {
   const saveState = {
     flow: toObject(),
-    store: builderStore.getSaveState(),
+    store: builderStore.getState(),
   }
 
   const jsonString = JSON.stringify(saveState, null, 2)
@@ -1219,6 +1288,7 @@ function onSaveConfirm(fileName) {
  */
 function handleLoadWorkspace(file) {
   const reader = new FileReader()
+  const { clearWorkspace } = useClearWorkspace()
 
   reader.onload = async (e) => {
     try {
@@ -1230,13 +1300,7 @@ function handleLoadWorkspace(file) {
       }
 
       // Clear the current Vue Flow state.
-      historyStore.clear()
-      nodes.value = []
-      edges.value = []
-      setViewport({ x: 0, y: 0, zoom: 1 }) // Reset viewport.
-      // Clear the current parameter data.
-
-      await nextTick()
+      await clearWorkspace()
 
       // Restore Vue Flow state.
       // We use `setViewport` to apply zoom/pan.
@@ -1425,6 +1489,11 @@ const handleKeyDown = (event) => {
     pasteSelection()
   }
 
+  if (isCtrl && event.key.toLowerCase() === 'a') {
+    event.preventDefault()
+    selectAllNodes()
+  }
+
   if (isCtrl && !isShift && event.key === 'z' && historyStore.canUndo) {
     handleUndo()
   }
@@ -1433,13 +1502,63 @@ const handleKeyDown = (event) => {
   }
 }
 
+async function fetchAndLoadResource(entry, resourceType) {
+  try {
+    const url = getUrlForResource(entry.path)
+
+    // Fetch resource content
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Failed to fetch ${entry.name}`)
+
+    // Process the response
+    const content = await response.text()
+
+    // Load the content
+    if (resourceType === 'cellml module') {
+      await loadCellMLModuleData(content, entry.file, false)
+    } else if (resourceType === 'module config') {
+      const jsonContent = JSON.parse(content)
+      builderStore.addConfigFile(jsonContent, entry.name, false)
+    } else if (resourceType === 'parameter file') {
+      const parsed = await parseParametersFile(content)
+      await loadParametersData(parsed, entry.name, false)
+    } else if (resourceType === 'cellml units') {
+      await loadCellMLUnitsData(content, entry.name, false)
+    }
+
+    return true
+  } catch (err) {
+    return false
+  }
+}
+
+
+const cellmlModules = import.meta.glob('../assets/modules/*.cellml', {
+  query: 'raw',
+  eager: true,
+})
+const cellmlUnits = import.meta.glob('../assets/units/*.cellml', {
+  query: 'raw',
+  eager: true,
+})
+const moduleConfigs = import.meta.glob('../assets/module_configs/*.json', {
+  eager: true,
+})
+
+
 onMounted(async () => {
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('mousemove', onMouseMove)
-  libcellmlReadyPromise.then((instance) => {
-    initLibCellML(instance)
-  })
-  await libcellmlReadyPromise
+
+  // Load the manifest and the libCellML WebAssembly module.
+  const [manifest, instance] = await Promise.all([loadManifest(), libcellmlReadyPromise])
+
+  initLibCellML(instance)
+
+  // const printPurgeUrl = false
+  // if (printPurgeUrl) {
+  //   console.log(getPurgedUrlForResource())
+  // }
 
   const promises = []
   for (const [path, content] of Object.entries(cellmlModules)) {
@@ -1450,12 +1569,41 @@ onMounted(async () => {
     promises.push(loadCellMLUnitsData(content.default, path.split('/').pop(), false))
   }
 
-  for (const [path, content] of Object.entries(parameterFiles)) {
-    const parsePromise = parseParametersFile(content.default).then((parsed) =>
-      loadParametersData(parsed, path.split('/').pop(), false)
-    )
-    promises.push(parsePromise)
-  }
+  // if (manifest?.modules) {
+  //   for (const entry of manifest.modules) {
+  //     if (printPurgeUrl) {
+  //       console.log(getPurgedUrlForResource(entry.path))
+  //     }
+  //     promises.push(fetchAndLoadResource(entry, 'cellml module'))
+  //   }
+  // }
+
+  // if (manifest?.units) {
+  //   for (const entry of manifest.units) {
+  //     if (printPurgeUrl) {
+  //       console.log(getPurgedUrlForResource(entry.path))
+  //     }
+  //     promises.push(fetchAndLoadResource(entry, 'cellml units'))
+  //   }
+  // }
+
+  // if (manifest?.parameters) {
+  //   for (const entry of manifest.parameters) {
+  //     if (printPurgeUrl) {
+  //       console.log(getPurgedUrlForResource(entry.path))
+  //     }
+  //     promises.push(fetchAndLoadResource(entry, 'parameter file'))
+  //   }
+  // }
+
+  // if (manifest?.configs) {
+  //   for (const entry of manifest.configs) {
+  //     if (printPurgeUrl) {
+  //       console.log(getPurgedUrlForResource(entry.path))
+  //     }
+  //     promises.push(fetchAndLoadResource(entry, 'module config'))
+  //   }
+  // }
 
   const results = await Promise.all(promises)
   const successCount = results.filter((result) => result === true).length
@@ -1463,7 +1611,7 @@ onMounted(async () => {
 
   if (successCount > 0) {
     notify.success({
-      title: 'Internal Resource Loading',
+      title: 'Resource Loading',
       message: `Successfully loaded ${successCount} file${successCount > 1 ? 's' : ''}.`,
     })
   }
@@ -1471,7 +1619,7 @@ onMounted(async () => {
   if (failCount > 0) {
     if (successCount > 0) await nextTick()
     notify.warning({
-      title: 'Internal Resource Loading',
+      title: 'Resource Loading',
       message: `${failCount} file${failCount > 1 ? 's' : ''} failed to load.`,
     })
   }

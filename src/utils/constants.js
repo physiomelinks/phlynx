@@ -4,6 +4,10 @@ export const SOURCE_PORT_TYPE = 'source'
 export const TARGET_PORT_TYPE = 'target'
 export const USER_MODULES_FILE = 'UserModules.cellml'
 
+export const TOOLTIP_AUTO_CLOSE = 1200
+export const RESCALE_ASPECT_RATIO = 3
+export const RESCALE_TARGET_SPACING = 1000
+
 export const markerEnd = MarkerType.ArrowClosed
 export const edgeLineOptions = {
   type: 'smoothstep',

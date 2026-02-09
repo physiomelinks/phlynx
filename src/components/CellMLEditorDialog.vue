@@ -12,7 +12,7 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" />
+        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleSave" />
       </div>
 
       <div class="status-bar">
@@ -27,30 +27,19 @@
       <span class="dialog-footer">
         <el-button @click="handleCancel">Cancel</el-button>
 
-        <el-button v-if="isInternalModule" type="primary" @click="showSaveAsPrompt = true" :disabled="!isDirty">
+        <el-button v-if="isInternalModule" type="primary" @click="handleForkSave" :disabled="!isDirty">
           Save As
         </el-button>
 
         <el-button v-else type="primary" @click="handleDirectSave" :disabled="!isDirty"> Save Changes </el-button>
       </span>
     </template>
-
-    <el-dialog v-model="showSaveAsPrompt" title="Save Copy As" width="30%" append-to-body>
-      <p>This is a standard library module. To save changes, please give your new component a name:</p>
-      <el-input v-model="newComponentName" placeholder="MyCustomComponent" />
-      <template #footer>
-        <el-button @click="showSaveAsPrompt = false">Cancel</el-button>
-        <el-button type="primary" :disabled="haveInvalidNewComponentName" @click="handleForkSave"
-          >Create Copy</el-button
-        >
-      </template>
-    </el-dialog>
   </el-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { ElButton, ElDialog, ElMessageBox, ElInput } from 'element-plus'
+import { computed, ref, watch } from 'vue'
+import { ElButton, ElDialog, ElMessageBox } from 'element-plus'
 import CellMLTextEditor from './CellMLTextEditor.vue'
 import { useBuilderStore } from '../stores/builderStore'
 import { useGtm } from '../composables/useGtm'
@@ -59,6 +48,7 @@ import {
   areModelsEquivalent,
   createEditableModelFromSourceModelAndComponent,
   doesComponentExistInModel,
+  getModelComponentNames,
   mergeModelComponents,
 } from '../utils/cellml'
 
@@ -81,12 +71,6 @@ const { trackEvent } = useGtm()
 const loading = ref(false)
 const currentCode = ref('')
 const originalCode = ref('')
-const showSaveAsPrompt = ref(false)
-const newComponentName = ref('')
-
-const haveInvalidNewComponentName = computed(() => {
-  return !newComponentName.value || newComponentName.value.trim().length === 0
-})
 
 const isInternalModule = computed(() => {
   const sourceFile = props.nodeData.sourceFile
@@ -113,16 +97,15 @@ watch(
         if (errors.length > 0) {
           console.error('Errors while extracting component for editing:', errors)
           ElMessageBox.alert(
-            `Failed to load the CellML source for editing.\n\nError${errors.length === 1 ? '' : 's'}:\n- ${errors.join('\n- ')}\n\nPlease create an issue if the problem persists.`,
+            `Failed to load the CellML source for editing.\n\nError${errors.length === 1 ? '' : 's'}:\n- ${errors.join(
+              '\n- '
+            )}\n\nPlease create an issue if the problem persists.`,
             'Load Error',
             { type: 'error' }
           )
         } else {
           currentCode.value = xml
           originalCode.value = xml
-
-          // Pre-fill a name for "Save As" (e.g., "sodium_channel_custom")
-          newComponentName.value = `${newData.componentName}_custom`
         }
       } catch (e) {
         console.error('Failed to load source', e)
@@ -150,6 +133,18 @@ const checkDirtyAndProceed = (confirmAction) => {
   }
 }
 
+const handleSave = () => {
+  if (isInternalModule.value) {
+    if (isDirty.value) {
+      handleForkSave()
+    }
+  } else {
+    if (isDirty.value) {
+      handleDirectSave()
+    }
+  }
+}
+
 const handleBeforeClose = (done) => {
   checkDirtyAndProceed(done)
 }
@@ -162,10 +157,13 @@ const handleCancel = () => {
 
 function formSaveData(componentName, modelString = null) {
   return {
-    nodeId: props.nodeData.nodeId,
+    ...props.nodeData,
     code: modelString,
     componentName: componentName,
     sourceFile: USER_MODULES_FILE,
+    originalSourceFile: props.nodeData.sourceFile,
+    originalComponentName: props.nodeData.componentName,
+    originalConfigIndex: props.nodeData.configIndex,
   }
 }
 
@@ -182,7 +180,7 @@ const handleDirectSave = async () => {
     category: 'Editor',
     action: 'save',
     label: props.nodeData.componentName, // useful context
-    file_type: 'cellml'
+    file_type: 'cellml',
   })
   emit('save-update', formSaveData(componentName, mergedModelString))
   emit('update:modelValue', false)
@@ -190,7 +188,8 @@ const handleDirectSave = async () => {
 
 const handleForkSave = async () => {
   // Validate name.
-  const trimmedComponentName = newComponentName.value.trim()
+  const componentNames = getModelComponentNames(currentCode.value)
+  const trimmedComponentName = componentNames[0].trim()
   const modelString = await store.getModuleContent(USER_MODULES_FILE)
   if (doesComponentExistInModel(modelString, trimmedComponentName)) {
     ElMessageBox.alert(
@@ -211,23 +210,24 @@ const handleForkSave = async () => {
     category: 'Editor',
     action: 'fork_save',
     label: trimmedComponentName, // useful context
-    file_type: 'cellml'
+    file_type: 'cellml',
   })
+  console.log('node data:', props.nodeData)
+
   emit('save-fork', formSaveData(trimmedComponentName, mergedModelString))
-  showSaveAsPrompt.value = false
   emit('update:modelValue', false)
 }
 </script>
 
 <style scoped>
 .editor-container {
-  height: 75vh; 
+  height: 75vh;
   display: flex;
   flex-direction: column;
 }
 .editor-wrapper {
-  flex: 1; 
-  overflow: hidden; 
+  flex: 1;
+  overflow: hidden;
   position: relative;
 }
 .tag.internal {

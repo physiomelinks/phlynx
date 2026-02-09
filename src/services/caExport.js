@@ -122,6 +122,7 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
 
     let module_config = []
     let vessel_array = []
+    let allParameters = new Set()
     const BC_type = 'nn' // Placeholder for boundary condition type
 
     // --- 1. PROCESS NODES FOR CONFIG AND TOPOLOGY ---
@@ -171,17 +172,13 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
       }
 
       // --- PARAMETER CLASSIFICATION FOR THIS NODE ---
-      const cellmlFileName = node.data?.sourceFile
-      // Get parameters specific to this CellML file for the classifyVariable function
-      const nodeParameters = builderStore.getParametersForFile(cellmlFileName) || []
-
       let variablesAndUnits = []
       for (const variable of node.data.portOptions || []) {
         variablesAndUnits.push([
           variable.name,
           variable.units || 'missing',
           'access',
-          classifyVariable(node.data.name, variable, nodeParameters),
+          node.data.variables?.find(v => v.name === variable.name)?.type || 'undefined',
         ])
       }
 
@@ -205,50 +202,34 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
         inp_vessels: inp_vessels.join(' '),
         out_vessels: out_vessels.join(' '),
       })
+
+      // Collect parameters for this node's module
+      for (const variable of node.data.variables || []) {
+        allParameters.add(JSON.stringify({
+          variable_name: `${variable.name}_${node.data.name}`,
+          value: variable.value || '',
+          units: variable.units || '',
+          type: variable.type || '',
+        }))
+      }
     }
 
     // --- 2. CONSOLIDATE PARAMETER FILES INTO ONE CSV ---
-    const activeCellMLFiles = new Set(nodes.map(node => node.data?.sourceFile).filter(Boolean))
-    let consolidatedParameters = []
-    const seenParamFiles = new Set()
-
-    activeCellMLFiles.forEach(cellmlFile => {
-      // Find which parameter file is linked to this CellML file
-      const paramFileName = builderStore.fileParameterMap.get(cellmlFile)
-
-      if (paramFileName && !seenParamFiles.has(paramFileName)) {
-        const params = builderStore.getParametersForFile(cellmlFile)
-        consolidatedParameters = [...consolidatedParameters, ...params]
-        seenParamFiles.add(paramFileName)
-      }
-    })
-
-    if (consolidatedParameters.length > 0) {
-      // Deduplicate parameters by variable_name to avoid duplicate CSV entries
-      const dedupedParameters = []
-      const seenVariableNames = new Set()
-
-      for (const param of consolidatedParameters) {
-        const key = param && typeof param === 'object' ? param.variable_name : undefined
-
-        // Only deduplicate when a variable_name is present; otherwise keep all such entries
-        if (key && seenVariableNames.has(key)) {
-          continue
-        }
-
-        dedupedParameters.push(param)
-
-        if (key) {
-          seenVariableNames.add(key)
-        }
-      }
-
-      zip.file(`${fileName}_parameters.csv`, Papa.unparse(dedupedParameters))
+    const globalVariables = builderStore.getGlobalVariables()
+    for (const variable of globalVariables) {
+      allParameters.add(JSON.stringify({
+        variable_name: variable.name,
+        value: variable.value || '',
+        units: variable.units || '',
+        type: variable.type || '',
+      }))
     }
+    const consolidatedParameters = Array.from(allParameters).map((paramStr) => JSON.parse(paramStr))
 
     // --- 3. FINALIZING AND COMPRESSING ZIP ---
     zip.file(`${fileName}_module_config.json`, JSON.stringify(module_config, null, 2))
     zip.file(`${fileName}_vessel_array.csv`, Papa.unparse(vessel_array))
+    zip.file(`${fileName}_parameters.csv`, Papa.unparse(consolidatedParameters))
 
     const zipBlob = await zip.generateAsync({
       type: 'blob',

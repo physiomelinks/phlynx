@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { isEditableVariableType } from '../utils/variables'
+
 function mergeIntoStore(newModules, target) {
   const moduleMap = new Map(target.map((mod) => [mod.filename, mod]))
 
@@ -17,6 +19,12 @@ function mergeIntoStore(newModules, target) {
   target.push(...moduleMap.values())
 }
 
+function mergeIn(sourceMap, targetMap) {
+  for (const [key, value] of sourceMap) {
+    targetMap.set(key, value)
+  }
+}
+
 // 'builder' is the store's ID
 export const useBuilderStore = defineStore('builder', () => {
   // --- STATE ---
@@ -25,11 +33,9 @@ export const useBuilderStore = defineStore('builder', () => {
   const lastSaveName = ref('phlynx-project')
   const lastExportName = ref('phlynx-export')
 
-  const parameterFiles = ref(new Map())
-  const moduleParameterMap = ref(new Map())
-  const moduleAssignmentTypeMap = ref(new Map())
-  const fileParameterMap = ref(new Map())
-  const fileAssignmentTypeMap = ref(new Map())
+  const availableParameters = ref(new Map())
+  const availableVariableNameIdMap = ref(new Map())
+  const globalConstants = ref(new Map())
 
   // --- DEBUG ---
 
@@ -45,54 +51,103 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   // --- ACTIONS ---
+  function normalizeValue(val) {
+    if (!val || val === '-') return val // Ignore placeholders
+
+    const num = parseFloat(val)
+
+    // If it's not a number, return original string (e.g. text values)
+    if (isNaN(num)) return val
+
+    return String(num)
+  }
+
+  function createParameterKey(parameter) {
+    return `${parameter.variable_name.trim()}||${parameter.units.trim()}||${normalizeValue(
+      parameter.value.trim()
+    )}||${parameter.data_reference.trim()}`
+  }
 
   function addParameterFile(filename, data) {
     if (!data || !Array.isArray(data)) return false
-    parameterFiles.value.set(filename, data)
+
+    for (const param of data) {
+      const key = createParameterKey(param)
+      if (availableParameters.value.has(key)) {
+        availableParameters.value.get(key).count += 1
+        availableParameters.value.get(key).source.push(filename)
+        // console.log(`Parameter already exists, skipping: ${key}, count: ${availableParameters.value.get(key).count}`)
+        continue
+      }
+
+      const trimmedVariableName = param.variable_name.trim()
+      if (trimmedVariableName === '' || trimmedVariableName === '#') {
+        continue
+      }
+      const newParameterSet = {
+        data_reference: param.data_reference.trim(),
+        variable_name: trimmedVariableName,
+        units: param.units.trim(),
+        value: normalizeValue(param.value.trim()),
+        source: [filename],
+        count: 1,
+        id: 'id_' + availableParameters.value.size,
+      }
+      availableParameters.value.set(key, newParameterSet)
+      if (!availableVariableNameIdMap.value.has(trimmedVariableName)) {
+        availableVariableNameIdMap.value.set(trimmedVariableName, [])
+      }
+      availableVariableNameIdMap.value.get(trimmedVariableName).push(key)
+    }
     return true
   }
 
-  function applyFileParameterLinks(linkMap, typeMap = null) {
-    fileParameterMap.value = linkMap
-    moduleParameterMap.value = linkMap
+  function clearGlobalConstants() {
+    globalConstants.value.clear()
+  }
 
-    if (typeMap) {
-      fileAssignmentTypeMap.value = typeMap
-      moduleAssignmentTypeMap.value = typeMap
+  function assignGlobalConstant(variableName, value, units) {
+    globalConstants.value.set(variableName, { value, units })
+  }
+
+  function getGlobalConstant(variableName) {
+    return globalConstants.value.get(variableName)
+  }
+
+  function getParameterValuesForInstanceVariable(instanceVariable) {
+    let results = []
+    const paramKeys = availableVariableNameIdMap.value.get(instanceVariable)
+    if (paramKeys) {
+      results = paramKeys.map((key) => availableParameters.value.get(key))
     }
+
+    return results
   }
 
-  function applyParameterLinks(linkMap, typeMap = null) {
-    moduleParameterMap.value = linkMap
-    fileParameterMap.value = linkMap
-    if (typeMap) {
-      moduleAssignmentTypeMap.value = typeMap
-      fileAssignmentTypeMap.value = typeMap
+  function setVariableParameterValuesForInstance(instanceName, variables, sourceFile, componentName, configIndex) {
+    const module = getModulesModule(sourceFile, componentName)
+    let variablesAndUnits = []
+    if (module?.configs && configIndex !== undefined && module.configs[configIndex]) {
+      variablesAndUnits = module.configs[configIndex]?.variables_and_units ?? []
     }
-  }
-
-  function getParameterFileNameForModule(moduleName) {
-    return moduleParameterMap.value.get(moduleName) || null
-  }
-
-  function getParametersForModule(moduleName) {
-    const paramFileName = moduleParameterMap.value.get(moduleName)
-    if (!paramFileName) return []
-    return parameterFiles.value.get(paramFileName) || []
-  }
-
-  function getAssignmentTypeForModule(moduleName) {
-    return moduleAssignmentTypeMap.value.get(moduleName) || null
-  }
-
-  function getParametersForFile(filename) {
-    const paramFileName = fileParameterMap.value.get(filename)
-    if (!paramFileName) return []
-    return parameterFiles.value.get(paramFileName) || []
-  }
-
-  function getParameterFileNameForFile(filename) {
-    return fileParameterMap.value.get(filename) || null
+    const configMap = new Map(variablesAndUnits.map((arr) => [arr[0], arr]))
+    for (const variable of variables) {
+      const configEntry = configMap.get(variable.name)
+      // Default to 'variable' if not found in config
+      const variableType = configEntry ? configEntry[3] : 'variable'
+      variable.type = variableType
+      if (isEditableVariableType(variableType)) {
+        const lookupName = variable.name + (variableType === 'global_constant' ? '' : '_' + instanceName)
+        const parameterValues = getParameterValuesForInstanceVariable(lookupName)
+        if (parameterValues.length === 1 && parameterValues[0].units === variable.units) {
+          if (variableType === 'global_constant') {
+            assignGlobalConstant(variable.name, parameterValues[0].value, parameterValues[0].units)
+          } else {
+            variable.value = parameterValues[0].value
+          }
+        }
+      }
+    }
   }
 
   // --- SETTERS ---
@@ -123,6 +178,10 @@ export const useBuilderStore = defineStore('builder', () => {
   function addConfigFile(payload, filename) {
     const configs = payload
     const configFilename = filename
+    if (!configs || !Array.isArray(configs)) {
+      console.warn('[builderStore] Invalid config file payload:', payload)
+      return
+    }
 
     configs.forEach((config) => {
       if (!config.module_file || typeof config.module_file !== 'string') {
@@ -202,13 +261,17 @@ export const useBuilderStore = defineStore('builder', () => {
   function loadState(state) {
     mergeIntoStore(state.availableModules, availableModules.value)
     mergeIntoStore(state.availableUnits, availableUnits.value)
-    fileAssignmentTypeMap.value = new Map(state.fileAssignmentTypeMap || [])
-    fileParameterMap.value = new Map(state.fileParameterMap || [])
+    if (state.availableParameters) {
+      mergeIn(new Map(state.availableParameters), availableParameters.value)
+    }
+    if (state.availableVariableNameIdMap) {
+      mergeIn(new Map(state.availableVariableNameIdMap), availableVariableNameIdMap.value)
+    }
+    if (state.globalConstants) {
+      mergeIn(new Map(state.globalConstants), globalConstants.value)
+    }
     lastSaveName.value = state.lastSaveName || 'phlynx-project'
     lastExportName.value = state.lastExportName || 'phlynx-export'
-    moduleAssignmentTypeMap.value = new Map(state.moduleAssignmentTypeMap || [])
-    moduleParameterMap.value = new Map(state.moduleParameterMap || [])
-    parameterFiles.value = new Map(state.parameterFiles || [])
   }
 
   function removeFile(collection, filename) {
@@ -227,15 +290,15 @@ export const useBuilderStore = defineStore('builder', () => {
   }
 
   function getModuleContent(filename) {
-    const index = this.availableModules.findIndex((f) => f.filename === filename)
+    const index = availableModules.value.findIndex((f) => f.filename === filename)
     if (index !== -1) {
-      return this.availableModules[index].model
+      return availableModules.value[index].model
     }
     return ''
   }
 
   function getModulesModule(filename, moduleName) {
-    const file = this.availableModules.find((f) => f.filename === filename)
+    const file = availableModules.value.find((f) => f.filename === filename)
     if (!file) return null
 
     const module = file.modules.find((m) => m.name === moduleName)
@@ -262,17 +325,18 @@ export const useBuilderStore = defineStore('builder', () => {
    * @returns {boolean} - True if the file is loaded, false otherwise.
    */
   function hasModuleFile(filename) {
-    return this.availableModules.some((f) => f.filename === filename)
+    return availableModules.value.some((f) => f.filename === filename)
   }
 
   function getConfigForVessel(vesselType, bcType) {
     for (const file of availableModules.value) {
       for (const module of file.modules) {
         if (module.configs) {
-          const config = module.configs.find((c) => c.vessel_type === vesselType && c.BC_type === bcType)
-          if (config) {
+          const configIndex = module.configs.findIndex((c) => c.vessel_type === vesselType && c.BC_type === bcType)
+          if (configIndex !== -1) {
             return {
-              config: config,
+              config: module.configs[configIndex],
+              configIndex: configIndex,
               module: module,
               filename: file.filename,
             }
@@ -283,33 +347,21 @@ export const useBuilderStore = defineStore('builder', () => {
     return null
   }
 
-  function getConfig(moduleType, bcType) {
-    for (const file of availableModules.value) {
-      for (const module of file.modules) {
-        if (module.name === moduleType || module.type === moduleType) {
-          const config = module.configs?.find((c) => c.BC_type === bcType)
-          if (config) return config
-        }
-      }
-    }
-    return null
-  }
-
-  function getSaveState() {
+  function getState() {
     return {
       availableModules: availableModules.value,
+      availableParameters: Array.from(availableParameters.value.entries()),
       availableUnits: availableUnits.value,
+      availableVariableNameIdMap: Array.from(availableVariableNameIdMap.value.entries()),
+      globalConstants: Array.from(globalConstants.value.entries()),
       lastExportName: lastExportName.value,
       lastSaveName: lastSaveName.value,
-      moduleParameterMap: Array.from(moduleParameterMap.value.entries()),
-      moduleAssignmentTypeMap: Array.from(moduleAssignmentTypeMap.value.entries()),
-      fileParameterMap: Array.from(fileParameterMap.value.entries()),
-      fileAssignmentTypeMap: Array.from(fileAssignmentTypeMap.value.entries()),
-      parameterFiles: Array.from(parameterFiles.value.entries()),
     }
   }
 
-  // --- GETTERS (computed) ---
+  function getGlobalVariables() {
+    return globalConstants.value
+  }
 
   return {
     // State
@@ -317,35 +369,28 @@ export const useBuilderStore = defineStore('builder', () => {
     availableUnits,
     lastExportName,
     lastSaveName,
-    moduleParameterMap,
-    moduleAssignmentTypeMap,
-    fileParameterMap,
-    fileAssignmentTypeMap,
-    parameterFiles,
 
     // Actions
     addConfigFile,
     addModuleFile,
     addParameterFile,
     addUnitsFile,
-    applyParameterLinks, // Re-enabled
-    applyFileParameterLinks, // Updated with syncing
+    assignGlobalConstant,
+    clearGlobalConstants,
     loadState,
     removeModuleFile,
     setLastExportName,
     setLastSaveName,
+    setVariableParameterValuesForInstance,
 
     // Getters
-    getAssignmentTypeForModule,
-    getConfig,
     getConfigForVessel,
+    getGlobalConstant,
+    getGlobalVariables,
     getModuleContent,
     getModulesModule,
-    getParameterFileNameForFile,
-    getParameterFileNameForModule,
-    getParametersForFile,
-    getParametersForModule,
-    getSaveState,
+    getParameterValuesForInstanceVariable,
+    getState,
     hasModuleFile,
 
     // Debug

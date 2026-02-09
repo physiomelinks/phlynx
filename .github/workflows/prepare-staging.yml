@@ -45,17 +45,19 @@ jobs:
           git pull origin production --no-rebase
           if [ -f "changelogs/latest.md" ]; then
             git rm changelogs/latest.md
-            echo "Deleted changelogs/latest.md"
+            echo "Deleted existing changelogs/latest.md"
           fi
 
           yarn gen-changelog -q > changelogs/latest.md
 
           # Check if latest.md is empty or only whitespace.
           if [ -s "changelogs/latest.md" ]; then
+            echo "Generated changelogs/latest.md changelog has content."
             echo "has_content=true" >> $GITHUB_OUTPUT
           else
             echo "has_content=false" >> $GITHUB_OUTPUT
             if [ -f "changelogs/latest.md" ]; then
+              echo "Deleting empty changelogs/latest.md."
               git rm changelogs/latest.md
             fi
           fi

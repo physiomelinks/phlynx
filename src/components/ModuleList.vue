@@ -1,13 +1,13 @@
 <template>
   <div class="module-list-container">
     <el-input v-model="filterText" placeholder="Filter modules..." clearable class="filter-input" />
+
     <el-collapse v-model="activeCollapseNames" class="module-list">
       <el-collapse-item
         v-for="file in filteredModuleFiles"
         :key="file.filename"
         :title="file.filename"
         :name="file.filename"
-        type="secondary"
       >
         <el-card
           v-for="module in file.modules"
@@ -15,34 +15,76 @@
           class="module-card"
           :class="{ selectable: selectable, 'is-stub': file.isStub }"
           shadow="hover"
+          :body-style="{ padding: '10px' }"
           :draggable="!selectable && !file.isStub"
-          @dragstart="!selectable && !file.isStub && onDragStart($event, module)"
+          @dragstart="handleDragStart($event, module)"
           @click="selectable && handleSelect(module)"
         >
-          <div class="module-name">{{ module.name }}</div>
+          <div class="card-header">
+            <span class="module-name">{{ module.name }}</span>
+
+            <el-tag
+              v-if="module.configs && module.configs.length > 1"
+              size="small"
+              type="info"
+              effect="plain"
+              class="config-badge"
+            >
+              {{ module.configs.length }} configs
+            </el-tag>
+            <el-tooltip
+              v-if="module.configs && module.configs.length === 1"
+              content="Preview Configuration"
+              placement="top"
+              :auto-close="TOOLTIP_AUTO_CLOSE"
+            >
+              <el-button size="small" circle @click.stop="openPreview(module, file.filename)">
+                <el-icon><View /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
+
+          <div v-if="!selectable && module.configs && module.configs.length > 1" class="config-controls">
+            <el-select
+              v-model="selectedConfigs[module.name]"
+              size="small"
+              placeholder="Select config"
+              class="config-select"
+              @click.stop
+            >
+              <el-option
+                v-for="(config, index) in module.configs"
+                :key="index"
+                :label="configLabel(config) || `Config ${index + 1}`"
+                :value="index"
+              />
+            </el-select>
+            <el-tooltip content="Preview Configuration" placement="top" :auto-close="TOOLTIP_AUTO_CLOSE">
+              <el-button size="small" circle @click.stop="openPreview(module, file.filename)">
+                <el-icon><View /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
         </el-card>
       </el-collapse-item>
     </el-collapse>
 
-    <el-empty
-      v-if="filteredModuleFiles.length === 0"
-      :description="store.availableModules.length === 0 ? 'Load a module file' : 'No modules found'"
-      :image-size="80"
-    ></el-empty>
+    <el-empty v-if="filteredModuleFiles.length === 0" description="No modules found" :image-size="80" />
+
+    <ModulePreviewDialog v-model="showPreview" :module-data="previewTarget" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, reactive } from 'vue'
+import { View } from '@element-plus/icons-vue'
 import { useBuilderStore } from '../stores/builderStore'
 import useDragAndDrop from '../composables/useDnD'
+import ModulePreviewDialog from './ModulePreviewDialog.vue'
+import { TOOLTIP_AUTO_CLOSE } from '../utils/constants'
 
-// Lets you optionally make the list selectable (used by ModuleReplacementDialog)
 const props = defineProps({
-  selectable: {
-    type: Boolean,
-    default: false,
-  },
+  selectable: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['select'])
@@ -53,15 +95,14 @@ const { onDragStart } = useDragAndDrop()
 const filterText = ref('')
 const activeCollapseNames = ref([])
 const knownFilenames = ref(new Set())
+const selectedConfigs = reactive({}) // Maps moduleName -> configIndex
+const showPreview = ref(false)
+const previewTarget = ref(null)
 
 const filteredModuleFiles = computed(() => {
   const lowerCaseFilter = filterText.value.toLowerCase()
+  if (!lowerCaseFilter) return store.availableModules
 
-  if (!lowerCaseFilter) {
-    return store.availableModules // Show all files
-  }
-
-  // Filter *inside* each file, and only return files that have matches
   return store.availableModules
     .map((file) => {
       const filteredModules = file.modules.filter((module) => module.name.toLowerCase().includes(lowerCaseFilter))
@@ -70,15 +111,57 @@ const filteredModuleFiles = computed(() => {
     .filter((file) => file.modules.length > 0)
 })
 
-watch(filteredModuleFiles, (newFiles) => {
-  // If we are filtering, open all panels that have matches.
-  if (filterText.value) {
-    activeCollapseNames.value = newFiles.map((f) => f.filename)
-  } else {
-    // If filter is cleared, close them all.
-    activeCollapseNames.value = []
+function configLabel(config) {
+  return `${config.vessel_type} - ${config.BC_type}` || `Config ${index + 1}`
+}
+
+// Initialize default config selection (index 0) for visible modules
+watch(
+  filteredModuleFiles,
+  (files) => {
+    files.forEach((file) => {
+      file.modules.forEach((mod) => {
+        if (selectedConfigs[mod.name] === undefined) {
+          selectedConfigs[mod.name] = 0
+        }
+      })
+    })
+
+    if (filterText.value === '') {
+      activeCollapseNames.value = []
+    } else {
+      activeCollapseNames.value = files.map((f) => f.filename)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+// Wrapper for Drag Start to include the selected Configuration
+function handleDragStart(event, module) {
+  if (props.selectable) return
+
+  const configIndex = selectedConfigs[module.name] || 0
+
+  // We attach the specific config index to the drag payload
+  // so the Builder knows which version to instantiate
+  onDragStart(event, {
+    ...module,
+    configIndex,
+  })
+}
+
+function openPreview(module, filename) {
+  const configIndex = selectedConfigs[module.name] || 0
+
+  previewTarget.value = {
+    moduleName: module.name,
+    filename: filename,
+    configIndex: configIndex,
+    // Pass the actual config object so the dialog is "dumb"
+    configData: module.configs[configIndex],
   }
-})
+  showPreview.value = true
+}
 
 watch(
   () => store.availableModules,
@@ -168,5 +251,26 @@ function handleSelect(module) {
 
 .module-name {
   font-weight: bold;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.config-badge {
+  margin-left: 8px;
+}
+
+.config-controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.config-select {
+  flex-grow: 1;
 }
 </style>

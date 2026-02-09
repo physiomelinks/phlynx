@@ -2,7 +2,8 @@
   <el-dialog
     :model-value="modelValue"
     :title="config.title || 'Import File'"
-    width="500px" @closed="closeDialog"
+    width="500px"
+    @closed="closeDialog"
     @update:model-value="closeDialog"
     :close-on-click-modal="!isLoading"
     :close-on-press-escape="!isLoading"
@@ -57,20 +58,14 @@
             <template #default> All necessary modules and configurations are available. </template>
           </el-alert>
 
-          <el-alert
-            v-else
-            title="Additional Files Required"
-            type="warning"
-            :closable="false"
-            show-icon
-          >
+          <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
             <template #default>
               <div>Please provide the following files to complete the import:</div>
               <ul class="missing-resources">
                 <li v-if="validationStatus.needsModuleFile" class="config-note">
                   <strong>CellML Module File</strong>
-                  <div 
-                    v-if="validationStatus.missingResources?.moduleFileIssues?.length > 0" 
+                  <div
+                    v-if="validationStatus.missingResources?.moduleFileIssues?.length > 0"
                     class="issue-list-container"
                   >
                     <div
@@ -81,10 +76,7 @@
                       • {{ moduleFileIssue.message }}
                     </div>
                   </div>
-                  <div 
-                    v-else-if="validationStatus.missingResources?.moduleTypes?.length > 0"
-                    class="module-type-list"
-                  >
+                  <div v-else-if="validationStatus.missingResources?.moduleTypes?.length > 0" class="module-type-list">
                     containing: {{ validationStatus.missingResources.moduleTypes.join(', ') }}
                   </div>
                 </li>
@@ -94,16 +86,10 @@
                 </li>
               </ul>
               <br />
-              <div
-                v-if="validationStatus.needsConfigFile"
-                class="config-note"
-              >
+              <div v-if="validationStatus.needsConfigFile" class="config-note">
                 <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
               </div>
-              <div
-                v-if="validationStatus.hasModuleFileMismatch"
-                class="mismatch-warning"
-              >
+              <div v-if="validationStatus.hasModuleFileMismatch" class="mismatch-warning">
                 Warning: Some modules are not in the CellML files specified by their configurations.
               </div>
             </template>
@@ -114,8 +100,12 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog" :disabled="isLoading">Cancel</el-button>
-        <el-button type="primary" @click="handleConfirm"
-          :disabled="!isFormValid || isLoading || !validationStatus?.isComplete" :loading="isLoading">
+        <el-button
+          type="primary"
+          @click="handleConfirm"
+          :disabled="!isFormValid || isLoading || !validationStatus?.isComplete"
+          :loading="isLoading"
+        >
           Import
         </el-button>
       </span>
@@ -375,21 +365,21 @@ const handleFileChange = async (uploadFile, field) => {
   if (field.processUpload === 'cellml') {
     const vesselValidation = formState[IMPORT_KEYS.VESSEL]?.validation
     if (vesselValidation?.missingResources?.moduleFileIssues) {
-      
       // Get the list of filenames the Vessel Config is actually looking for
-      const expectedFilenames = Array.from(vesselValidation.missingResources.moduleFileIssues
-        .filter(issue => issue.file)
-        .map(issue => issue.file)
+      const expectedFilenames = Array.from(
+        vesselValidation.missingResources.moduleFileIssues.filter((issue) => issue.file).map((issue) => issue.file)
       )
 
       // If there are requirements and this file name isn't one of them, reject immediately
       if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
         notify.error({
           title: 'Incorrect File Provided',
-          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
-          duration: 6000
+          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${
+            rawFile.name
+          }". This file will not be processed.`,
+          duration: 6000,
         })
-        return 
+        return
       }
     }
   }
@@ -403,7 +393,7 @@ const handleFileChange = async (uploadFile, field) => {
       isVesselReset.value = false
     }
   }
-  
+
   state.fileName = rawFile.name
   state.isValid = false
   state.payload = null
@@ -453,7 +443,7 @@ const handleFileChange = async (uploadFile, field) => {
         validationStatus.value = {
           isComplete: true,
           errors: [],
-          warnings: []
+          warnings: [],
         }
       }
     }
@@ -527,7 +517,7 @@ async function stageFile(field, parsedData, fileName) {
   if (vesselField?.payload?.data) {
     const validationStore = createValidationStore()
     const newValidation = validateVesselData(vesselField.payload.data, validationStore)
-    
+
     // Update state
     formState[IMPORT_KEYS.VESSEL].validation = newValidation
     updateVesselValidation(newValidation)
@@ -535,16 +525,18 @@ async function stageFile(field, parsedData, fileName) {
     // Specific check for CellML failures
     if (field.processUpload === 'cellml') {
       const moduleIssues = newValidation.missingResources.moduleFileIssues
-      
+
       // Look for issues related to the file we just uploaded
-      const relevantIssue = moduleIssues.find(issue => issue.file === fileName)
+      const relevantIssue = moduleIssues.find((issue) => issue.file === fileName)
 
       if (relevantIssue) {
         // The file was uploaded, but it failed for a specific reason
         let errorMsg = `File "${fileName}" was staged, but has issues: `
-        
+
         if (relevantIssue.issue === 'module_not_in_file') {
-          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(', ')}.`
+          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(
+            ', '
+          )}.`
         } else if (relevantIssue.issue === 'filename_mismatch') {
           errorMsg = `The modules were found, but the file name must be exactly "${relevantIssue.expectedFile}" as defined in your config.`
         }
@@ -552,24 +544,24 @@ async function stageFile(field, parsedData, fileName) {
         notify.error({
           title: 'Import Requirement Not Met',
           message: errorMsg,
-          duration: 6000
+          duration: 6000,
         })
       } else if (newValidation.needsModuleFile) {
         // The file was fine, but we still need MORE files
         notify.warning({
           title: 'Partial Success',
-          message: `"${fileName}" is valid, but additional CellML files are still required.`
+          message: `"${fileName}" is valid, but additional CellML files are still required.`,
         })
       } else {
         notify.success({ title: 'CellML Ready', message: `${fileName} staged successfully.` })
       }
-    } 
+    }
     // Simplified check for Config files
     else if (field.processUpload === 'config') {
       if (newValidation.needsConfigFile) {
         notify.warning({
           title: 'Config Staged',
-          message: `"${fileName}" added, but more configurations are still missing.`
+          message: `"${fileName}" added, but more configurations are still missing.`,
         })
       } else {
         notify.success({ title: 'Success', message: 'All configurations provided.' })
@@ -595,33 +587,13 @@ const handleConfirm = async () => {
   await new Promise((resolve) => setTimeout(resolve, 50))
 
   commitStagedFiles()
+
   if (formState[IMPORT_KEYS.PARAMETER]?.isValid) {
     const paramState = formState[IMPORT_KEYS.PARAMETER]
     const { fileName, data } = paramState.payload
 
-    const vesselState = formState[IMPORT_KEYS.VESSEL]
-    const vesselData = vesselState?.payload?.data
-
-    if (fileName && data && vesselData) {
+    if (fileName && data) {
       builderStore.addParameterFile(fileName, data)
-
-      const fileLinkMap = new Map(builderStore.fileParameterMap)
-      const fileTypeMap = new Map(builderStore.fileAssignmentTypeMap || [])
-
-      const involvedCellMLFiles = new Set()
-      vesselData.forEach((vessel) => {
-        const config = builderStore.getConfigForVessel(vessel.vessel_type, vessel.BC_type)
-        if (config?.filename) {
-          involvedCellMLFiles.add(config.filename)
-        }
-      })
-
-      involvedCellMLFiles.forEach((cellmlFile) => {
-        fileLinkMap.set(cellmlFile, fileName)
-        fileTypeMap.set(cellmlFile, 'imported')
-      })
-
-      builderStore.applyFileParameterLinks(fileLinkMap, fileTypeMap)
     }
   }
 
@@ -633,7 +605,7 @@ const handleConfirm = async () => {
   trackEvent('import_action', {
     category: 'Import',
     action: 'import_file',
-    label: props.config.title || 'Import File', // useful context
+    label: props.config.title || 'Import File',
     file_type: 'various',
   })
   emit('confirm', result, (progressText) => {
@@ -773,7 +745,6 @@ defineExpose({
 }
 
 @keyframes breathe {
-
   0%,
   100% {
     transform: scale(0.95);

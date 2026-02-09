@@ -54,6 +54,7 @@ import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import { useGtm } from '../composables/useGtm'
 import { notify } from '../utils/notify'
+import { sanitiseModuleName } from '../utils/nodes'
 
 const props = defineProps({
   // v-model for visibility
@@ -122,9 +123,17 @@ function handleConfirm() {
     return
   }
 
+  const sanitisedName = sanitiseModuleName(editableData.name)
+  if (!sanitisedName) {
+    notify.error({ message: 'Module name is not valid.' })
+    return
+  }
+  editableData.name = sanitisedName
+
   const nameExists = props.existingNames.some(
     (name) => name === editableData.name && name !== props.initialName
   )
+  
   if (nameExists) {
     notify.error({ message: 'A module with this name already exists.' })
     return
@@ -172,10 +181,10 @@ function isOptionDisabled(optionName, currentSelection) {
   // Disable if:
   // 1. It's in the usedOptions Set
   // 2. And it's NOT an option this row already has selected
-  return (
-    usedOptions.value.has(optionName) &&
-    currentSelection.includes(optionName) === false
-  )
+
+  // FIXME: Disabling for now as circ auto configs have multiple ports with same variable options, and this logic would prevent that. We can revisit if we want to enforce unique variable options across ports in the future.
+  // return (usedOptions.value.has(optionName) && currentSelection.includes(optionName) === false)
+  return false
 }
 
 function addPortLabel() {

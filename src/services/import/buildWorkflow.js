@@ -1,23 +1,22 @@
 import { buildPorts, buildPortLabels } from './buildPorts'
 import { getHandleId } from '../../utils/ports'
 import { SOURCE_PORT_TYPE, TARGET_PORT_TYPE } from '../../utils/constants'
+import { extractVariablesFromModule } from '../../utils/cellml'
 
 function buildNodes(builderStore, vessels, progressCallback = null) {
+
   return vessels.map((vessel, index) => {
     if (progressCallback) {
       progressCallback(index, vessels.length, vessel.name)
     }
-    
+
     // Use builderStore method to find the config
-    const configData = builderStore.getConfigForVessel(
-      vessel.vessel_type,
-      vessel.BC_type
-    )
+    const configData = builderStore.getConfigForVessel(vessel.vessel_type, vessel.BC_type)
 
     if (!configData) {
       console.warn(
         `No config found for vessel "${vessel.name}" ` +
-        `(vessel_type: ${vessel.vessel_type}, BC_type: ${vessel.BC_type})`
+          `(vessel_type: ${vessel.vessel_type}, BC_type: ${vessel.BC_type})`
       )
       // Return a placeholder node
       return {
@@ -35,12 +34,21 @@ function buildNodes(builderStore, vessels, progressCallback = null) {
       }
     }
 
-    const { config, module, filename } = configData
+    const { config, configIndex, module, filename } = configData
 
+    const modelString = builderStore.getModuleContent(filename)
+    const variables = extractVariablesFromModule(modelString, module.componentName)
+    builderStore.setVariableParameterValuesForInstance(
+      vessel.name,
+      variables,
+      filename,
+      module.componentName,
+      configIndex
+    )
     // Check if vessel has explicit position
     const hasPosition = vessel.x !== undefined && vessel.y !== undefined
 
-    if (progressCallback && index === vessels.length){
+    if (progressCallback && index === vessels.length) {
       progressCallback(vessels.length, vessels.length, 'Building connections...')
     }
 
@@ -57,15 +65,16 @@ function buildNodes(builderStore, vessels, progressCallback = null) {
             style: { opacity: 0 }, // Hidden until layout runs
           }),
       data: {
-        ...vessel,
-        ...module,
-        name: vessel.name,
-        vesselType: vessel.vessel_type,
-        bcType: vessel.BC_type,
-        config: config,
-        ports: buildPorts(vessel, config),
+        componentName: module.componentName,
+        configIndex: configIndex,
         label: `${module.componentName || module.name} — ${filename}`,
+        name: vessel.name,
         portLabels: buildPortLabels(config),
+        portOptions: module.portOptions || [],
+        ports: buildPorts(vessel, config),
+        hasPrescribedPosition: hasPosition,
+        sourceFile: filename,
+        variables,
       },
     }
   })
@@ -88,13 +97,11 @@ function buildEdges(vessels, nodes) {
     if (sourceNode.data.error) return
 
     // Get ALL valid source ports
-    const sourcePorts = sourceNode.data.ports.filter(
-      (p) => p.type === SOURCE_PORT_TYPE
-    )
+    const sourcePorts = sourceNode.data.ports.filter((p) => p.type === SOURCE_PORT_TYPE)
     if (sourcePorts.length === 0) return
 
     // Parse output vessels (space-separated)
-    const targets = vessel.out_vessels.split(' ').filter(t => t.trim())
+    const targets = vessel.out_vessels.split(' ').filter((t) => t.trim())
 
     targets.forEach((targetName, index) => {
       const targetNode = nodeMap.get(targetName)
@@ -108,9 +115,7 @@ function buildEdges(vessels, nodes) {
       const sourcePort = sourcePorts[sourcePortIndex]
 
       // Get all valid target ports
-      const targetPorts = targetNode.data.ports.filter(
-        (p) => p.type === TARGET_PORT_TYPE
-      )
+      const targetPorts = targetNode.data.ports.filter((p) => p.type === TARGET_PORT_TYPE)
       if (targetPorts.length === 0) return
 
       // Determine which input slot on the target we should use

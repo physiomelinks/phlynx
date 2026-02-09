@@ -60,10 +60,12 @@ export function useScreenshot() {
       })
   }
 
-  function toPng(el, options = { quality: 1 }) {
+  function toPng(el, options = {}) {
     error.value = null
 
     const newOptions = {
+      skipFonts: true, 
+      quality: 1,
       ...options,
 
       // remove unwanted visual elements from screenshot

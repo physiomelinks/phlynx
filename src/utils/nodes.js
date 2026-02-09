@@ -1,3 +1,8 @@
+import { useVueFlow } from "@vue-flow/core"
+import { FLOW_IDS } from "./constants"
+
+const { getNodes } = useVueFlow(FLOW_IDS.MAIN)
+
 /**
  * Generates a unique module name based on the module data and existing names.
  *
@@ -15,6 +20,22 @@ export function generateUniqueModuleName(moduleData, existingNames) {
   }
 
   return finalName
+}
+
+export function sanitiseModuleName(name) {
+  // Sanitize: replace spaces with underscores, remove invalid characters
+  // Valid CellML component names: alphanumeric, underscore, and must start with letter or underscore
+  let sanitised = name
+    .trim()
+    .replace(/\s+/g, '_') // Replace spaces (and multiple spaces) with underscore
+    .replace(/[^a-zA-Z0-9_]/g, '') // Remove all invalid characters
+
+  // Ensure it starts with a letter or underscore
+  if (sanitised && !/^[a-zA-Z_]/.test(sanitised)) {
+    sanitised = '_' + sanitised
+  }
+
+  return sanitised
 }
 
 /**
@@ -36,4 +57,25 @@ export function getId(nodeIds, prefix = 'dndnode_') {
 
   // Return the next ID in the sequence
   return `${prefix}${maxId + 1}`
+}
+
+export function findAnyNode() {
+  return getNodes.value.find(n => n.data?.layoutFrame)
+}
+
+/**
+ * Puts new modules in the same reference frame if user imported using vessel array
+ * containing x and y (z ignored for now).
+ */
+export function attachNewNodeToFrame(position, existingNodeData) {
+  const frame = existingNodeData?.layoutFrame
+  if (!frame) return null
+
+  const refX = position.x / frame.xScale + frame.xCentre
+  const refY = position.y / frame.yScale + frame.yCentre
+
+  return {
+    layoutFrame: frame,
+    layoutRef: { refX, refY }
+  }
 }
