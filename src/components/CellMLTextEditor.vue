@@ -30,13 +30,14 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 import { basicSetup } from 'codemirror'
 import { keymap } from '@codemirror/view'
-import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
 import { CellMLTextGenerator } from 'cellml-text-editor'
 import { CellMLTextParser } from 'cellml-text-editor'
 import { CellMLLatexGenerator } from 'cellml-text-editor'
 import { cellml } from 'cellml-text-editor'
+
+const katexPromise = import('katex')
 
 const props = defineProps({
   modelValue: {
@@ -88,8 +89,10 @@ const shiftSpaceKeymap = keymap.of([
 
 const extensions = [basicSetup, cellml(), shiftSpaceKeymap]
 
-const updatePreview = () => {
+const updatePreview = async() => {
   if (!currentDoc) return
+
+  const katex = (await katexPromise).default
 
   // Find the equation that matches this line
   // We look for elements with 'data-source-location' close to our cursor

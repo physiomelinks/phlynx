@@ -1,11 +1,11 @@
-import cytoscape from 'cytoscape'
 import fcose from 'cytoscape-fcose'
 import { getHandleId } from '../../utils/ports'
+const cytoscapePromise = import('cytoscape')
 
-// Register the fCoSE extension
-cytoscape.use(fcose)
-
-export function runFcoseLayout(nodes, edges) {
+export async function runFcoseLayout(nodes, edges) {
+  const cytoscape = (await cytoscapePromise).default
+  // Register the fCoSE extension
+  cytoscape.use(fcose)
   // Initialize Cytoscape.
   const cy = cytoscape({
     headless: true,
@@ -91,11 +91,7 @@ export function runFcoseLayout(nodes, edges) {
       // A. Determine Side dynamically based on neighbours.
       node.data.ports.forEach((port) => {
         // Find the neighbour node for this port.
-        const edge = edges.find(
-          (e) =>
-            e.sourceHandle === getHandleId(port) ||
-            e.targetHandle === getHandleId(port)
-        )
+        const edge = edges.find((e) => e.sourceHandle === getHandleId(port) || e.targetHandle === getHandleId(port))
         if (!edge) return
 
         const neighbourId = edge.source === node.id ? edge.target : edge.source
@@ -125,11 +121,7 @@ export function runFcoseLayout(nodes, edges) {
         list.sort((a, b) => {
           // Look up neighbour positions again for sorting.
           const getNeighborPos = (port) => {
-            const edge = edges.find(
-              (e) =>
-                e.sourceHandle === getHandleId(port) ||
-                e.targetHandle === getHandleId(port)
-            )
+            const edge = edges.find((e) => e.sourceHandle === getHandleId(port) || e.targetHandle === getHandleId(port))
             if (!edge) return 0
             const nId = edge.source === node.id ? edge.target : edge.source
             const n = cy.getElementById(nId)
@@ -144,12 +136,7 @@ export function runFcoseLayout(nodes, edges) {
       sortPortsByCoord(sides.left, true) // Left varies by Y.
       sortPortsByCoord(sides.right, true) // Right varies by Y.
 
-      node.data.ports = [
-        ...sides.top,
-        ...sides.right,
-        ...sides.bottom,
-        ...sides.left,
-      ]
+      node.data.ports = [...sides.top, ...sides.right, ...sides.bottom, ...sides.left]
     }
 
     node.style = { opacity: 1 }

@@ -40,7 +40,10 @@ jobs:
         run: yarn
 
       - name: Build
-        run: yarn build
+        run: |
+          ls -la
+          ls -la changelogs
+          yarn build
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
