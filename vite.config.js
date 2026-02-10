@@ -11,8 +11,8 @@ import packageJson from './package.json'
 import { execSync } from 'child_process'
 
 const latestChangelogPath = path.resolve(__dirname, 'changelogs/latest.md')
-const hasLatestChangelog = fs.existsSync(latestChangelogPath)
 
+let hasLatestChangelog = false
 if (fs.existsSync(latestChangelogPath)) {
   const content = fs.readFileSync(latestChangelogPath, 'utf8')
   // .trim().length > 0 ensures there is at least one non-whitespace character
