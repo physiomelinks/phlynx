@@ -179,18 +179,18 @@
                   {{ matchCount }} match{{ matchCount !== 1 ? 'es' : '' }}
                 </span>
                 <div v-if="searchQuery && matchCount >= 1" class="search-nav-buttons">
-                  <el-button 
+                  <el-button
                     v-if="matchCount > 1"
-                    :icon="ArrowUp" 
-                    size="small" 
-                    text 
+                    :icon="ArrowUp"
+                    size="small"
+                    text
                     @click="cycleToPreviousMatch"
                     title="Previous match (Shift+Enter)"
                   />
-                  <el-button 
-                    :icon="ArrowDown" 
-                    size="small" 
-                    text 
+                  <el-button
+                    :icon="ArrowDown"
+                    size="small"
+                    text
                     @click="cycleToNextMatch"
                     :title="matchCount === 1 ? 'Zoom to match (Enter)' : 'Next match (Enter)'"
                   />
@@ -350,6 +350,7 @@ import {
   IMPORT_KEYS,
   EXPORT_KEYS,
   JSON_FILE_TYPES,
+  ZIP_FILE_TYPES,
 } from '../utils/constants'
 import { getId as getNextNodeId, generateUniqueModuleName } from '../utils/nodes'
 import { getId as getNextEdgeId } from '../utils/edges'
@@ -564,11 +565,8 @@ const handleSearchInput = () => {
     const name = node.data?.name?.toLowerCase() || ''
     const label = node.data?.label?.toLowerCase() || ''
     const sourceFile = node.data?.sourceFile?.toLowerCase() || ''
-    
-    if (componentName.includes(query) || 
-        name.includes(query) || 
-        label.includes(query) || 
-        sourceFile.includes(query)) {
+
+    if (componentName.includes(query) || name.includes(query) || label.includes(query) || sourceFile.includes(query)) {
       matches.add(node.id)
     }
   })
@@ -581,9 +579,9 @@ const handleSearchInput = () => {
 // Cycle to next matching node
 const cycleToNextMatch = () => {
   if (matchCount.value === 0) return
-  
+
   const matchArray = Array.from(matchingNodeIds.value)
-  
+
   if (matchCount.value === 1) {
     // If only one match, just zoom to it
     zoomToNode(matchArray[0])
@@ -597,7 +595,7 @@ const cycleToNextMatch = () => {
 // Cycle to previous matching node
 const cycleToPreviousMatch = () => {
   if (matchCount.value <= 1) return
-  
+
   const matchArray = Array.from(matchingNodeIds.value)
   currentMatchIndex.value = (currentMatchIndex.value - 1 + matchArray.length) % matchArray.length
   zoomToNode(matchArray[currentMatchIndex.value])
@@ -607,16 +605,19 @@ const cycleToPreviousMatch = () => {
 const zoomToNode = (nodeId) => {
   const node = findNode(nodeId)
   if (!node) return
-  
+
   const x = node.position.x + (node.dimensions?.width || 0) / 2
   const y = node.position.y + (node.dimensions?.height || 0) / 2
   const zoom = 1.2
-  
-  setViewport({
-    x: dimensions.value.width / 2 - x * zoom,
-    y: dimensions.value.height / 2 - y * zoom,
-    zoom: zoom,
-  }, { duration: 300 })
+
+  setViewport(
+    {
+      x: dimensions.value.width / 2 - x * zoom,
+      y: dimensions.value.height / 2 - y * zoom,
+      zoom: zoom,
+    },
+    { duration: 300 }
+  )
 }
 
 // Helper function to determine node class based on search
@@ -1090,7 +1091,7 @@ const performExport = async () => {
   currentExportKey.value = currentExportMode.value.key
   const result = await saveFileHandle(
     builderStore.lastExportName,
-    currentExportKey.value === EXPORT_KEYS.CELLML ? CELLML_FILE_TYPES : JSON_FILE_TYPES
+    currentExportKey.value === EXPORT_KEYS.CELLML ? CELLML_FILE_TYPES : ZIP_FILE_TYPES
   )
   if (result.status) {
     if (result.handle) {
@@ -1410,7 +1411,7 @@ async function onExportConfirm(fileName, handle) {
       finalName = handle.name
     }
 
-    if (fileName && finalName.endsWith(currentExportMode.value.suffix)) {
+    if (finalName.endsWith(currentExportMode.value.suffix)) {
       const suffixLen = currentExportMode.value.suffix.length
       finalName = finalName.slice(0, -suffixLen)
     }
@@ -1676,17 +1677,17 @@ const handleKeyDown = (event) => {
   const isShift = event.shiftKey
 
   if (isCtrl && event.key.toLowerCase() === 'c') {
-    event.preventDefault() 
+    event.preventDefault()
     copySelection()
   }
 
   if (isCtrl && event.key.toLowerCase() === 'v') {
-    event.preventDefault() 
+    event.preventDefault()
     pasteSelection(true)
   }
 
   if (isCtrl && event.key.toLowerCase() === 'd') {
-    event.preventDefault() 
+    event.preventDefault()
     copySelection()
     pasteSelection()
   }
@@ -1702,34 +1703,34 @@ const handleKeyDown = (event) => {
   }
 
   if (isCtrl && !isShift && event.key === 'z' && historyStore.canUndo) {
-    event.preventDefault() 
+    event.preventDefault()
     handleUndo()
   }
   if (isCtrl && isShift && event.key === 'z' && historyStore.canRedo) {
-    event.preventDefault() 
+    event.preventDefault()
     handleRedo()
   }
   if (isCtrl && event.key.toLowerCase() === 'y' && historyStore.canRedo) {
-    event.preventDefault() 
+    event.preventDefault()
     handleRedo()
   }
 
   if (isCtrl && event.key.toLowerCase() === 'e' && !currentExportMode.disabled) {
-    event.preventDefault() 
+    event.preventDefault()
     triggerCurrentExport()
   }
 
   if (isCtrl && event.key.toLowerCase() === 'i' && !currentImportMode.disabled) {
-    event.preventDefault() 
+    event.preventDefault()
     triggerCurrentImport()
   }
 
   // Search shortcuts
-  if ((isCtrl && event.key === 'f')||(event.key === '/')){
+  if ((isCtrl && event.key === 'f') || event.key === '/') {
     event.preventDefault()
     document.querySelector('.workspace-search-input input')?.focus()
   }
-  
+
   if (event.key === 'Escape' && searchQuery.value && !['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
     searchQuery.value = ''
   }
@@ -1890,11 +1891,15 @@ watchPostEffect(() => {
 })
 
 // Watch for node changes to re-apply search filter
-watch(nodes, () => {
-  if (searchQuery.value.trim()) {
-    handleSearchInput()
-  }
-}, { deep: true })
+watch(
+  nodes,
+  () => {
+    if (searchQuery.value.trim()) {
+      handleSearchInput()
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <style>

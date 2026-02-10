@@ -14,7 +14,7 @@ const notifyDuration = (type) => {
 export const notify = (options) => {
   return ElNotification({
     position: 'top-right',
-    offset: 120,
+    offset: 170,
     duration: notifyDuration(options.type),
     ...options,
   })

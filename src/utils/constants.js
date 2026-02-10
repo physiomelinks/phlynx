@@ -61,3 +61,10 @@ export const JSON_FILE_TYPES = [
     accept: { 'application/json': ['.json'] },
   },
 ]
+
+export const ZIP_FILE_TYPES = [
+  {
+    description: 'ZIP File',
+    accept: { 'application/zip': ['.zip'] },
+  },
+]

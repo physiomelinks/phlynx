@@ -11,6 +11,7 @@
 
 
 #### Fixed Bugs
+* Fix up suffixes for exporting and saving assets by [@hsorby](https://github.com/hsorby) in [#273](https://github.com/physiomelinks/phlynx/pull/273)
 * Update parameters when parameters are imported by [@hsorby](https://github.com/hsorby) in [#266](https://github.com/physiomelinks/phlynx/pull/266)
 * Suffix for export should change depending on what export is taking place by [@hsorby](https://github.com/hsorby) in [#265](https://github.com/physiomelinks/phlynx/pull/265)
 * Rename module after first edit by [@hsorby](https://github.com/hsorby) in [#264](https://github.com/physiomelinks/phlynx/pull/264)
