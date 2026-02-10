@@ -92,11 +92,11 @@ To build the application for production, use the following command:
     yarn build
 
 This will create a production-ready build in the ``dist`` directory.
-We can also use the `update-docs-changelog` script to generate the complete changelog before building the application:
+We can also use the `update:docs:changelog` script to generate the complete changelog before building the application:
 
 .. code-block:: bash
 
-    yarn update-docs-changelog
+    yarn update:docs:changelog
     yarn build
 
 To update the changelogs in the changelogs/ directory based on linked pull requests issue information we have to run:
