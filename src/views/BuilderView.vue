@@ -162,6 +162,44 @@
       </div>
 
       <el-main class="workbench-main">
+        <div class="workspace-search-container" :class="{ 'search-inactive': !searchBarFocused && !searchQuery }">
+          <el-input
+            v-model="searchQuery"
+            placeholder="Search modules..."
+            :prefix-icon="Search"
+            clearable
+            class="workspace-search-input"
+            @input="handleSearchInput"
+            @focus="searchBarFocused = true"
+            @blur="searchBarFocused = false"
+          >
+            <template #suffix>
+              <div class="search-suffix-content">
+                <span v-if="searchQuery && matchCount !== null" class="search-match-count">
+                  {{ matchCount }} match{{ matchCount !== 1 ? 'es' : '' }}
+                </span>
+                <div v-if="searchQuery && matchCount >= 1" class="search-nav-buttons">
+                  <el-button 
+                    v-if="matchCount > 1"
+                    :icon="ArrowUp" 
+                    size="small" 
+                    text 
+                    @click="cycleToPreviousMatch"
+                    title="Previous match (Shift+Enter)"
+                  />
+                  <el-button 
+                    :icon="ArrowDown" 
+                    size="small" 
+                    text 
+                    @click="cycleToNextMatch"
+                    :title="matchCount === 1 ? 'Zoom to match (Enter)' : 'Next match (Enter)'"
+                  />
+                </div>
+              </div>
+            </template>
+          </el-input>
+        </div>
+
         <div class="dnd-flow" @drop="onDrop">
           <VueFlow
             :id="FLOW_IDS.MAIN"
@@ -188,6 +226,7 @@
                 :id="props.id"
                 :data="props.data"
                 :selected="props.selected"
+                :class="getNodeClass(props)"
                 @open-edit-dialog="onOpenEditDialog"
                 @open-cellml-editor-dialog="onOpenCellMLEditorDialog"
                 @open-parameter-editor-dialog="onOpenParameterEditorDialog"
@@ -214,12 +253,7 @@
     @confirm="onEditConfirm"
   />
 
-  <CellMLEditorDialog
-    v-model="cellMLEditorDialogVisible"
-    :nodeData="currentEditingNode"
-    @save-update="onCellMLUpdateSave"
-    @save-fork="onCellMLForkSave"
-  />
+  <CellMLEditorDialog v-model="cellMLEditorDialogVisible" :nodeData="currentEditingNode" @save="handleCellMLSave" />
 
   <EditParameterDialog v-model="editParameterDialogVisible" :nodeData="currentEditingNode" />
 
@@ -266,11 +300,14 @@ export default {
 </script>
 
 <script setup>
-import { computed, h, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watchPostEffect } from 'vue'
+import { computed, h, inject, markRaw, nextTick, onMounted, onUnmounted, ref, watch, watchPostEffect } from 'vue'
 import { useVueFlow, VueFlow } from '@vue-flow/core'
 import {
   DCaret,
   CameraFilled,
+  Search,
+  ArrowUp,
+  ArrowDown,
   Menu as IconVessel,
   Operation as IconParameters,
   Setting as IconModuleConfig,
@@ -396,6 +433,13 @@ const undoRedoSelection = false
 const clipboard = ref({ nodes: [], edges: [] })
 const mousePosition = ref({ x: 0, y: 0 })
 
+// Search functionality
+const searchQuery = ref('')
+const matchCount = ref(null)
+const matchingNodeIds = ref(new Set())
+const searchBarFocused = ref(false)
+const currentMatchIndex = ref(0)
+
 const allNodeNames = computed(() => nodes.value.map((n) => n.data.name))
 
 const somethingAvailable = computed(() => nodes.value.length > 0)
@@ -500,6 +544,87 @@ function selectAllNodes() {
   nodes.value.forEach((node) => {
     node.selected = true
   })
+}
+
+// Search filter logic
+const handleSearchInput = () => {
+  if (!searchQuery.value.trim()) {
+    matchingNodeIds.value.clear()
+    matchCount.value = null
+    currentMatchIndex.value = 0
+    return
+  }
+
+  const query = searchQuery.value.toLowerCase()
+  const matches = new Set()
+
+  nodes.value.forEach((node) => {
+    // Search in all relevant name fields
+    const componentName = node.data?.componentName?.toLowerCase() || ''
+    const name = node.data?.name?.toLowerCase() || ''
+    const label = node.data?.label?.toLowerCase() || ''
+    const sourceFile = node.data?.sourceFile?.toLowerCase() || ''
+    
+    if (componentName.includes(query) || 
+        name.includes(query) || 
+        label.includes(query) || 
+        sourceFile.includes(query)) {
+      matches.add(node.id)
+    }
+  })
+
+  matchingNodeIds.value = matches
+  matchCount.value = matches.size
+  currentMatchIndex.value = 0
+}
+
+// Cycle to next matching node
+const cycleToNextMatch = () => {
+  if (matchCount.value === 0) return
+  
+  const matchArray = Array.from(matchingNodeIds.value)
+  
+  if (matchCount.value === 1) {
+    // If only one match, just zoom to it
+    zoomToNode(matchArray[0])
+  } else {
+    // Multiple matches, cycle through them
+    currentMatchIndex.value = (currentMatchIndex.value + 1) % matchArray.length
+    zoomToNode(matchArray[currentMatchIndex.value])
+  }
+}
+
+// Cycle to previous matching node
+const cycleToPreviousMatch = () => {
+  if (matchCount.value <= 1) return
+  
+  const matchArray = Array.from(matchingNodeIds.value)
+  currentMatchIndex.value = (currentMatchIndex.value - 1 + matchArray.length) % matchArray.length
+  zoomToNode(matchArray[currentMatchIndex.value])
+}
+
+// Zoom and center on a specific node
+const zoomToNode = (nodeId) => {
+  const node = findNode(nodeId)
+  if (!node) return
+  
+  const x = node.position.x + (node.dimensions?.width || 0) / 2
+  const y = node.position.y + (node.dimensions?.height || 0) / 2
+  const zoom = 1.2
+  
+  setViewport({
+    x: dimensions.value.width / 2 - x * zoom,
+    y: dimensions.value.height / 2 - y * zoom,
+    zoom: zoom,
+  }, { duration: 300 })
+}
+
+// Helper function to determine node class based on search
+const getNodeClass = (props) => {
+  if (!searchQuery.value.trim()) {
+    return ''
+  }
+  return matchingNodeIds.value.has(props.id) ? 'node-search-match' : 'node-search-dimmed'
 }
 
 function handleClearWorkspace() {
@@ -757,6 +882,21 @@ const onEdgeChange = (changes) => {
 
 const screenshotDisabled = computed(() => nodes.value.length === 0 && vueFlowRef.value !== null)
 
+function updateNodesWithNewParameters() {
+  nodes.value.forEach((node) => {
+    if (node.type === 'moduleNode') {
+      builderStore.setVariableParameterValuesForInstance(
+        node.data.name,
+        node.data.variables,
+        node.data.sourceFile,
+        node.data.componentName,
+        node.data.configIndex
+      )
+      updateNodeData(node.id, { variables: node.data.variables })
+    }
+  })
+}
+
 const loadCellMLModuleData = (content, filename, broadcastNotifications = true) => {
   return new Promise((resolve) => {
     const result = processModuleData(content)
@@ -934,6 +1074,7 @@ async function onImportConfirm(importPayload, updateProgress) {
   } else if (currentImportMode.value.key === IMPORT_KEYS.PARAMETER) {
     const paramPayload = importPayload[IMPORT_KEYS.PARAMETER]
     loadParametersData(paramPayload?.data, paramPayload?.fileName)
+    updateNodesWithNewParameters()
   } else if (currentImportMode.value.key === IMPORT_KEYS.UNITS) {
     const unitsPayload = importPayload[IMPORT_KEYS.UNITS]
     loadCellMLUnitsData(unitsPayload?.data, unitsPayload?.fileName)
@@ -990,54 +1131,6 @@ function onOpenParameterEditorDialog(eventPayload) {
   editParameterDialogVisible.value = true
 }
 
-async function propogateCellMLModuleUpdates(updatedData, changeText) {
-  await loadCellMLModuleData(updatedData.code, updatedData.sourceFile, false)
-  const updatedModule = builderStore.getModulesModule(updatedData.sourceFile, updatedData.componentName)
-  const validPortNames = new Set(updatedModule.portOptions.map((p) => p.name))
-
-  let updatedCount = 0
-  nodes.value.forEach((node) => {
-    const isTargetNode = node.id === updatedData.nodeId
-    const isMatchingModule =
-      node.data.sourceFile === updatedData.sourceFile && node.data.componentName === updatedData.componentName
-    if (isTargetNode || isMatchingModule) {
-      const cleanLabels = (node.data.portLabels || []).map((labelObj) => {
-        return {
-          ...labelObj,
-          // Filter the internal array: Keep 'opt' only if it exists in validPortNames.
-          option: labelObj.option.filter((opt) => validPortNames.has(opt)),
-        }
-      })
-      const existingVariableNames = new Set(node.data.variables.map((item) => item.name))
-      const cleanVariables = (node.data.variables || []).filter((v) => validPortNames.has(v.name))
-      const newItems = updatedModule.variables.filter((item) => !existingVariableNames.has(item.name))
-      cleanVariables.push(...newItems)
-
-      // Create the new data object
-      const newData = {
-        ...JSON.parse(JSON.stringify(node.data)), // Deep copy to avoid mutating existing data
-        componentName: updatedData.componentName,
-        sourceFile: updatedData.sourceFile, // Essential for the target node
-        label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
-        portLabels: cleanLabels, // Cleaned port labels.
-        portOptions: updatedModule.portOptions, // Updates the ports/handles
-        variables: cleanVariables, // Cleaned variables list.
-      }
-
-      updatedCount++
-      updateNodeData(node.id, newData)
-    }
-  })
-
-  notify.success({
-    title: 'CellML Module ' + changeText,
-    message: `Updated ${updatedCount} node${updatedCount !== 1 ? 's' : ''} to use ${updatedData.componentName} from ${
-      updatedData.sourceFile
-    }.`,
-  })
-  return validPortNames
-}
-
 function filterConfig(config, validNamesSet) {
   // Clean the Ports (Nested arrays).
   const portFields = ['entrance_ports', 'exit_ports', 'general_ports']
@@ -1057,29 +1150,123 @@ function filterConfig(config, validNamesSet) {
     config.variables_and_units = config.variables_and_units.filter((entry) => validNamesSet.has(entry[0]))
   }
 }
+/**
+ * Handler for both Saving (Updating) and Forking CellML modules.
+ * Handles:
+ * 1. Loading the new/updated CellML data.
+ * 2. Migrating configs if the name changed.
+ * 3. updating graph nodes to match new ports.
+ */
+async function handleCellMLSave(saveData) {
+  const { sourceFile, componentName, originalSourceFile, originalComponentName, originalConfigIndex, code } = saveData
 
-async function onCellMLUpdateSave(updatedData) {
-  const validPortNames = await propogateCellMLModuleUpdates(updatedData, 'Updated')
-  const targetModule = builderStore.getModulesModule(updatedData.sourceFile, updatedData.componentName)
-  // Strip new config port settings down to only those that are valid for the new module.
-  filterConfig(targetModule.configs[updatedData.configIndex], validPortNames)
+  const isRename = originalComponentName !== componentName
+  const isNewFile = originalSourceFile !== sourceFile
+  const isForkOrRename = isRename || isNewFile
+
+  // Get the original configuration to migrate (if it exists).
+  const originalModule = builderStore.getModulesModule(originalSourceFile, originalComponentName)
+
+  // Safety check: If we can't find the original, create a blank config
+  let configToMigrate = {}
+  if (originalModule && originalModule.configs && originalModule.configs[originalConfigIndex]) {
+    // Deep copy to break reactivity
+    configToMigrate = JSON.parse(JSON.stringify(originalModule.configs[originalConfigIndex]))
+  }
+
+  // Load the New Data into the Store
+  // This registers the module under the name found in 'code'.
+  await loadCellMLModuleData(code, sourceFile, false)
+
+  // Retrieve the "Target" Module (The one we just loaded)
+  let targetModule = builderStore.getModulesModule(sourceFile, componentName)
+
+  if (!targetModule) {
+    console.warn(`Mismatch: Requested ${componentName}, but store didn't register it. Check component name extraction.`)
+    return
+  }
+
+  // Update the configuration.
+  if (!targetModule.configs) {
+    targetModule.configs = []
+  }
+
+  if (isForkOrRename) {
+    // CASE A: Fork or Rename -> We add a NEW config entry.
+
+    // Update metadata to match new home.
+    configToMigrate.module_file = sourceFile
+    configToMigrate.module_type = componentName
+
+    // Push as a new config.
+    targetModule.configs.push(configToMigrate)
+    targetModule.configIndex = targetModule.configs.length - 1
+  } else {
+    // CASE B: Simple Update -> We update the EXISTING config in place.
+    // We don't push a new one, we just ensure the current one is up to date.
+    targetModule.configs[originalConfigIndex] = configToMigrate
+  }
+
+  // Propagate Changes (Update Nodes and Filter Configs).
+  const validPortNames = updateGraphNodesAndPorts(saveData, targetModule)
+
+  // Clean the Config (Remove ports that no longer exist).
+  // Now that we have the valid ports from the new CellML, clean the config.
+  const activeConfig = targetModule.configs[targetModule.configIndex]
+  filterConfig(activeConfig, validPortNames)
 }
 
-async function onCellMLForkSave(saveData) {
-  const originalModule = builderStore.getModulesModule(saveData.originalSourceFile, saveData.originalComponentName)
-  const newConfig = JSON.parse(
-    JSON.stringify(originalModule.configs ? originalModule.configs[saveData.originalConfigIndex] : {})
-  )
-  newConfig.module_file = saveData.sourceFile
-  newConfig.module_type = saveData.componentName
-  const validPortNames = await propogateCellMLModuleUpdates(saveData, 'Forked')
-  // Strip new config port settings down to only those that are valid for the new module.
-  filterConfig(newConfig, validPortNames)
-  const targetModule = builderStore.getModulesModule(saveData.sourceFile, saveData.componentName)
-  const configs = targetModule.configs || []
-  targetModule.configIndex = configs.length
-  configs.push(newConfig)
-  targetModule.configs = configs
+/**
+ * Helper: Updates the visual nodes on the graph.
+ * Separated from data fetching for clarity.
+ */
+function updateGraphNodesAndPorts(updatedData, updatedModule) {
+  const validPortNames = new Set(updatedModule?.portOptions?.map((p) => p.name) || [])
+  let updatedCount = 0
+
+  nodes.value.forEach((node) => {
+    // Check if node is the specific target OR if it uses the same module (for reusability).
+    const isTargetNode = node.id === updatedData.nodeId
+    const isMatchingModule =
+      node.data.sourceFile === updatedData.originalSourceFile &&
+      node.data.componentName === updatedData.originalComponentName
+
+    if (isTargetNode || isMatchingModule) {
+      // Logic to clean existing variables/ports on the node.
+      const cleanLabels = (node.data.portLabels || []).map((labelObj) => ({
+        ...labelObj,
+        option: labelObj.option.filter((opt) => validPortNames.has(opt)),
+      }))
+
+      const existingVariableNames = new Set(node.data.variables.map((item) => item.name))
+      const cleanVariables = (node.data.variables || []).filter((v) => validPortNames.has(v.name))
+
+      // Add new variables found in the CellML.
+      const newItems = (updatedModule.variables || []).filter((item) => !existingVariableNames.has(item.name))
+      cleanVariables.push(...newItems)
+
+      // Construct new node data.
+      const newData = {
+        ...JSON.parse(JSON.stringify(node.data)),
+        componentName: updatedData.componentName, // Update to NEW name
+        sourceFile: updatedData.sourceFile, // Update to NEW file
+        label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
+        portLabels: cleanLabels,
+        portOptions: updatedModule.portOptions || [],
+        variables: cleanVariables,
+      }
+
+      updatedCount++
+      updateNodeData(node.id, newData)
+    }
+  })
+
+  notify.success({
+    title: 'Module Updated',
+    message: `Updated ${updatedCount} node${updatedCount !== 1 ? 's' : ''} to ${updatedData.componentName}.`,
+  })
+
+  return validPortNames
 }
 
 function onOpenMacroBuilderDialog() {
@@ -1470,21 +1657,36 @@ const pasteSelection = (atMouse = false) => {
 
 const handleKeyDown = (event) => {
   // Check if user is typing in an input field (don't trigger copy/paste then)
-  if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return
+  if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+    // Allow Enter/Shift+Enter in search input for navigation
+    if (event.target.closest('.workspace-search-input')) {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        if (event.shiftKey) {
+          cycleToPreviousMatch()
+        } else {
+          cycleToNextMatch()
+        }
+      }
+    }
+    return
+  }
 
   const isCtrl = event.ctrlKey || event.metaKey // metaKey for Mac Cmd
   const isShift = event.shiftKey
 
-  if (isCtrl && event.key === 'c') {
+  if (isCtrl && event.key.toLowerCase() === 'c') {
+    event.preventDefault() 
     copySelection()
   }
 
-  if (isCtrl && event.key === 'v') {
+  if (isCtrl && event.key.toLowerCase() === 'v') {
+    event.preventDefault() 
     pasteSelection(true)
   }
 
-  if (isCtrl && event.key === 'd') {
-    event.preventDefault() // Stop browser bookmark dialog
+  if (isCtrl && event.key.toLowerCase() === 'd') {
+    event.preventDefault() 
     copySelection()
     pasteSelection()
   }
@@ -1494,11 +1696,42 @@ const handleKeyDown = (event) => {
     selectAllNodes()
   }
 
+  if (isCtrl && event.key.toLowerCase() === 's' && !somethingAvailable) {
+    event.preventDefault()
+    handleSaveWorkspace()
+  }
+
   if (isCtrl && !isShift && event.key === 'z' && historyStore.canUndo) {
+    event.preventDefault() 
     handleUndo()
   }
   if (isCtrl && isShift && event.key === 'z' && historyStore.canRedo) {
+    event.preventDefault() 
     handleRedo()
+  }
+  if (isCtrl && event.key.toLowerCase() === 'y' && historyStore.canRedo) {
+    event.preventDefault() 
+    handleRedo()
+  }
+
+  if (isCtrl && event.key.toLowerCase() === 'e' && !currentExportMode.disabled) {
+    event.preventDefault() 
+    triggerCurrentExport()
+  }
+
+  if (isCtrl && event.key.toLowerCase() === 'i' && !currentImportMode.disabled) {
+    event.preventDefault() 
+    triggerCurrentImport()
+  }
+
+  // Search shortcuts
+  if ((isCtrl && event.key === 'f')||(event.key === '/')){
+    event.preventDefault()
+    document.querySelector('.workspace-search-input input')?.focus()
+  }
+  
+  if (event.key === 'Escape' && searchQuery.value && !['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+    searchQuery.value = ''
   }
 }
 
@@ -1532,7 +1765,6 @@ async function fetchAndLoadResource(entry, resourceType) {
   }
 }
 
-
 const cellmlModules = import.meta.glob('../assets/modules/*.cellml', {
   query: 'raw',
   eager: true,
@@ -1544,7 +1776,6 @@ const cellmlUnits = import.meta.glob('../assets/units/*.cellml', {
 const moduleConfigs = import.meta.glob('../assets/module_configs/*.json', {
   eager: true,
 })
-
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeyDown)
@@ -1657,6 +1888,13 @@ watchPostEffect(() => {
     actionBtn.removeAttribute('disabled')
   }
 })
+
+// Watch for node changes to re-apply search filter
+watch(nodes, () => {
+  if (searchQuery.value.trim()) {
+    handleSearchInput()
+  }
+}, { deep: true })
 </script>
 
 <style>
@@ -1698,5 +1936,67 @@ watchPostEffect(() => {
 .import-button-content {
   display: flex;
   align-items: center;
+}
+
+/* Search bar styles */
+.workspace-search-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 300px;
+  transition: opacity 0.3s ease;
+}
+
+.workspace-search-container.search-inactive {
+  opacity: 0.4;
+}
+
+.workspace-search-container:hover {
+  opacity: 1;
+}
+
+.workspace-search-input {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.search-match-count {
+  font-size: 12px;
+  color: #909399;
+  padding-right: 8px;
+}
+
+.search-suffix-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+}
+
+.search-nav-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.search-nav-buttons .el-button {
+  padding: 4px;
+  min-height: unset;
+}
+
+/* Node filtering styles */
+.node-search-match {
+  opacity: 1 !important;
+  transition: opacity 0.2s ease;
+  outline: 3px solid #409eff;
+  outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.2);
+}
+
+.node-search-dimmed {
+  opacity: 0.25 !important;
+  transition: opacity 0.2s ease;
 }
 </style>

@@ -347,6 +347,11 @@ export const useBuilderStore = defineStore('builder', () => {
     return null
   }
 
+  function getModuleConfigFromConfigIndex(filename, moduleName, configIndex) {
+    const module = getModulesModule(filename, moduleName)
+    return module.configs[configIndex]
+  }
+
   function getState() {
     return {
       availableModules: availableModules.value,
@@ -389,6 +394,7 @@ export const useBuilderStore = defineStore('builder', () => {
     getGlobalVariables,
     getModuleContent,
     getModulesModule,
+    getModuleConfigFromConfigIndex,
     getParameterValuesForInstanceVariable,
     getState,
     hasModuleFile,

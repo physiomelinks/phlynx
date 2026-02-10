@@ -963,7 +963,7 @@ export function doesComponentExistInModel(modelString, componentName) {
   return false
 }
 
-export function mergeModelComponents(targetModelString, sourceModelString, newComponentName) {
+export function mergeModelComponents(targetModelString, sourceModelString, newComponentName, oldComponentName) {
   const parser = new _libcellml.Parser(false)
 
   let targetModel = null
@@ -993,10 +993,10 @@ export function mergeModelComponents(targetModelString, sourceModelString, newCo
 
   if (sourceModel.componentCount() > 0) {
     const component = sourceModel.componentByIndex(0)
-    const existingComponent = targetModel.componentByName(newComponentName, true)
+    const existingComponent = targetModel.componentByName(oldComponentName || newComponentName, true)
 
     if (existingComponent) {
-      targetModel.removeComponentByName(newComponentName, true)
+      targetModel.removeComponentByName(oldComponentName || newComponentName, true)
       existingComponent.delete()
     }
 

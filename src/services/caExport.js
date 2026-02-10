@@ -120,10 +120,9 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
       nodeNameObjMap.set(node.data.name, node)
     }
 
-    let module_config = []
+    const uniqueModuleConfigs = new Map();
     let vessel_array = []
     let allParameters = new Set()
-    const BC_type = 'nn' // Placeholder for boundary condition type
 
     // --- 1. PROCESS NODES FOR CONFIG AND TOPOLOGY ---
     for (const node of nodes) {
@@ -182,23 +181,31 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
         ])
       }
 
-      // Build Config and Vessel arrays
-      module_config.push({
-        vessel_type: node.data.name,
-        BC_type: BC_type,
-        module_format: 'cellml',
-        module_file: node.data.sourceFile,
-        module_type: node.data.componentName,
-        entrance_ports: portsByType.entrance_ports || [],
-        exit_ports: portsByType.exit_ports || [],
-        general_ports: portsByType.general_ports || [],
-        variables_and_units: variablesAndUnits,
-      })
+      const config = builderStore.getModuleConfigFromConfigIndex(
+        node.data.sourceFile,
+        node.data.componentName,
+        node.data.configIndex
+      )
+
+      const moduleConfigKey = `${config.vessel_type}|${config.BC_type}`;
+      if (!uniqueModuleConfigs.has(moduleConfigKey)) {
+        uniqueModuleConfigs.set(moduleConfigKey, {
+          vessel_type: config.vessel_type,
+          BC_type: config.BC_type,
+          module_format: config.module_format,
+          module_file: config.module_file,
+          module_type: config.module_type,
+          entrance_ports: portsByType.entrance_ports || [],
+          exit_ports: portsByType.exit_ports || [],
+          general_ports: portsByType.general_ports || [],
+          variables_and_units: variablesAndUnits,
+        });
+      }
 
       vessel_array.push({
         name: node.data.name,
-        BC_type: BC_type,
-        vessel_type: node.data.name,
+        BC_type: config.BC_type,
+        vessel_type: config.vessel_type,
         inp_vessels: inp_vessels.join(' '),
         out_vessels: out_vessels.join(' '),
       })
@@ -213,6 +220,9 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
         }))
       }
     }
+
+    // Convert Map to array
+    const module_config = Array.from(uniqueModuleConfigs.values());
 
     // --- 2. CONSOLIDATE PARAMETER FILES INTO ONE CSV ---
     const globalVariables = builderStore.getGlobalVariables()

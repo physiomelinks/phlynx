@@ -1,5 +1,3 @@
-import { JSON_FILE_TYPES } from "./constants"
-
 export const legacyDownload = (filename, blob) => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -21,7 +19,7 @@ export const saveFileHandle = async (defaultName, types) => {
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: defaultName,
-        types: JSON_FILE_TYPES,
+        types,
       })
       return { status: true, handle: handle }
     } catch (err) {

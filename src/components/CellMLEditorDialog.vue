@@ -12,7 +12,7 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleSave" />
+        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleSave('key')" />
       </div>
 
       <div class="status-bar">
@@ -27,11 +27,11 @@
       <span class="dialog-footer">
         <el-button @click="handleCancel">Cancel</el-button>
 
-        <el-button v-if="isInternalModule" type="primary" @click="handleForkSave" :disabled="!isDirty">
+        <el-button v-if="isInternalModule" type="primary" @click="handleSave('fork')" :disabled="!isDirty">
           Save As
         </el-button>
 
-        <el-button v-else type="primary" @click="handleDirectSave" :disabled="!isDirty"> Save Changes </el-button>
+        <el-button v-else type="primary" @click="handleSave('update')" :disabled="!isDirty"> Save Changes </el-button>
       </span>
     </template>
   </el-dialog>
@@ -64,7 +64,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'save-fork', 'save-update'])
+const emit = defineEmits(['update:modelValue', 'save'])
 
 const store = useBuilderStore()
 const { trackEvent } = useGtm()
@@ -133,18 +133,6 @@ const checkDirtyAndProceed = (confirmAction) => {
   }
 }
 
-const handleSave = () => {
-  if (isInternalModule.value) {
-    if (isDirty.value) {
-      handleForkSave()
-    }
-  } else {
-    if (isDirty.value) {
-      handleDirectSave()
-    }
-  }
-}
-
 const handleBeforeClose = (done) => {
   checkDirtyAndProceed(done)
 }
@@ -167,55 +155,84 @@ function formSaveData(componentName, modelString = null) {
   }
 }
 
-const handleDirectSave = async () => {
-  // Emit event to save over the EXISTING file
-  const componentName = props.nodeData.componentName
-  const modelString = await store.getModuleContent(USER_MODULES_FILE)
-  const mergedModelString = mergeModelComponents(modelString, currentCode.value, componentName)
-  if (!mergedModelString) {
-    ElMessageBox.alert(`Failed to merge changes into User Modules.`, 'Save Error', { type: 'error' })
-    return
-  }
-  trackEvent('editor_action', {
-    category: 'Editor',
-    action: 'save',
-    label: props.nodeData.componentName, // useful context
-    file_type: 'cellml',
-  })
-  emit('save-update', formSaveData(componentName, mergedModelString))
-  emit('update:modelValue', false)
-}
-
-const handleForkSave = async () => {
-  // Validate name.
-  const componentNames = getModelComponentNames(currentCode.value)
-  const trimmedComponentName = componentNames[0].trim()
-  const modelString = await store.getModuleContent(USER_MODULES_FILE)
-  if (doesComponentExistInModel(modelString, trimmedComponentName)) {
-    ElMessageBox.alert(
-      `A component named "${trimmedComponentName}" already exists in your User Modules. Please choose a different name.`,
-      'Name Conflict',
-      { type: 'error' }
-    )
+/**
+ * Handler for saving CellML changes.
+ * The 'source' parameter determines the source of the save event it can
+ * be 'fork', 'update', or 'key'. We block 'key' save events if the save buttons
+ * are disabled.
+ */
+const handleSave = async (source) => {
+  if (source === 'key' && !isDirty.value) {
     return
   }
 
-  const mergedModelString = mergeModelComponents(modelString, currentCode.value, trimmedComponentName)
-  if (!mergedModelString) {
-    ElMessageBox.alert(`Failed to merge new component into User Modules.`, 'Save Error', { type: 'error' })
-    return
+  const mode = source === 'key' ? (isInternalModule.value ? 'fork' : 'update') : source
+
+  try {
+    // Parse the new component name from the editor content.
+    const componentNames = getModelComponentNames(currentCode.value)
+    if (!componentNames || componentNames.length === 0) {
+      ElMessageBox.alert('Could not find a valid component name in the code.', 'Parse Error', { type: 'error' })
+      return
+    }
+    const newName = componentNames[0].trim()
+    const currentName = props.nodeData.componentName
+
+    // Fetch existing User Modules to check for collisions.
+    const existingModelString = await store.getModuleContent(USER_MODULES_FILE)
+    const nameExists = doesComponentExistInModel(existingModelString, newName)
+
+    // Validation Logic.
+    if (mode === 'fork') {
+      // FORK: Name must be unique. Period.
+      if (nameExists) {
+        ElMessageBox.alert(
+          `A component named "${newName}" already exists. Please rename the component in the code before forking.`,
+          'Name Conflict',
+          { type: 'error' }
+        )
+        return
+      }
+    } else {
+      // UPDATE: Name must be unique if renaming.
+      // If we are renaming (newName !== currentName), the *target* name must not be taken by someone else.
+      // If we are just saving in place (newName === currentName), existence is expected.
+      if (newName !== currentName && nameExists) {
+        ElMessageBox.alert(
+          `Cannot rename to "${newName}" because a component with that name already exists.`,
+          'Name Conflict',
+          { type: 'error' }
+        )
+        return
+      }
+    }
+
+    // Merge Logic
+    // If updating, we pass 'currentName' so the merger knows what to replace/remove.
+    // If forking, we pass undefined so the merger just appends the new one.
+    const oldNameForMerge = mode === 'update' ? currentName : undefined
+
+    const mergedModelString = mergeModelComponents(existingModelString, currentCode.value, newName, oldNameForMerge)
+
+    if (!mergedModelString) {
+      throw new Error('Merge operation returned empty string.')
+    }
+
+    // Analytics & Events
+    trackEvent('editor_action', {
+      category: 'Editor',
+      action: mode === 'fork' ? 'fork_save' : 'save',
+      label: newName,
+      file_type: 'cellml',
+    })
+
+    emit('save', formSaveData(newName, mergedModelString))
+
+    emit('update:modelValue', false)
+  } catch (error) {
+    console.error(error)
+    ElMessageBox.alert(`Failed to save changes: ${error.message}`, 'Save Error', { type: 'error' })
   }
-
-  trackEvent('editor_action', {
-    category: 'Editor',
-    action: 'fork_save',
-    label: trimmedComponentName, // useful context
-    file_type: 'cellml',
-  })
-  console.log('node data:', props.nodeData)
-
-  emit('save-fork', formSaveData(trimmedComponentName, mergedModelString))
-  emit('update:modelValue', false)
 }
 </script>
 
