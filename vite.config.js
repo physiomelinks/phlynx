@@ -17,7 +17,7 @@ export default defineConfig({
   define: {
     // Create a global constant. Strings must be JSON stringified.
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    __RELEASE_BUILD__: JSON.stringify(!hasLatestChangelog),
+    __BUILD_STATE_MARKER__: !!hasLatestChangelog ? '*' : '',
     __COMMIT_HASH__: JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
     __BRANCH__: JSON.stringify(execSync('git rev-parse --abbrev-ref HEAD').toString().trim()),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
