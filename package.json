@@ -29,7 +29,7 @@
     "app:build": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder",
     "build:glossary": "node src/services/generate/generateGlossaryIndex.js",
     "preview": "yarn build:glossary && vite preview",
-    "update-docs-changelog": "node scripts/build-changelog.js"
+    "update:docs:changelog": "node scripts/build-changelog.js"
   },
   "build": {
     "appId": "nz.ac.auckland.physiome-links.phlynx",
