@@ -2,10 +2,14 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-09
+###### Includes changes up to 2026-02-10
 
 #### New Features
 * Add bulk variable type updating by [@jmdowrick](https://github.com/jmdowrick) in [#242](https://github.com/physiomelinks/phlynx/pull/242)
+
+
+#### Maintenance Work
+* Add final module and config files for vital workshop by [@jmdowrick](https://github.com/jmdowrick) in [#252](https://github.com/physiomelinks/phlynx/pull/252)
 
 
 #### Contributors
