@@ -1,16 +1,16 @@
-import cytoscape from 'cytoscape'
 import fcose from 'cytoscape-fcose'
-
-// Register the fCoSE extension
-cytoscape.use(fcose)
+const cytoscapePromise = import('cytoscape')
 
 /**
  * Relayouts nodes while preserving existing port configurations
- * 
+ *
  * @param {Array} nodes - Array of node objects to reposition
  * @param {Array} edges - Array of edge objects
  */
-export function relayoutNodes(nodes, edges) {
+export async function relayoutNodes(nodes, edges) {
+  const cytoscape = (await cytoscapePromise).default
+  // Register the fCoSE extension
+  cytoscape.use(fcose)
   // Create Cytoscape instance
   const cy = cytoscape({
     headless: true,

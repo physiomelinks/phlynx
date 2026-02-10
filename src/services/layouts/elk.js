@@ -1,13 +1,13 @@
-import ELK from 'elkjs/lib/elk.bundled.js'
-
+const elkPromise = import('elkjs/lib/elk.bundled.js')
 import { getHandleId } from '../../utils/ports'
-
-const elk = new ELK()
 
 /**
  * ELK Layout Function
  */
 export async function runElkLayout(nodes, edges) {
+
+  const ELK = (await elkPromise).default
+  const elk = new ELK()
   // Construct the ELK Graph Structure
   const elkGraph = {
     id: 'root',

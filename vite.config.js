@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
 import path from 'path'
 import Markdown from 'unplugin-vue-markdown/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 import LinkAttributes from 'markdown-it-link-attributes'
 import MarkdownItAttrs from 'markdown-it-attrs'
 import MarkdownItGitHubAlerts from 'markdown-it-github-alerts'
@@ -11,6 +12,12 @@ import { execSync } from 'child_process'
 
 const latestChangelogPath = path.resolve(__dirname, 'changelogs/latest.md')
 const hasLatestChangelog = fs.existsSync(latestChangelogPath)
+
+console.log('--------------------------------------')
+console.log(latestChangelogPath)
+console.log(`Latest Changelog: ${hasLatestChangelog ? 'Exists' : 'Not Found'}`)
+console.log(JSON.stringify(!!hasLatestChangelog ? '*' : ''))
+console.log('--------------------------------------')
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -53,6 +60,7 @@ export default defineConfig({
         typographer: true,
       },
     }),
+    visualizer(),
   ],
   resolve: {
     alias: {
