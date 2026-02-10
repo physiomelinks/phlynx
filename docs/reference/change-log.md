@@ -1,8 +1,12 @@
 # Changelog
 
 
-## Unofficial Release
-###### Includes changes up to 2026-02-10
+
+
+---
+
+## v0.2.4
+###### Released on 2026-02-11
 
 #### New Features
 * Correct PhLynx circulatory autogen export formats by [@jmdowrick](https://github.com/jmdowrick) in [#262](https://github.com/physiomelinks/phlynx/pull/262)
