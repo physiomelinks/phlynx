@@ -1,6 +1,46 @@
 # Changelog
 
 
+## Unofficial Release
+###### Includes changes up to 2026-02-10
+
+#### New Features
+* Correct PhLynx circulatory autogen export formats by [@jmdowrick](https://github.com/jmdowrick) in [#262](https://github.com/physiomelinks/phlynx/pull/262)
+* Add search bar to workspace by [@jmdowrick](https://github.com/jmdowrick) in [#257](https://github.com/physiomelinks/phlynx/pull/257)
+* Add bulk variable type updating by [@jmdowrick](https://github.com/jmdowrick) in [#242](https://github.com/physiomelinks/phlynx/pull/242)
+
+
+#### Fixed Bugs
+* Update parameters when parameters are imported by [@hsorby](https://github.com/hsorby) in [#266](https://github.com/physiomelinks/phlynx/pull/266)
+* Suffix for export should change depending on what export is taking place by [@hsorby](https://github.com/hsorby) in [#265](https://github.com/physiomelinks/phlynx/pull/265)
+* Rename module after first edit by [@hsorby](https://github.com/hsorby) in [#264](https://github.com/physiomelinks/phlynx/pull/264)
+
+
+#### Maintenance Work
+* Offset notifications off the header  by [@hsorby](https://github.com/hsorby) in [#268](https://github.com/physiomelinks/phlynx/pull/268)
+* Add keyboard shortcuts by [@jmdowrick](https://github.com/jmdowrick) in [#267](https://github.com/physiomelinks/phlynx/pull/267)
+* Add module config getter to builder store by [@jmdowrick](https://github.com/jmdowrick) in [#261](https://github.com/physiomelinks/phlynx/pull/261)
+* Add final module and config files for vital workshop by [@jmdowrick](https://github.com/jmdowrick) in [#252](https://github.com/physiomelinks/phlynx/pull/252)
+
+
+#### Contributors
+
+<kbd>
+  <a href="https://github.com/hsorby">
+    <img src="https://avatars.githubusercontent.com/u/778048?u=31d6ee5b17c95630c61a61e7cfe0c008b138b769&v=4&s=100" width="50" height="50"><br>
+    <sub>@hsorby</sub>
+  </a>
+</kbd> <kbd>
+  <a href="https://github.com/jmdowrick">
+    <img src="https://avatars.githubusercontent.com/u/146781982?u=94c7295b017c61161e81ba34c929524b31a423c2&v=4&s=100" width="50" height="50"><br>
+    <sub>@jmdowrick</sub>
+  </a>
+</kbd>
+
+
+
+---
+
 ## v0.2.3
 ###### Released on 2026-02-10
 
@@ -20,7 +60,8 @@
 
 
 #### Fixed Bugs
-* Set variable type for non editable types so they are saved. by [@hsorby](https://github.com/hsorby) in [#238](https://github.com/physiomelinks/phlynx/pull/238)
+* Set variable type for non editable types so they are saved. by [@hsorby](https://github.com/hsorby) in [#238](https://github.com/physiomelinks/phlynx/pull/238)225](https://github.com/physiomelinks/phlynx/pull/225)
+* Add clear workspace button by [@jmdowrick](https://github.com/jmdowrick) in [#208](https://git
 * Fix exporting with the wrong extension. by [@hsorby](https://github.com/hsorby) in [#236](https://github.com/physiomelinks/phlynx/pull/236)
 * Print purge urls when variable set true. Fix bug when editing moduleswithout config by [@hsorby](https://github.com/hsorby) in [#235](https://github.com/physiomelinks/phlynx/pull/235)
 * Fixes bug in garbage collection of CellML WASM by [@hsorby](https://github.com/hsorby) in [#233](https://github.com/physiomelinks/phlynx/pull/233)
@@ -35,8 +76,7 @@
 
 
 #### Maintenance Work
-* Use syntax highlighting from CellML Text library by [@hsorby](https://github.com/hsorby) in [#225](https://github.com/physiomelinks/phlynx/pull/225)
-* Add clear workspace button by [@jmdowrick](https://github.com/jmdowrick) in [#208](https://github.com/physiomelinks/phlynx/pull/208)
+* Use syntax highlighting from CellML Text library by [@hsorby](https://github.com/hsorby) in [#hub.com/physiomelinks/phlynx/pull/208)
 * Add select all on ctrl+A command by [@jmdowrick](https://github.com/jmdowrick) in [#201](https://github.com/physiomelinks/phlynx/pull/201)
 * Add a workflow to prepare a staging branch for release. by [@hsorby](https://github.com/hsorby) in [#194](https://github.com/physiomelinks/phlynx/pull/194)
 
