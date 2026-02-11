@@ -212,12 +212,14 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
 
       // Collect parameters for this node's module
       for (const variable of node.data.variables || []) {
-        allParameters.add(JSON.stringify({
-          variable_name: `${variable.name}_${node.data.name}`,
-          value: variable.value || '',
-          units: variable.units || '',
-          type: variable.type || '',
-        }))
+        if (variable.type === 'constant') {
+          allParameters.add(JSON.stringify({
+            variable_name: `${variable.name}_${node.data.name}`,
+            value: variable.value || '',
+            units: variable.units || '',
+            data_reference: 'phlynx',
+          }))
+        }
       }
     }
 
@@ -225,13 +227,15 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
     const module_config = Array.from(uniqueModuleConfigs.values());
 
     // --- 2. CONSOLIDATE PARAMETER FILES INTO ONE CSV ---
-    const globalVariables = builderStore.getGlobalVariables()
-    for (const variable of globalVariables) {
+    const globalConstants = builderStore.getGlobalVariables()
+
+    for (const variable of globalConstants) {
+      console.log(variable[1].value)
       allParameters.add(JSON.stringify({
-        variable_name: variable.name,
-        value: variable.value || '',
-        units: variable.units || '',
-        type: variable.type || '',
+        variable_name: variable[0],
+        value: variable[1].value || '',
+        units: variable[1].units || '',
+        data_reference: 'phlynx',
       }))
     }
     const consolidatedParameters = Array.from(allParameters).map((paramStr) => JSON.parse(paramStr))

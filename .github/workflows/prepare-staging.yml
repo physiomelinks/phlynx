@@ -57,12 +57,15 @@ jobs:
           yarn gen-changelog -q > changelogs/latest.md
 
           # Check if latest.md is empty or only whitespace.
-          if [ -s "changelogs/latest.md" ]; then
-            echo "Generated changelogs/latest.md changelog has content."
+          if grep -q '[^[:space:]]' "changelogs/latest.md"; then
+            echo "Generated changelogs/latest.md has content."
           else
+            # If the file exists, delete it (using -f to avoid errors if it's already gone)
             if [ -f "changelogs/latest.md" ]; then
-              echo "Deleting empty changelogs/latest.md."
-              rm changelogs/latest.md
+              echo "File was empty or only whitespace. Deleting."
+              rm "changelogs/latest.md"
+            else
+              echo "File changelogs/latest.md does not exist, doing nothing."
             fi
           fi
 

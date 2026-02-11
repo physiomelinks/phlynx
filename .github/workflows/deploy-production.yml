@@ -41,13 +41,6 @@ jobs:
 
       - name: Build
         run: |
-          ls -la changelogs
-          if [ -f "changelogs/latest.md" ]; then
-            echo "latest.md exists"
-            cat changelogs/latest.md
-          else
-            echo "latest.md does not exist"
-          fi
           yarn build
           cp dist/index.html dist/404.html
         
