@@ -341,6 +341,7 @@ import { notify } from '../utils/notify'
 import { getHelperLines } from '../utils/helperLines'
 import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
 import { useClearWorkspace } from '../utils/workspace'
+import { sanitiseModuleName } from '../utils/nodes'
 import { relayoutNodes } from '../services/layouts/physics'
 import { generateFlattenedModel, initLibCellML, processModuleData, processUnitsData } from '../utils/cellml'
 import {
@@ -1359,6 +1360,16 @@ async function handleSaveWorkspace() {
   }
 }
 
+// in refactor, this should be combined with node util sanitizeModuleName
+const sanitiseFileName = (name) => {
+  if (!name) return 'export'
+  return name
+    .replace(/\.zip$/i, '') // Remove .zip extension if accidentally passed
+    .trim()
+    .replace(/\s+/g, '_')   // Replace spaces with underscores
+    .replace(/[^a-zA-Z0-9\-_]/g, '') // Optional: Remove special chars (keep alphanumeric, -, _)
+}
+
 /**
  * Collects all state and processes it into the current export format.
  */
@@ -1368,20 +1379,40 @@ async function onExportConfirm(fileName, handle) {
   const notification = notify.info({
     title: 'Exporting ...',
     message: message,
-    duration: 0, // Stays open until closed
+    duration: 0, 
   })
 
   try {
+
+    let rawName = fileName
+
+    if (!rawName && handle) {
+      rawName = handle.name
+    } 
+
+    if (!rawName) {
+      rawName = builderStore.lastExportName || 'phlynx-export'
+    }
+
+    let finalName = sanitiseFileName(rawName)
+
+    // Strip suffix if present 
+    if (finalName && finalName.endsWith(currentExportMode.value.suffix)) {
+      const suffixLen = currentExportMode.value.suffix.length
+      finalName = finalName.slice(0, -suffixLen)
+    }
+
+    // Generate the Blob
     let blob = undefined
     let exportMessage = ''
     if (caExport) {
-      blob = await generateExportZip(fileName, nodes.value, edges.value, builderStore)
+      blob = await generateExportZip(finalName, nodes.value, edges.value, builderStore)
       exportMessage = 'Circulatory Autogen export zip generated.'
     } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
       blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
-
-      const dataUri = await createCellMLDataFragment(blob, fileName)
-
+      // Note: Data URI generation is only needed for the notification link, 
+      // but we calculate it here as per your original logic.
+      const dataUri = await createCellMLDataFragment(blob, finalName)
       const openCorProtocol = 'opencor://'
       const openCorUrl = `https://opencor.ws/app/?${openCorProtocol}openFile/#${dataUri}`
 
@@ -1400,20 +1431,14 @@ async function onExportConfirm(fileName, handle) {
       ])
     }
 
-    let finalName = undefined
-    if (fileName) {
-      finalName = fileName.endsWith(currentExportMode.value.suffix)
-        ? fileName
-        : `${fileName}${currentExportMode.value.suffix}`
-      legacyDownload(finalName, blob)
-    } else if (handle) {
-      writeFileHandle(handle, blob)
-      finalName = handle.name
-    }
+    if (finalName) {
+      // --- Browser Legacy Mode ---
+      const downloadName = `${finalName}${currentExportMode.value.suffix}`
+        legacyDownload(downloadName, blob)
 
-    if (finalName.endsWith(currentExportMode.value.suffix)) {
-      const suffixLen = currentExportMode.value.suffix.length
-      finalName = finalName.slice(0, -suffixLen)
+    } else if (handle) {
+      // --- System Dialog Mode ---
+      await writeFileHandle(handle, blob)
     }
 
     builderStore.setLastExportName(finalName)
