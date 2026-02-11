@@ -215,8 +215,8 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
         if (variable.type === 'constant') {
           allParameters.add(JSON.stringify({
             variable_name: `${variable.name}_${node.data.name}`,
-            value: variable.value || '',
             units: variable.units || '',
+            value: variable.value || '',
             data_reference: 'phlynx',
           }))
         }
@@ -230,11 +230,10 @@ export async function generateExportZip(fileName, nodes, edges, builderStore) {
     const globalConstants = builderStore.getGlobalVariables()
 
     for (const variable of globalConstants) {
-      console.log(variable[1].value)
       allParameters.add(JSON.stringify({
         variable_name: variable[0],
-        value: variable[1].value || '',
         units: variable[1].units || '',
+        value: variable[1].value || '',
         data_reference: 'phlynx',
       }))
     }

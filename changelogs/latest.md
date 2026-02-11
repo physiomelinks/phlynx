@@ -2,11 +2,8 @@
 ## Unofficial Release
 ###### Includes changes up to 2026-02-11
 
-#### New Features
-* Fix circulatory autogen export naming by [@jmdowrick](https://github.com/jmdowrick) in [#291](https://github.com/physiomelinks/phlynx/pull/291)
-
-
 #### Fixed Bugs
+* Fix order of columns in parameter export by [@jmdowrick](https://github.com/jmdowrick) in [#294](https://github.com/physiomelinks/phlynx/pull/294)
 * Fix circulatory autogen export naming by [@jmdowrick](https://github.com/jmdowrick) in [#291](https://github.com/physiomelinks/phlynx/pull/291)
 * Fix parameter export format by [@jmdowrick](https://github.com/jmdowrick) in [#287](https://github.com/physiomelinks/phlynx/pull/287)
 
