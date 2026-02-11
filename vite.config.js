@@ -15,17 +15,10 @@ const latestChangelogPath = path.resolve(__dirname, 'changelogs/latest.md')
 let hasLatestChangelog = false
 if (fs.existsSync(latestChangelogPath)) {
   const content = fs.readFileSync(latestChangelogPath, 'utf8')
-  // .trim().length > 0 ensures there is at least one non-whitespace character
   if (content.trim().length > 0) {
     hasLatestChangelog = true
   }
 }
-
-console.log('--------------------------------------')
-console.log(latestChangelogPath)
-console.log(`Latest Changelog: ${hasLatestChangelog ? 'Has content' : 'No content or file missing'}`)
-console.log(JSON.stringify(!!hasLatestChangelog ? '*' : ''))
-console.log('--------------------------------------')
 
 // https://vite.dev/config/
 export default defineConfig({
