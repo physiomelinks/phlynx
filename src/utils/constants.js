@@ -35,6 +35,8 @@ export const GHOST_MODULE_DEFINITION = {
   ],
 }
 
+export const DEFAULT_FILE_NAME = 'phlynx-export'
+
 export const IMPORT_KEYS = {
   VESSEL: 'vessel',
   MODULE_CONFIG: 'moduleConfig',

@@ -81,7 +81,7 @@ function handleConfirm() {
   trackEvent('save_dialog_action', {
     category: 'SaveDialog',
     action: 'confirm',
-    label: `Filename: ${fileName.value}${props.suffix}`, // useful context
+    label: `Filename: ${fileName.value}${props.suffix}`,
     file_type: 'json'
   })
   emit('confirm', fileName.value)
