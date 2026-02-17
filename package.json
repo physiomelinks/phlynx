@@ -29,7 +29,10 @@
     "app:build": "yarn build:glossary && vite build --config vite.electron.config.js && electron-builder",
     "build:glossary": "node src/services/generate/generateGlossaryIndex.js",
     "preview": "yarn build:glossary && vite preview",
-    "update:docs:changelog": "node scripts/build-changelog.js"
+    "update:docs:changelog": "node scripts/build-changelog.js",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "build": {
     "appId": "nz.ac.auckland.physiome-links.phlynx",
@@ -75,8 +78,11 @@
   "devDependencies": {
     "@hsorby/changelog": "^3.0.2",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12",
+    "happy-dom": "^20.6.1",
     "markdown-it": "^14.1.0",
     "markdown-it-attrs": "^4.3.1",
     "markdown-it-github-alerts": "^1.0.0",
@@ -84,7 +90,8 @@
     "rollup-plugin-visualizer": "^6.0.5",
     "unplugin-vue-markdown": "^29.2.0",
     "vite": "^7.1.7",
-    "vite-plugin-electron": "^0.29.0"
+    "vite-plugin-electron": "^0.29.0",
+    "vitest": "^4.0.18"
   },
   "packageManager": "yarn@4.12.0",
   "changelog": {

@@ -341,7 +341,6 @@ import { notify } from '../utils/notify'
 import { getHelperLines } from '../utils/helperLines'
 import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
 import { useClearWorkspace } from '../utils/workspace'
-import { sanitiseModuleName } from '../utils/nodes'
 import { relayoutNodes } from '../services/layouts/physics'
 import { generateFlattenedModel, initLibCellML, processModuleData, processUnitsData } from '../utils/cellml'
 import {
@@ -352,11 +351,19 @@ import {
   EXPORT_KEYS,
   JSON_FILE_TYPES,
   ZIP_FILE_TYPES,
+  DEFAULT_FILE_NAME,
 } from '../utils/constants'
 import { getId as getNextNodeId, generateUniqueModuleName } from '../utils/nodes'
 import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig, parseParametersFile } from '../utils/import'
-import { legacyDownload, saveFileHandle, writeFileHandle } from '../utils/save'
+import {
+  saveFileHandle, 
+  saveWithDialog,
+  getFileHandle,
+  writeFileHandle,
+  ensureExtension,
+  legacyDownload
+} from '../utils/save'
 import CellMLEditorDialog from '../components/CellMLEditorDialog.vue'
 import EditParameterDialog from '../components/EditParameterDialog.vue'
 
@@ -428,6 +435,7 @@ const currentImportMode = ref(null)
 const currentImportConfig = ref({})
 
 const currentExportKey = ref(EXPORT_KEYS.CELLML)
+const activeExportNotification = ref(null)
 
 const activeInteractionBuffer = new Map()
 const undoRedoSelection = false
@@ -1090,15 +1098,18 @@ async function onImportConfirm(importPayload, updateProgress) {
 
 const performExport = async () => {
   currentExportKey.value = currentExportMode.value.key
-  const result = await saveFileHandle(
-    builderStore.lastExportName,
-    currentExportKey.value === EXPORT_KEYS.CELLML ? CELLML_FILE_TYPES : ZIP_FILE_TYPES
-  )
-  if (result.status) {
-    if (result.handle) {
-      onExportConfirm(undefined, result.handle)
-    }
-  } else {
+  
+  const baseName = builderStore.lastExportName || DEFAULT_FILE_NAME
+  const fileTypes = currentExportKey.value === EXPORT_KEYS.CELLML 
+    ? CELLML_FILE_TYPES 
+    : ZIP_FILE_TYPES
+  
+  // Get handle first
+  const result = await getFileHandle(baseName, fileTypes, currentExportMode.value.suffix)
+  if (result.success && result.handle) {
+    onExportConfirm(result.cleanName, result.handle)
+  } else if (result.needsLegacyDialog) {
+    // Show custom dialog for legacy browsers
     exportDialogVisible.value = true
   }
 }
@@ -1328,7 +1339,8 @@ function handleAutoLayout() {
 }
 
 async function handleSaveWorkspace() {
-  const result = await saveFileHandle(builderStore.lastSaveName, JSON_FILE_TYPES)
+  const safeName = ensureExtension(builderStore.lastSaveName, '.json')
+  const result = await saveFileHandle(safeName, JSON_FILE_TYPES)
   if (result.status) {
     if (result.handle) {
       const blob = createSaveBlob()
@@ -1341,7 +1353,7 @@ async function handleSaveWorkspace() {
           label: `File: ${result.handle.name}`,
           file_type: 'json',
         })
-        notify.success({ message: 'Workflow saved!' })
+        notify.success({ title: 'Workflow saved!' })
       } catch (err) {
         trackEvent('save_action', {
           category: 'Save',
@@ -1360,68 +1372,52 @@ async function handleSaveWorkspace() {
   }
 }
 
-// in refactor, this should be combined with node util sanitizeModuleName
-const sanitiseFileName = (name) => {
-  if (!name) return 'export'
-  return name
-    .replace(/\.zip$/i, '') // Remove .zip extension if accidentally passed
-    .trim()
-    .replace(/\s+/g, '_')   // Replace spaces with underscores
-    .replace(/[^a-zA-Z0-9\-_]/g, '') // Optional: Remove special chars (keep alphanumeric, -, _)
-}
-
 /**
  * Collects all state and processes it into the current export format.
  */
 async function onExportConfirm(fileName, handle) {
+  if (activeExportNotification.value) {
+    activeExportNotification.value.close()
+    activeExportNotification.value = null
+  }
+
   const caExport = currentExportMode.value.key === EXPORT_KEYS.CA
   const message = caExport ? 'Generating and zipping CA files.' : 'Generating flattened CellML model.'
   const notification = notify.info({
-    title: 'Exporting ...',
+    title: 'Exporting...',
     message: message,
     duration: 0, 
   })
 
   try {
+    const finalName = fileName || builderStore.lastExportName || DEFAULT_FILE_NAME
+    
+    const blob = caExport
+      ? await generateExportZip(finalName, nodes.value, edges.value, builderStore)
+      : generateFlattenedModel(nodes.value, edges.value, builderStore)
+    
+    const result = await saveWithDialog(
+      blob, 
+      handle, 
+      finalName,
+      currentExportMode.value.suffix
+    )
+    
+    builderStore.setLastExportName(result.savedName)
+    
+    notification.close()
 
-    let rawName = fileName
-
-    if (!rawName && handle) {
-      rawName = handle.name
-    } 
-
-    if (!rawName) {
-      rawName = builderStore.lastExportName || 'phlynx-export'
-    }
-
-    let finalName = sanitiseFileName(rawName)
-
-    // Strip suffix if present 
-    if (finalName && finalName.endsWith(currentExportMode.value.suffix)) {
-      const suffixLen = currentExportMode.value.suffix.length
-      finalName = finalName.slice(0, -suffixLen)
-    }
-
-    // Generate the Blob
-    let blob = undefined
     let exportMessage = ''
     if (caExport) {
-      blob = await generateExportZip(finalName, nodes.value, edges.value, builderStore)
       exportMessage = 'Circulatory Autogen export zip generated.'
-    } else if (currentExportMode.value.key === EXPORT_KEYS.CELLML) {
-      blob = generateFlattenedModel(nodes.value, edges.value, builderStore)
-      // Note: Data URI generation is only needed for the notification link, 
-      // but we calculate it here as per your original logic.
+    } else {
       const dataUri = await createCellMLDataFragment(blob, finalName)
-      const openCorProtocol = 'opencor://'
-      const openCorUrl = `https://opencor.ws/app/?${openCorProtocol}openFile/#${dataUri}`
-
       exportMessage = h('div', null, [
         'Model exported to CellML. Open this model directly in ',
         h(
           'a',
           {
-            href: openCorUrl,
+            href: `https://opencor.ws/app/?opencor://openFile/#${dataUri}`,
             rel: 'noopener noreferrer',
             style: { color: 'var(--el-color-primary)', fontWeight: 'bold' },
             target: '_blank',
@@ -1431,19 +1427,6 @@ async function onExportConfirm(fileName, handle) {
       ])
     }
 
-    if (finalName) {
-      // --- Browser Legacy Mode ---
-      const downloadName = `${finalName}${currentExportMode.value.suffix}`
-        legacyDownload(downloadName, blob)
-
-    } else if (handle) {
-      // --- System Dialog Mode ---
-      await writeFileHandle(handle, blob)
-    }
-
-    builderStore.setLastExportName(finalName)
-    notification.close()
-
     trackEvent('export_action', {
       category: 'Export',
       action: 'export_model',
@@ -1451,10 +1434,10 @@ async function onExportConfirm(fileName, handle) {
       file_type: currentExportMode.value.key,
     })
 
-    notify.success({
+    activeExportNotification.value = notify.success({
       title: 'Export successful!',
       message: exportMessage,
-      duration: 5000,
+      duration: 0,
     })
   } catch (error) {
     notification.close()
@@ -1464,7 +1447,8 @@ async function onExportConfirm(fileName, handle) {
       label: `Error: ${error.message}`,
       file_type: currentExportMode.value.key,
     })
-    notify.error({ message: `Export failed: ${error.message}` })
+
+    notify.error({ title: 'Export failed', message: `${error.message}` })
   }
 }
 
@@ -1484,16 +1468,15 @@ function createSaveBlob() {
 /**
  * Collects all state and downloads it as a JSON file.
  */
-function onSaveConfirm(fileName) {
-  // Ensure the filename ends with .json
-  const finalName = fileName.endsWith('.json') ? fileName : `${fileName}.json`
-
+const onSaveConfirm = async (fileName) => {
+  const baseName = fileName || builderStore.lastSaveName || DEFAULT_FILE_NAME
+  const finalName = ensureExtension(baseName, '.json')
   const blob = createSaveBlob()
 
   legacyDownload(finalName, blob)
 
   builderStore.setLastSaveName(fileName)
-  notify.success({ message: 'Workflow saved!' })
+  notify.success({ title: 'Workflow saved!' })
 }
 
 /**
@@ -1533,7 +1516,7 @@ function handleLoadWorkspace(file) {
         file_type: 'json',
       })
       notify.success({
-        message: 'Workflow loaded successfully!',
+        title: 'Workflow loaded successfully!',
       })
     } catch (error) {
       trackEvent('workflow_load_action', {
@@ -1542,7 +1525,7 @@ function handleLoadWorkspace(file) {
         label: `Error: ${error.message}`,
         file_type: 'json',
       })
-      notify.error({ message: `Failed to load workflow: ${error.message}` })
+      notify.error({ title: 'Failed to load workflow', message: `${error.message}` })
     }
   }
 
