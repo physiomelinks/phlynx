@@ -1,8 +1,9 @@
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-17
+###### Includes changes up to 2026-02-18
 
 #### Not Specified
+* Add missing units to the user units file by [@jmdowrick](https://github.com/jmdowrick) in [#313](https://github.com/physiomelinks/phlynx/pull/313)
 * Add testing packages to phlynx by [@jmdowrick](https://github.com/jmdowrick) in [#308](https://github.com/physiomelinks/phlynx/pull/308)
 
 
