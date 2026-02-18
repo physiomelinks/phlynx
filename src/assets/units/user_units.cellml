@@ -267,4 +267,12 @@
         <!--unit litre {expo: -1};-->
         <unit exponent="-3" prefix="deci" units="meter"/>
     </units>
+    <units name="L_per_mol">
+        <unit units="litre"/>
+        <unit exponent="-1" units="mole"/>
+    </units>
+    <units name="mol_per_L">
+        <unit units="mole"/>
+        <unit exponent="-1" units="litre"/>
+    </units>
 </model>
