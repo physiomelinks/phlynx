@@ -204,22 +204,21 @@ const removeFile = (fieldKey, filename) => {
   if (fieldState && fieldState.files.has(filename)) {
     // Remove from local form state
     fieldState.files.delete(filename)
-    
+
     // Remove from staged files if applicable
     stagedFiles.value.moduleFiles = stagedFiles.value.moduleFiles.filter(f => f.filename !== filename)
     stagedFiles.value.configFiles = stagedFiles.value.configFiles.filter(f => f.filename !== filename)
 
     // Re-evaluate overall vessel dependencies
     const vesselPayload = getVesselPayload()
-    if (vesselPayload?.data) {
+    if (vesselPayload) {
       const temporaryStore = createTemporaryStore()
-      const newCompletionStatus = validateVesselData(vesselPayload.data, temporaryStore)
+      const newCompletionStatus = validateVesselData(vesselPayload, temporaryStore)
       formState[IMPORT_KEYS.VESSEL].completionStatus = newCompletionStatus
       updateVesselValidation(newCompletionStatus)
     } else if (fieldKey === IMPORT_KEYS.VESSEL) {
-      // If the user deleted the last/only vessel file, wipe completion status
-      completionStatusRef.value = null
-      dynamicFields.value = []
+      // If the user deletes the vessel file, wipe completion status
+      resetForm()
     }
   }
 }

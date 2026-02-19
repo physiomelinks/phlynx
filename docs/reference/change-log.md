@@ -14,6 +14,7 @@
 
 
 #### Fixed Bugs
+* Fix vessel array file removal bug by [@jmdowrick](https://github.com/jmdowrick) in [#320](https://github.com/physiomelinks/phlynx/pull/320)
 * Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 * Fix bugs related to system dialog by [@jmdowrick](https://github.com/jmdowrick) in [#307](https://github.com/physiomelinks/phlynx/pull/307)
 * Fix order of columns in parameter export by [@jmdowrick](https://github.com/jmdowrick) in [#294](https://github.com/physiomelinks/phlynx/pull/294)
