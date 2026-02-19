@@ -1057,7 +1057,6 @@ const loadParametersData = async (content, filename, { notify: shouldNotify = tr
 
 const loadConfigData = async (content, filename, { notify: shouldNotify = true } = {}) => {
   try {
-    console.log(content.length)
     const added = builderStore.addConfigFile(content, filename)
     if (shouldNotify && added > 0) {
       notify.success({
@@ -1166,7 +1165,6 @@ async function onImportConfirm(importPayload, updateProgress) {
     )
     if (multiFile) {
       const succeeded = results.filter((r) => r.ok)
-      console.log(results, succeeded)
       const failed = results.length - succeeded.length
       const totalConfigs = succeeded.reduce((sum, r) => sum + r.count, 0)
       if (succeeded.length > 0 && failed === 0) {
