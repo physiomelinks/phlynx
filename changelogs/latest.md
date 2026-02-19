@@ -1,13 +1,18 @@
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-18
+###### Includes changes up to 2026-02-20
 
 #### Not Specified
 * Add missing units to the user units file by [@jmdowrick](https://github.com/jmdowrick) in [#313](https://github.com/physiomelinks/phlynx/pull/313)
 * Add testing packages to phlynx by [@jmdowrick](https://github.com/jmdowrick) in [#308](https://github.com/physiomelinks/phlynx/pull/308)
 
 
+#### New Features
+* Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
+
+
 #### Fixed Bugs
+* Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 * Fix bugs related to system dialog by [@jmdowrick](https://github.com/jmdowrick) in [#307](https://github.com/physiomelinks/phlynx/pull/307)
 * Fix order of columns in parameter export by [@jmdowrick](https://github.com/jmdowrick) in [#294](https://github.com/physiomelinks/phlynx/pull/294)
 * Fix circulatory autogen export naming by [@jmdowrick](https://github.com/jmdowrick) in [#291](https://github.com/physiomelinks/phlynx/pull/291)

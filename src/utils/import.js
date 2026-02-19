@@ -3,6 +3,7 @@ import Papa from 'papaparse'
 import { IMPORT_KEYS } from './constants'
 import { isCellML } from './cellml'
 
+// TODO: really need to rename to check complete or something similar?
 export const validateVesselData = (vesselData, builderStore) => {
   const errors = []
   const warnings = []
@@ -291,17 +292,17 @@ const parseVesselCsv = (file, builderStore = null) => {
           return
         }
         if (builderStore) {
-          const validation = validateVesselData(results.data, builderStore)
+          const completionStatus = validateVesselData(results.data, builderStore)
           resolve({
             data: results.data,
-            warnings: validation.warnings,
-            validation: validation,
+            // warnings: completionStatus.warnings,
+            completionStatus: completionStatus,
           })
         } else {
           resolve({
             data: results.data,
-            warnings: [],
-            validation: null,
+            // warnings: [],
+            completionStatus: null,
           })
         }
       },
@@ -449,6 +450,7 @@ const configs = {
         key: IMPORT_KEYS.VESSEL,
         label: 'Select Vessel Array (.csv)',
         accept: '.csv',
+        limit: 1,
         required: true,
         parser: parseVesselCsv,
         requiresStore: true,

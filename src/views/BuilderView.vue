@@ -907,7 +907,7 @@ function updateNodesWithNewParameters() {
   })
 }
 
-const loadCellMLModuleData = (content, filename, broadcastNotifications = true) => {
+const loadCellMLModuleData = (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
   return new Promise((resolve) => {
     const result = processModuleData(content)
     if (result.type === 'success') {
@@ -920,26 +920,30 @@ const loadCellMLModuleData = (content, filename, broadcastNotifications = true) 
         modules: augmentedData,
         model: result.model,
       })
-      if (broadcastNotifications) {
+      if (trackEvents) {
         trackEvent('modules_load_action', {
           category: 'Modules',
           action: 'load_cellml_module',
           label: `Modules: ${result.data.length}`,
           file_type: 'cellml',
         })
+      }
+      if (shouldNotify) {
         notify.success({
           title: 'CellML Modules Loaded',
-          message: `Loaded ${result.data.length} parameters from ${filename}.`,
+          message: `Loaded ${result.data.length} modules from ${filename}.`,
         })
       }
     } else if (result.issues) {
-      if (broadcastNotifications) {
+      if (trackEvents) {
         trackEvent('modules_load_action', {
           category: 'Modules',
           action: 'load_cellml_module',
           label: `Error: encountered ${result.issues.length} error(s)`,
           file_type: 'cellml',
         })
+      }
+      if (shouldNotify) {
         notify.error({
           title: 'Loading Module Error',
           message: `${result.issues.length} issues found in model file.`,
@@ -948,11 +952,14 @@ const loadCellMLModuleData = (content, filename, broadcastNotifications = true) 
       console.error('Model import issues:', result.issues)
     }
 
-    resolve(result.type === 'success')
+    resolve(result.type === 'success'
+      ? { ok: true, count: result.data.length }
+      : { ok: false, count: 0 }
+    )
   })
 }
 
-const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) => {
+const loadCellMLUnitsData = (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
   return new Promise((resolve) => {
     const result = processUnitsData(content)
     if (result.type === 'success') {
@@ -960,26 +967,37 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
         filename: filename,
         model: result.model,
       })
-      if (broadcastNotifications) {
+      if (trackEvents) {
         trackEvent('units_load_action', {
           category: 'Units',
           action: 'load_cellml_units',
           label: `Units: ${result.units.count}`,
           file_type: 'cellml',
         })
-        notify.success({
-          title: 'CellML Units Loaded',
-          message: `Loaded ${result.units.count} units from ${filename}.`,
-        })
+      }
+      if (shouldNotify) {
+        if (result.units.count > 0) {
+          notify.success({
+            title: 'CellML Units Loaded',
+            message: `Loaded ${result.units.count} units from ${filename}.`,
+          })
+        } else {
+          notify.info({
+            title: 'No CellML Units Loaded',
+            message: `${filename} contained no unit definitions.`,
+          })
+        }
       }
     } else if (result.issues) {
-      if (broadcastNotifications) {
+      if (trackEvents) {
         trackEvent('units_load_action', {
           category: 'Units',
           action: 'load_cellml_units',
           label: `Error: encountered ${result.issues.length} error(s)`,
           file_type: 'cellml',
         })
+      }
+      if (shouldNotify) {
         notify.error({
           title: 'Loading Units Error',
           message: `${result.issues[0].description}`,
@@ -987,46 +1005,80 @@ const loadCellMLUnitsData = (content, filename, broadcastNotifications = true) =
       }
     }
 
-    resolve(result.type === 'success')
+    resolve(result.type === 'success'
+      ? { ok: true, count: result.units.count }
+      : { ok: false, count: 0 }
+    )
   })
 }
 
-const loadParametersData = async (content, filename, broadcastNotifications = true) => {
+const loadParametersData = async (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
   try {
     const added = builderStore.addParameterFile(filename, content)
 
-    if (broadcastNotifications && added) {
-      trackEvent('parameters_load_action', {
-        category: 'Parameters',
-        action: 'load_parameters',
-        label: `Parameters: ${content.length}`,
-        file_type: 'csv',
-      })
+    if (shouldNotify && added) {
+      if (trackEvents) {
+        trackEvent('parameters_load_action', {
+          category: 'Parameters',
+          action: 'load_parameters',
+          label: `Parameters: ${content.length}`,
+          file_type: 'csv',
+        })
+      }
       notify.success({
         title: 'Parameters Loaded',
         message: `Loaded ${content.length} parameters from ${filename}.`,
       })
-    } else if (broadcastNotifications && !added) {
+    } else if (shouldNotify && !added) {
       notify.info({
         title: 'Parameters Not Loaded',
         message: `No new parameters were added from ${filename}.`,
       })
     }
-    return added
+    return { ok: added, count: added ? content.length : 0 }
   } catch (err) {
-    if (broadcastNotifications) {
-      trackEvent('parameters_load_action', {
-        category: 'Parameters',
-        action: 'load_parameters',
-        label: `Error: ${err.message}`,
-        file_type: 'csv',
-      })
+    if (shouldNotify) {
+      if (trackEvents) {
+        trackEvent('parameters_load_action', {
+          category: 'Parameters',
+          action: 'load_parameters',
+          label: `Error: ${err.message}`,
+          file_type: 'csv',
+        })
+      }
       notify.error({
         title: 'Loading Parameters Error',
         message: `Failed to load parameters from ${filename}.`,
       })
     }
-    return false
+    return { ok: false, count: 0 }
+  }
+}
+
+const loadConfigData = async (content, filename, { notify: shouldNotify = true } = {}) => {
+  try {
+    console.log(content.length)
+    const added = builderStore.addConfigFile(content, filename)
+    if (shouldNotify && added > 0) {
+      notify.success({
+        title: 'Configurations Loaded',
+        message: `Loaded ${content.length} configurations from ${filename}.`,
+      })
+    } else if (shouldNotify && added === 0) {
+      notify.info({
+        title: 'Configurations Not Loaded',
+        message: `No new configurations were added from ${filename}.`,
+      })
+    }
+    return { ok: added > 0, count: added }
+  } catch (err) {
+    if (shouldNotify) {
+      notify.error({
+        title: 'Loading Configuration Error',
+        message: `Failed to load configurations from ${filename}.`,
+      })
+    }
+    return { ok: false, count: 0 }
   }
 }
 
@@ -1049,10 +1101,14 @@ const handleImportCommand = (option) => {
 
 async function onImportConfirm(importPayload, updateProgress) {
   if (currentImportMode.value.key === IMPORT_KEYS.VESSEL) {
-    const vessels = importPayload[IMPORT_KEYS.VESSEL]?.data
+    const [[, data]] = importPayload
+    const vessels = data.payload
 
     if (!vessels || vessels.length === 0) {
-      console.warn('no vessel data provided')
+      notify.warning({
+        title: 'Import Aborted',
+        message: 'No vessel data provided',
+      })
       return
     }
 
@@ -1074,20 +1130,119 @@ async function onImportConfirm(importPayload, updateProgress) {
       })
     }
   } else if (currentImportMode.value.key === IMPORT_KEYS.CELLML_FILE) {
-    const cellmlPayload = importPayload[IMPORT_KEYS.CELLML_FILE]
-    loadCellMLModuleData(cellmlPayload?.data, cellmlPayload?.fileName)
+    const multiFile = importPayload.size > 1
+    const results = await Promise.all(
+      [...importPayload].map(([filename, data]) =>
+        loadCellMLModuleData(data?.payload, filename, { notify: !multiFile })
+      )
+    )
+    if (multiFile) {
+      const succeeded = results.filter(r => r.ok)
+      const failed = results.length - succeeded.length
+      const totalModules = succeeded.reduce((sum, r) => sum + r.count, 0)
+      if (succeeded.length > 0 && failed === 0) {
+        notify.success({ 
+          title: 'CellML Modules Loaded', 
+          message: `Loaded ${totalModules} modules from ${succeeded.length} files.`, 
+        })
+      } else if (succeeded.length > 0) {
+        notify.warning({ 
+          title: 'Partial Import', 
+        message: `Loaded ${totalModules} modules from ${succeeded.length} files. ${failed} file(s) failed.`,
+      })
+      } else {
+        notify.error({ 
+          title: 'Import Failed',
+          message: `Failed to load all ${failed} file(s).`,
+        })
+      }
+    }
   } else if (currentImportMode.value.key === IMPORT_KEYS.MODULE_CONFIG) {
-    const configPayload = importPayload[IMPORT_KEYS.MODULE_CONFIG]
-    if (configPayload) {
-      builderStore.addConfigFile(configPayload.data, configPayload.fileName)
+    const multiFile = importPayload.size > 1
+    const results = await Promise.all(
+      [...importPayload].map(([filename, data]) =>
+        loadConfigData(data?.payload, filename, { notify: !multiFile })
+      )
+    )
+    if (multiFile) {
+      const succeeded = results.filter((r) => r.ok)
+      console.log(results, succeeded)
+      const failed = results.length - succeeded.length
+      const totalConfigs = succeeded.reduce((sum, r) => sum + r.count, 0)
+      if (succeeded.length > 0 && failed === 0) {
+        notify.success({
+          title: 'Configurations Loaded',
+          message: `Loaded ${totalConfigs} configurations from ${succeeded.length} files.`,
+        })
+      } else if (succeeded.length > 0) {
+        notify.warning({
+          title: 'Partial Import',
+          message: `Loaded ${totalConfigs} configurations from ${succeeded.length} files. ${failed} file(s) failed.` ,
+        })
+      } else {
+        notify.error({
+          title: 'Import Failed',
+          message: `Failed to load all ${failed} file(s).`,
+        })
+      }
     }
   } else if (currentImportMode.value.key === IMPORT_KEYS.PARAMETER) {
-    const paramPayload = importPayload[IMPORT_KEYS.PARAMETER]
-    loadParametersData(paramPayload?.data, paramPayload?.fileName)
+    const multiFile = importPayload.size > 1
+    const results = await Promise.all(
+      [...importPayload].map(([filename, data]) =>
+        loadParametersData(data?.payload, filename, { notify: !multiFile })
+      )
+    )
+    if (multiFile) {
+      const succeeded = results.filter(r => r.ok)
+      const failed = results.length - succeeded.length
+      const totalParams = succeeded.reduce((sum, r) => sum + r.count, 0)
+      if (succeeded.length > 0 && failed === 0) {
+        notify.success({
+          title: 'Parameters Loaded',
+          message: `Loaded ${totalParams} parameters from ${succeeded.length} files.`,
+        })
+      } else if (succeeded.length > 0) {
+        notify.warning({ 
+          title: 'Partial Import', 
+          message: `Loaded ${totalParams} parameters from ${succeeded.length} files. ${failed} file(s) failed.`, 
+        })
+      } else {
+        notify.error({ 
+          title: 'Import Failed', 
+          message: `Failed to load all ${failed} file(s).`, 
+        })
+      }
+    }
     updateNodesWithNewParameters()
   } else if (currentImportMode.value.key === IMPORT_KEYS.UNITS) {
-    const unitsPayload = importPayload[IMPORT_KEYS.UNITS]
-    loadCellMLUnitsData(unitsPayload?.data, unitsPayload?.fileName)
+    const multiFile = importPayload.size > 1
+    const results = await Promise.all(
+      [...importPayload].map(([filename, data]) =>
+        loadCellMLUnitsData(data?.payload, filename, { notify: !multiFile })
+      )
+    )
+    if (multiFile) {
+      const succeeded = results.filter(r => r.ok)
+      const failed = results.length - succeeded.length
+      const totalUnits = succeeded.reduce((sum, r) => sum + r.count, 0)
+      if (succeeded.length > 0 && failed === 0) {
+        notify.success({
+          title: 'CellML Units Loaded',
+          message: `Loaded ${totalUnits} units from ${succeeded.length} files.`,
+        })
+      } else if (succeeded.length > 0) {
+        notify.warning({ 
+          title: 'Partial Import',
+          message: `Loaded ${totalUnits} units from ${succeeded.length} files. ${failed} file(s) failed.`,
+        })
+      } else {
+        notify.error({
+          title: 'Import Failed', 
+          message: `Failed to load all ${failed} file(s).`,
+        })
+      }
+    }
   } else {
     console.log("Cannot get here this shouldn't be an import:", currentImportMode.value.key)
   }
@@ -1189,7 +1344,7 @@ async function handleCellMLSave(saveData) {
 
   // Load the New Data into the Store
   // This registers the module under the name found in 'code'.
-  await loadCellMLModuleData(code, sourceFile, false)
+  await loadCellMLModuleData(code, sourceFile, { notify: false })
 
   // Retrieve the "Target" Module (The one we just loaded)
   let targetModule = builderStore.getModulesModule(sourceFile, componentName)
@@ -1757,15 +1912,16 @@ async function fetchAndLoadResource(entry, resourceType) {
 
     // Load the content
     if (resourceType === 'cellml module') {
-      await loadCellMLModuleData(content, entry.file, false)
+      await loadCellMLModuleData(content, entry.file, { notify: false })
     } else if (resourceType === 'module config') {
-      const jsonContent = JSON.parse(content)
-      builderStore.addConfigFile(jsonContent, entry.name, false)
+      await loadConfigData(content, entry.name, false)
+      // const jsonContent = JSON.parse(content)
+      // builderStore.addConfigFile(jsonContent, entry.name, false)
     } else if (resourceType === 'parameter file') {
       const parsed = await parseParametersFile(content)
-      await loadParametersData(parsed, entry.name, false)
+      await loadParametersData(parsed, entry.name, { notify: false })
     } else if (resourceType === 'cellml units') {
-      await loadCellMLUnitsData(content, entry.name, false)
+      await loadCellMLUnitsData(content, entry.name, { notify: false })
     }
 
     return true
@@ -1802,11 +1958,11 @@ onMounted(async () => {
 
   const promises = []
   for (const [path, content] of Object.entries(cellmlModules)) {
-    promises.push(loadCellMLModuleData(content.default, path.split('/').pop(), false))
+    promises.push(loadCellMLModuleData(content.default, path.split('/').pop(), { notify: false }))
   }
 
   for (const [path, content] of Object.entries(cellmlUnits)) {
-    promises.push(loadCellMLUnitsData(content.default, path.split('/').pop(), false))
+    promises.push(loadCellMLUnitsData(content.default, path.split('/').pop(), { notify: false }))
   }
 
   // if (manifest?.modules) {
@@ -1846,7 +2002,7 @@ onMounted(async () => {
   // }
 
   const results = await Promise.all(promises)
-  const successCount = results.filter((result) => result === true).length
+  const successCount = results.filter((result) => result?.ok).length
   const failCount = results.length - successCount
 
   if (successCount > 0) {
