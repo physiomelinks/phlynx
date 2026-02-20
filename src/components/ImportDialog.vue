@@ -35,14 +35,14 @@
                 :on-change="(file) => handleFileChange(file, field)"
                 class="upload-trigger"
               >
-                <div class="file-drop-zone" :class="{ 'is-valid': isFieldValid(field.key), 'has-files': formState[field.key]?.files?.size > 0 }">
+                <div class="file-drop-zone" :class="{ 'is-valid': isFieldReady(field.key), 'has-files': formState[field.key]?.files?.size > 0 }">
                   <div class="drop-zone-left">
                     <el-icon class="drop-zone-icon">
-                      <Check v-if="isFieldValid(field.key)" />
+                      <Check v-if="isFieldReady(field.key)" />
                       <Upload v-else />
                     </el-icon>
                     <span class="drop-zone-label">
-                      {{ isFieldValid(field.key) ? 'Ready' : 'Select file(s)' }}
+                      {{ isFieldReady(field.key) ? 'Ready' : 'Select file(s)' }}
                     </span>
                   </div>
 
@@ -75,9 +75,9 @@
           </el-form-item>
         </div>
 
-        <div v-if="completionStatusRef && formState[IMPORT_KEYS.VESSEL]?.completionStatus" class="validation-status">
+        <div v-if="importReadiness && formState[IMPORT_KEYS.VESSEL]?.readiness" class="validation-status">
           <el-alert
-            v-if="completionStatusRef.isComplete"
+            v-if="importReadiness.isComplete"
             title="All Required Resources Available"
             type="success"
             :closable="false"
@@ -90,34 +90,34 @@
             <template #default>
               <div>Please provide the following files to complete the import:</div>
               <ul class="missing-resources">
-                <li v-if="completionStatusRef.needsModuleFile" class="config-note">
+                <li v-if="importReadiness.needsModuleFile" class="config-note">
                   <strong>CellML Module File</strong>
                   <div
-                    v-if="completionStatusRef.missingResources?.moduleFileIssues?.length > 0"
+                    v-if="importReadiness.missingResources?.moduleFileIssues?.length > 0"
                     class="issue-list-container"
                   >
                     <div
-                      v-for="moduleFileIssue in completionStatusRef.missingResources.moduleFileIssues"
+                      v-for="moduleFileIssue in importReadiness.missingResources.moduleFileIssues"
                       :key="moduleFileIssue.uniqueKey"
                       class="module-issue-item"
                     >
                       • {{ moduleFileIssue.message }}
                     </div>
                   </div>
-                  <div v-else-if="completionStatusRef.missingResources?.moduleTypes?.length > 0" class="module-type-list">
-                    containing: {{ completionStatusRef.missingResources.moduleTypes.join(', ') }}
+                  <div v-else-if="importReadiness.missingResources?.moduleTypes?.length > 0" class="module-type-list">
+                    containing: {{ importReadiness.missingResources.moduleTypes.join(', ') }}
                   </div>
                 </li>
-                <li v-if="completionStatusRef.needsConfigFile" class="config-note">
+                <li v-if="importReadiness.needsConfigFile" class="config-note">
                   <strong>Module Configurations</strong> for vessel_types:bc_types:
-                  {{ completionStatusRef.missingResources?.configs?.join(', ') }} and possibly CellML modules.
+                  {{ importReadiness.missingResources?.configs?.join(', ') }} and possibly CellML modules.
                 </li>
               </ul>
               <br />
-              <div v-if="completionStatusRef.needsConfigFile" class="config-note">
+              <div v-if="importReadiness.needsConfigFile" class="config-note">
                 <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
               </div>
-              <div v-if="completionStatusRef.hasModuleFileMismatch" class="mismatch-warning">
+              <div v-if="importReadiness.hasModuleFileMismatch" class="mismatch-warning">
                 Warning: Some modules are not in the CellML files specified by their configurations.
               </div>
             </template>
@@ -131,7 +131,7 @@
         <el-button
           type="primary"
           @click="handleConfirm"
-          :disabled="!isFormValid || isLoading || !completionStatusRef?.isComplete"
+          :disabled="!isFormValid || isLoading || !importReadiness?.isComplete"
           :loading="isLoading"
         >
           Import
@@ -171,7 +171,7 @@ const builderStore = useBuilderStore()
 const formState = reactive({})
 const uploadRefs = ref([])
 const dynamicFields = ref([])
-const completionStatusRef = ref(null)
+const importReadiness = ref(null)
 const isLoading = ref(false)
 const loadingText = ref('Loading...')
 const stagedFiles = ref({
@@ -180,13 +180,36 @@ const stagedFiles = ref({
 })
 const isVesselReset = ref(false)
 
-// Checks if a field has valid files uploaded.
-const isFieldValid = (fieldKey) => {
+// Checks if a field has valid files uploaded and all required information has been provided.
+const isFieldReady = (fieldKey) => {
   const fieldState = formState[fieldKey]
   if (!fieldState || fieldState.files.size === 0) {
-    return false 
+    return false
   }
-  return Array.from(fieldState.files.values()).every(file => file?.isValid)
+  const filesAllValid = Array.from(fieldState.files.values()).every(file => file?.isValid)
+  if (!filesAllValid) return false
+
+  // Vessel array field is ready if:
+  // - Vessel array is valid
+  if (fieldKey === IMPORT_KEYS.VESSEL) {
+    return true
+  }
+
+  // Module config field is ready if:
+  // - Config files are all valid
+  // - All required config files have been supplied
+  if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
+    return !importReadiness.value?.needsConfigFile ?? false
+  }
+
+  // Module field is ready if:
+  // - Module files are all valid
+  // - All required module files have been supplied
+  if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
+    return !importReadiness.value?.needsModuleFile ?? false
+  }
+
+  return true
 }
 
 function handleExceed(field) {
@@ -214,7 +237,7 @@ const removeFile = (fieldKey, filename) => {
     if (vesselPayload) {
       const temporaryStore = createTemporaryStore()
       const newCompletionStatus = validateVesselData(vesselPayload, temporaryStore)
-      formState[IMPORT_KEYS.VESSEL].completionStatus = newCompletionStatus
+      formState[IMPORT_KEYS.VESSEL].readiness = newCompletionStatus
       updateVesselValidation(newCompletionStatus)
     } else if (fieldKey === IMPORT_KEYS.VESSEL) {
       // If the user deletes the vessel file, wipe completion status
@@ -230,7 +253,7 @@ function resetFormState() {
       formState[key] = createEmptyFieldState()
     }
   })
-  completionStatusRef.value = null
+  importReadiness.value = null
 }
 
 function initFormFromConfig(fields = []) {
@@ -305,7 +328,7 @@ const addDynamicFields = async (completionStatus) => {
 function createEmptyFieldState() {
   return {
     files: new Map(), //  [key: filename, object: {isValid: boolean, payload: raw file contents} ]
-    completionStatus: null, // Selected files contain enough information to complete the import
+    readiness: null, // Selected files contain enough information to complete the import
     warnings: [],
   }
 }
@@ -419,26 +442,22 @@ const handleFileChange = async (uploadFile, field) => {
   const state = formState[field.key]
 
   if (field.processUpload === 'cellml') {
-    if (formState[IMPORT_KEYS.VESSEL]?.completionStatus?.missingResources?.moduleFileIssues) {
-      // Get the list of filenames the Vessel Config is looking for
-      const expectedFilenames = Array.from(
-        formState[IMPORT_KEYS.VESSEL]?.completionStatus.missingResources.moduleFileIssues
-        .filter((issue) => issue.file).map((issue) => issue.file)
-      )
+  const moduleFileIssues = importReadiness.value?.missingResources?.moduleFileIssues
+  if (moduleFileIssues?.length > 0) {
+    const expectedFilenames = moduleFileIssues
+      .filter((issue) => issue.file)
+      .map((issue) => issue.file)
 
-      // If there are requirements and this file name isn't one of them, reject immediately
-      if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
-        notify.error({
-          title: 'Incorrect File Provided',
-          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${
-            rawFile.name
-          }". This file will not be processed.`,
-          duration: 6000,
-        })
-        return
-      }
+    if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
+      notify.error({
+        title: 'Incorrect File Provided',
+        message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
+        duration: 6000,
+      })
+      return
     }
   }
+}
 
   if (field.key === IMPORT_KEYS.VESSEL) {
     const vesselFileMap = formState[IMPORT_KEYS.VESSEL]?.files
@@ -469,7 +488,7 @@ const handleFileChange = async (uploadFile, field) => {
     }
 
     state.files.get(filename).payload = data
-    state.completionStatus = completionStatus
+    state.readiness = completionStatus
     state.warnings = warnings
 
     // Specific logic for Dynamic Files (Configs/Modules)
@@ -493,7 +512,7 @@ const handleFileChange = async (uploadFile, field) => {
       if (hasVesselPayload && completionStatus) {
         await updateVesselValidation(completionStatus)
       } else if (!hasVesselPayload) {
-        completionStatusRef.value = {
+        importReadiness.value = {
           isComplete: true,
           errors: [],
           warnings: [],
@@ -530,7 +549,7 @@ const handleFileChange = async (uploadFile, field) => {
 }
 
 async function updateVesselValidation(completionStatus) {
-  completionStatusRef.value = completionStatus
+  importReadiness.value = completionStatus
   if (completionStatus.isComplete) {
     return
   }
@@ -573,7 +592,7 @@ async function stageFile(field, parsedData, fileName) {
     const newCompletionStatus = validateVesselData(vesselPayload.data, temporaryStore)
 
     // Update state
-    formState[IMPORT_KEYS.VESSEL].completionStatus = newCompletionStatus
+    formState[IMPORT_KEYS.VESSEL].readiness = newCompletionStatus
     updateVesselValidation(newCompletionStatus)
 
     // Specific check for CellML failures
