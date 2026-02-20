@@ -469,7 +469,7 @@ const importOptions = computed(() => [
   },
   {
     key: IMPORT_KEYS.MODULE_CONFIG,
-    label: 'CellML Module Config',
+    label: 'Module Config',
     icon: markRaw(IconModuleConfig),
     disabled: libcellml.status !== 'ready',
   },

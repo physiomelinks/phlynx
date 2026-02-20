@@ -21,56 +21,91 @@
           <span class="required-asterisk">*</span> Indicates required field
         </div>
         <div v-for="field in displayFields" :key="field.key" class="field-container">
-          <el-form-item :label="field.label" :required="field?.required ?? true">
+          <el-form-item class="form-item" :label="field.label" :required="field?.required ?? true" :class="{ 'is-info': field.limit }">
             <div class="upload-row">
-              <el-upload
-                ref="uploadRefs"
-                action="#"
-                multiple
-                :limit="field?.limit"
-                :show-file-list="false"
-                :auto-upload="false"
-                :on-exceed="() => handleExceed(field)"
-                :accept="field.accept"
-                :on-change="(file) => handleFileChange(file, field)"
-                class="upload-trigger"
-              >
-                <div class="file-drop-zone" :class="{ 'is-valid': isFieldReady(field.key), 'has-files': formState[field.key]?.files?.size > 0 }">
-                  <div class="drop-zone-left">
-                    <el-icon class="drop-zone-icon">
-                      <Check v-if="isFieldReady(field.key)" />
-                      <Upload v-else />
-                    </el-icon>
-                    <span class="drop-zone-label">
-                      {{ isFieldReady(field.key) ? 'Ready' : 'Select file(s)' }}
-                    </span>
-                  </div>
+              <div class="file-input-box" :class="{ 'is-valid': isFieldReady(field.key) }">
+                <div class="file-names-area" @click.stop>
+                  <span v-if="!formState[field.key]?.files || formState[field.key]?.files.size === 0" class="empty-text">
+                    No file(s) selected
+                  </span>
+                  <template v-else>
+                    <el-tag
+                      v-for="[filename, fileData] in [...formState[field.key].files].slice(0, MAX_VISIBLE_TAGS)"
+                      :key="filename"
+                      :type="fileData.isValid ? 'success' : 'warning'"
+                      closable
+                      @close="removeFile(field.key, filename)"
+                      size="small"
+                      effect="light"
+                      class="file-tag"
+                    >
+                      <span class="tag-content">
+                        <el-icon v-if="fileData.isValid" class="tag-icon"><Check /></el-icon>
+                        <el-icon v-else class="tag-icon"><Warning /></el-icon>
+                        <span>{{ filename }}</span>
+                      </span>
+                    </el-tag>
 
-                  <div class="file-tags-area">
-                    <span v-if="!formState[field.key]?.files || formState[field.key]?.files.size === 0" class="empty-text">
-                      No file(s) selected
-                    </span>
-                    <transition-group v-else name="list">
-                      <el-tag
-                        v-for="[filename, fileData] in formState[field.key].files"
-                        :key="filename"
-                        :type="fileData.isValid ? 'success' : 'warning'"
-                        closable
-                        @close.stop="removeFile(field.key, filename)"
-                        size="small"
-                        effect="light"
-                        class="file-tag"
-                      >
-                        <span class="tag-content">
-                          <el-icon v-if="fileData.isValid" class="tag-icon"><Check /></el-icon>
-                          <el-icon v-else class="tag-icon"><Warning /></el-icon>
-                          <span>{{ filename }}</span>
-                        </span>
-                      </el-tag>
-                    </transition-group>
-                  </div>
+                    <el-popover
+                      v-if="formState[field.key].files.size > MAX_VISIBLE_TAGS"
+                      placement="bottom-start"
+                      :width="280"
+                      trigger="click"
+                    >
+                      <template #reference>
+                        <el-tag size="small" type="info" effect="plain" class="overflow-tag" @click.stop>
+                          +{{ formState[field.key].files.size - MAX_VISIBLE_TAGS }} more
+                        </el-tag>
+                      </template>
+                      <div class="overflow-popover">
+                        <el-tag
+                          v-for="[filename, fileData] in [...formState[field.key].files].slice(MAX_VISIBLE_TAGS)"
+                          :key="filename"
+                          :type="fileData.isValid ? 'success' : 'warning'"
+                          closable
+                          @close="removeFile(field.key, filename)"
+                          size="small"
+                          effect="light"
+                          class="overflow-popover-tag"
+                        >
+                          <span class="tag-content">
+                            <el-icon v-if="fileData.isValid" class="tag-icon"><Check /></el-icon>
+                            <el-icon v-else class="tag-icon"><Warning /></el-icon>
+                            <span>{{ filename }}</span>
+                          </span>
+                        </el-tag>
+                      </div>
+                    </el-popover>
+                  </template>
                 </div>
-              </el-upload>
+
+                <el-upload
+                  ref="uploadRefs"
+                  action="#"
+                  multiple
+                  :limit="field?.limit"
+                  :show-file-list="false"
+                  :auto-upload="false"
+                  :on-exceed="() => handleExceed(field)"
+                  :accept="field.accept"
+                  :on-change="(file) => handleFileChange(file, field)"
+                  class="upload-trigger"
+                >
+                  <el-button
+                    :type="isFieldReady(field.key) ? 'success' : 'primary'"
+                    class="browse-button"
+                    plain
+                  >
+                    <el-icon class="in-button-icon"><Check v-if="isFieldReady(field.key)" /><Upload v-else /></el-icon>
+                    Select
+                  </el-button>
+                </el-upload>
+
+              </div>
+            </div>
+            <div v-if="field.limit" class="field-hint">
+              <el-icon><InfoFilled /></el-icon>
+              Up to {{ field.limit }} file{{ field.limit === 1 ? '' : 's' }} allowed
             </div>
           </el-form-item>
         </div>
@@ -143,13 +178,13 @@
 
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { ElDialog, ElForm, ElFormItem, ElButton, ElUpload, ElAlert, ElIcon, ElTag } from 'element-plus'
-import { Check, Warning, Upload } from '@element-plus/icons-vue'
+import { ElDialog, ElForm, ElFormItem, ElButton, ElUpload, ElAlert, ElIcon, ElTag, ElPopover } from 'element-plus'
+import { Check, Warning, Upload, InfoFilled } from '@element-plus/icons-vue'
 
 import { useBuilderStore } from '../stores/builderStore'
 import { useGtm } from '../composables/useGtm'
 import { notify } from '../utils/notify'
-import { IMPORT_KEYS } from '../utils/constants'
+import { IMPORT_KEYS, MAX_VISIBLE_TAGS } from '../utils/constants'
 import { createDynamicFields, validateVesselData } from '../utils/import'
 import { processModuleData } from '../utils/cellml'
 import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
@@ -189,24 +224,19 @@ const isFieldReady = (fieldKey) => {
   const filesAllValid = Array.from(fieldState.files.values()).every(file => file?.isValid)
   if (!filesAllValid) return false
 
-  // Vessel array field is ready if:
-  // - Vessel array is valid
+  // Vessel array field is ready if all its files are valid
   if (fieldKey === IMPORT_KEYS.VESSEL) {
     return true
   }
 
-  // Module config field is ready if:
-  // - Config files are all valid
-  // - All required config files have been supplied
+  // Module config field is ready if all required configs have been supplied
   if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
-    return !importReadiness.value?.needsConfigFile ?? false
+    return !(importReadiness.value?.needsConfigFile ?? true)
   }
 
-  // Module field is ready if:
-  // - Module files are all valid
-  // - All required module files have been supplied
+  // CellML module field is ready if all required modules have been supplied
   if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
-    return !importReadiness.value?.needsModuleFile ?? false
+    return !(importReadiness.value?.needsModuleFile ?? true)
   }
 
   return true
@@ -274,7 +304,7 @@ const unstageFiles = () => {
 const resetForm = () => {
   resetFormState()
   unstageFiles()
-  
+
   // Clear the visual file list in the UI components
   if (uploadRefs.value) {
     uploadRefs.value.forEach((uploadInstance) => {
@@ -421,10 +451,10 @@ const isFormValid = computed(() => {
   // Strictly check if all required fields have successfully parsed their files
   return displayFields.value.every((field) => {
     if (field.required === false) return true
-    
+
     const fieldState = formState[field.key]
     if (!fieldState || fieldState.files.size === 0) return false
-    
+
     return Array.from(fieldState.files.values()).every(file => file?.isValid)
   })
 })
@@ -442,22 +472,22 @@ const handleFileChange = async (uploadFile, field) => {
   const state = formState[field.key]
 
   if (field.processUpload === 'cellml') {
-  const moduleFileIssues = importReadiness.value?.missingResources?.moduleFileIssues
-  if (moduleFileIssues?.length > 0) {
-    const expectedFilenames = moduleFileIssues
-      .filter((issue) => issue.file)
-      .map((issue) => issue.file)
+    const moduleFileIssues = importReadiness.value?.missingResources?.moduleFileIssues
+    if (moduleFileIssues?.length > 0) {
+      const expectedFilenames = moduleFileIssues
+        .filter((issue) => issue.file)
+        .map((issue) => issue.file)
 
-    if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
-      notify.error({
-        title: 'Incorrect File Provided',
-        message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
-        duration: 6000,
-      })
-      return
+      if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
+        notify.error({
+          title: 'Incorrect File Provided',
+          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
+          duration: 6000,
+        })
+        return
+      }
     }
   }
-}
 
   if (field.key === IMPORT_KEYS.VESSEL) {
     const vesselFileMap = formState[IMPORT_KEYS.VESSEL]?.files
@@ -466,11 +496,11 @@ const handleFileChange = async (uploadFile, field) => {
       isVesselReset.value = true
       resetForm()
       isVesselReset.value = false
-    } 
+    }
   }
 
   const filename = rawFile.name
-  
+
   state.files.set(filename, { isValid: false, payload: null })
 
   try {
@@ -603,13 +633,10 @@ async function stageFile(field, parsedData, fileName) {
       const relevantIssue = moduleIssues.find((issue) => issue.file === fileName)
 
       if (relevantIssue) {
-        // The file was uploaded, but it failed for a specific reason
         let errorMsg = `File "${fileName}" was staged, but has issues: `
 
         if (relevantIssue.issue === 'module_not_in_file') {
-          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(
-            ', '
-          )}.`
+          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(', ')}.`
         } else if (relevantIssue.issue === 'filename_mismatch') {
           errorMsg = `The modules were found, but the file name must be exactly "${relevantIssue.expectedFile}" as defined in your config.`
         }
@@ -627,8 +654,7 @@ async function stageFile(field, parsedData, fileName) {
       } else {
         notify.success({ title: 'CellML Ready', message: `${fileName} staged successfully.` })
       }
-    }
-    else if (field.processUpload === 'config') {
+    } else if (field.processUpload === 'config') {
       if (newCompletionStatus.needsConfigFile) {
         notify.warning({
           title: 'Config Staged',
@@ -702,155 +728,150 @@ defineExpose({
 
 <style scoped>
 .field-container {
-  margin-bottom: var(--el-spacing-large);
+  margin-bottom: var(--el-spacing-small);
 }
 
 .upload-row {
   width: 100%;
 }
 
-.upload-trigger {
-  width: 100%;
+.form-item {
+  margin-bottom: 32;
 }
 
-.upload-trigger :deep(.el-upload) {
-  width: 100%;
+.form-item.is-info {
+  margin-bottom: 0;
 }
 
-.file-drop-zone {
+.field-hint {
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 42px;
-  border: 1.5px solid var(--el-border-color);
-  border-radius: var(--el-border-radius-base);
-  background-color: var(--el-fill-color-blank);
-  padding: 6px 6px 6px 0;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  overflow: hidden;
+  gap: 4px;
+  font-size: var(--el-font-size-extra-small);
+  color: var(--el-text-color-placeholder);
+  margin-bottom: 4px;
 }
 
-.file-drop-zone:hover {
+.field-hint .el-icon {
+  font-size: 12px;
+}
+
+.file-input-box {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background-color: var(--el-fill-color-blank);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.file-input-box:focus-within {
   border-color: var(--el-color-primary);
   box-shadow: 0 0 0 1px var(--el-color-primary-light-7);
 }
 
-.file-drop-zone.is-valid {
+.file-input-box.is-valid {
   border-color: var(--el-color-success);
-  background-color: var(--el-color-success-light-9);
 }
 
-.file-drop-zone.is-valid:hover {
-  border-color: var(--el-color-success);
+.file-input-box.is-valid:focus-within {
   box-shadow: 0 0 0 1px var(--el-color-success-light-5);
 }
 
-.drop-zone-left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 64px;
-  padding: 4px 12px;
-  border-right: 1.5px solid var(--el-border-color-light);
-  align-self: stretch;
-  flex-shrink: 0;
-}
-
-.is-valid .drop-zone-left {
-  border-right-color: var(--el-color-success-light-5);
-  color: var(--el-color-success);
-}
-
-.drop-zone-icon {
-  font-size: 16px;
-  color: var(--el-text-color-secondary);
-  transition: color 0.2s ease;
-}
-
-.is-valid .drop-zone-icon {
-  color: var(--el-color-success);
-}
-
-.file-drop-zone:hover .drop-zone-icon {
-  color: var(--el-color-primary);
-}
-
-.is-valid:hover .drop-zone-icon {
-  color: var(--el-color-success);
-}
-
-.drop-zone-label {
-  font-size: 11px;
-  color: var(--el-text-color-secondary);
-  white-space: nowrap;
-  transition: color 0.2s ease;
-}
-
-.is-valid .drop-zone-label {
-  color: var(--el-color-success);
-}
-
-.file-drop-zone:hover .drop-zone-label {
-  color: var(--el-color-primary);
-}
-
-.file-tags-area {
+.file-names-area {
   flex: 1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px 2px 0;
+  gap: 4px;
+  padding: 0 8px;
+  min-width: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+.upload-trigger {
+  flex-shrink: 0;
+  border-left: 1px solid var(--el-border-color);
+}
+
+.upload-trigger :deep(.el-upload) {
+  display: flex;
+  height: 100%;
+}
+
+.browse-button {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0 14px;
 }
 
 .empty-text {
   color: var(--el-text-color-placeholder);
   font-size: var(--el-font-size-small);
+  white-space: nowrap;
 }
 
 .file-tag {
-  margin: 0;
+  flex-shrink: 0;
+}
+
+.overflow-tag {
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .tag-content {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+}
+
+.tag-content span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .tag-icon {
   font-size: 14px;
+  flex-shrink: 0;
 }
 
-/* Optional simple tag animation */
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.3s ease;
+.overflow-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
+
+.overflow-popover-tag {
+  width: 100%;
+}
+
+.overflow-popover-tag :deep(.el-tag__content) {
+  flex: 1;
+  min-width: 0;
 }
 
 .form-header {
+  margin-top: var(--el-spacing-mini);
   margin-bottom: var(--el-spacing-base);
   font-size: var(--el-font-size-extra-small);
   color: var(--el-text-color-secondary);
   text-align: right;
 }
 
-.validation-status {
+/* .validation-status {
   margin-top: var(--el-spacing-large);
   margin-bottom: var(--el-spacing-base);
-}
+} */
 
 .required-asterisk {
   color: var(--el-color-danger);
@@ -889,6 +910,10 @@ defineExpose({
   margin-top: var(--el-spacing-base);
   font-size: var(--el-font-size-small);
   color: var(--el-color-warning);
+}
+
+.in-button-icon {
+  margin-right: 7px;
 }
 
 .mismatch-warning {

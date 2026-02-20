@@ -3,6 +3,7 @@
 ###### Includes changes up to 2026-02-20
 
 #### Not Specified
+* Improve consistency of import dialog fields by [@jmdowrick](https://github.com/jmdowrick) in [#332](https://github.com/physiomelinks/phlynx/pull/332)
 * Add missing units to the user units file by [@jmdowrick](https://github.com/jmdowrick) in [#313](https://github.com/physiomelinks/phlynx/pull/313)
 * Add testing packages to phlynx by [@jmdowrick](https://github.com/jmdowrick) in [#308](https://github.com/physiomelinks/phlynx/pull/308)
 
@@ -12,6 +13,7 @@
 
 
 #### Fixed Bugs
+* Update import dialog to Hugh's liking by [@jmdowrick](https://github.com/jmdowrick) in [#331](https://github.com/physiomelinks/phlynx/pull/331)
 * Ensure that warning dialog checks against the same store by [@jmdowrick](https://github.com/jmdowrick) in [#328](https://github.com/physiomelinks/phlynx/pull/328)
 * Fix form behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#325](https://github.com/physiomelinks/phlynx/pull/325)
 * Fix vessel array file removal bug by [@jmdowrick](https://github.com/jmdowrick) in [#320](https://github.com/physiomelinks/phlynx/pull/320)
