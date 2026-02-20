@@ -74,39 +74,28 @@ export default function useDragAndDrop(pendingHistoryNodes) {
   }
 
   /**
-   * Handles the drop event.
+   * Creates a new module node at the given position and adds it to the flow.
+   * Returns the new node's id and type so the caller can handle any
+   * post-creation logic (e.g. opening the ghost setup dialog).
    *
-   * @param {DragEvent} event
+   * @param {object} moduleData - The module descriptor (componentName, sourceFile, configs, etc.)
+   * @param {{x: number, y: number}} position - Flow coordinates to place the node.
+   * @returns {{ nodeId: string, nodeType: string }}
    */
-  function onDrop(event) {
-    const position = screenToFlowCoordinate({
-      x: event.clientX,
-      y: event.clientY,
-    })
-
+  function createModuleNode(moduleData, position) {
     const nodeId = getId(getNodes.value.map((n) => n.id))
-
-    const moduleData = draggedType.value
-
-    if (!moduleData) {
-      return
-    }
-
-    const existingNames = new Set(getNodes.value.map((node) => node.data.name))
+    const existingNames = new Set(getNodes.value.map((n) => n.data.name))
     const finalName = generateUniqueModuleName(moduleData, existingNames)
 
-    // Build a non-editable label that reflects the component and CellML source file.
     const componentName = moduleData.componentName
     const nodeType = moduleData.sourceFile === GHOST_MODULE_FILENAME ? GHOST_NODE_TYPE : 'moduleNode'
     const sourceFile = moduleData.sourceFile
     const label = sourceFile ? `${componentName} — ${sourceFile}` : componentName
+
     pendingHistoryNodes.add(nodeId)
 
     const config = moduleData.configs ? moduleData.configs[moduleData.configIndex || 0] : null
-    let portLabels = []
-    if (config) {
-      portLabels = buildPortLabels(config)
-    }
+    const portLabels = config ? buildPortLabels(config) : []
 
     const modelString = builderStore.getModuleContent(sourceFile)
     const variables = extractVariablesFromModule(modelString, componentName)
@@ -136,8 +125,7 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     }
 
     /**
-     * Align node position after drop, so it's centered to the mouse
-     *
+     * Align node position after drop, so it's centered to the mouse.
      * We can hook into events even in a callback, and we can remove the event listener after it's been called.
      */
     const { off } = onNodesInitialized(() => {
@@ -163,8 +151,27 @@ export default function useDragAndDrop(pendingHistoryNodes) {
 
     addNodes(newNode)
 
+    return { nodeId, nodeType }
+  }
+
+  /**
+   * Handles the drop event.
+   *
+   * @param {DragEvent} event
+   */
+  function onDrop(event) {
+    const moduleData = draggedType.value
+    if (!moduleData) return
+
+    const position = screenToFlowCoordinate({
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    const { nodeId, nodeType } = createModuleNode(moduleData, position)
+
     if (nodeType === GHOST_NODE_TYPE) {
-      pendingGhostNodeId.value = newNode.id
+      pendingGhostNodeId.value = nodeId
       isGhostSetupOpen.value = true
     }
   }
@@ -179,5 +186,6 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     onDragLeave,
     onDragOver,
     onDrop,
+    createModuleNode,
   }
 }
