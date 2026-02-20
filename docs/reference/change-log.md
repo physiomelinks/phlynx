@@ -14,6 +14,8 @@
 
 
 #### Fixed Bugs
+* Ensure that warning dialog checks against the same store by [@jmdowrick](https://github.com/jmdowrick) in [#328](https://github.com/physiomelinks/phlynx/pull/328)
+* Fix form behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#325](https://github.com/physiomelinks/phlynx/pull/325)
 * Fix vessel array file removal bug by [@jmdowrick](https://github.com/jmdowrick) in [#320](https://github.com/physiomelinks/phlynx/pull/320)
 * Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 * Fix bugs related to system dialog by [@jmdowrick](https://github.com/jmdowrick) in [#307](https://github.com/physiomelinks/phlynx/pull/307)
