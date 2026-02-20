@@ -207,6 +207,7 @@
             @dragleave="onDragLeave"
             @nodes-change="onNodeChange"
             @edges-change="onEdgeChange"
+            @pane-context-menu="onPaneContextMenu"
             :max-zoom="1.5"
             :min-zoom="0.1"
             :default-edge-options="edgeLineOptions"
@@ -231,6 +232,7 @@
                 @open-cellml-editor-dialog="onOpenCellMLEditorDialog"
                 @open-parameter-editor-dialog="onOpenParameterEditorDialog"
                 @open-replacement-dialog="onOpenReplacementDialog"
+                @open-context-menu="onNodeContextMenu"
                 :ref="(el) => (nodeRefs[props.id] = el)"
               />
             </template>
@@ -288,6 +290,8 @@
     :config="currentImportConfig"
     @confirm="onImportConfirm"
   />
+
+  <PaneContextMenu ref="contextMenuRef" :items="contextMenuItems" />
 </template>
 
 <script>
@@ -333,6 +337,7 @@ import ModuleReplacementDialog from '../components/ModuleReplacementDialog.vue'
 import SaveDialog from '../components/SaveDialog.vue'
 import MacroBuilderDialog from '../components/MacroBuilderDialog.vue'
 import HelperLines from '../components/HelperLines.vue'
+import PaneContextMenu from '../components/PaneContextMenu.vue'
 import { useScreenshot } from '../services/useScreenshot'
 import { generateExportZip } from '../services/caExport'
 import { createCellMLDataFragment } from '../services/cellml'
@@ -399,7 +404,7 @@ const { processMacroGeneration } = useMacroGenerator()
 
 const pendingHistoryNodes = new Set()
 
-const { onDragOver, onDrop, onDragLeave, isDragOver } = useDragAndDrop(pendingHistoryNodes)
+const { onDragOver, onDrop, onDragLeave, isDragOver, createModuleNode } = useDragAndDrop(pendingHistoryNodes)
 const historyStore = useFlowHistoryStore()
 const { loadFromVesselArray } = useLoadFromVesselArray()
 const { capture } = useScreenshot()
@@ -1487,6 +1492,75 @@ async function onReplaceConfirm(updatedData) {
   replacementDialogVisible.value = false
 }
 
+const contextMenuRef = ref(null)
+
+const paneContextMenuItems = [
+  {
+    label: 'Create New Module',
+    action: () => createNewModuleAtPosition(mousePosition.value.x, mousePosition.value.y),
+  },
+  {
+    label: 'Select All',
+    action: () => selectAllNodes(),
+  },
+  {
+    label: 'Clear Workspace',
+    action: () => handleClearWorkspace(),
+  },
+]
+
+const contextMenuItems = ref(paneContextMenuItems)
+
+function onPaneContextMenu(event) {
+  event.preventDefault()
+  contextMenuItems.value = paneContextMenuItems
+  contextMenuRef.value.open(event.clientX, event.clientY)
+}
+
+function onNodeContextMenu({ clientX, clientY, nodeId }) {
+  contextMenuItems.value = [
+    {
+      label: 'Replace Module',
+      action: () => {
+        const node = findNode(nodeId)
+        if (!node) return
+        onOpenReplacementDialog({
+          nodeId,
+          nodeData: node.data,
+          name: node.data.name,
+          portOptions: node.data.portOptions,
+          portLabels: node.data.portLabels,
+        })
+      },
+    },
+  ]
+  contextMenuRef.value.open(clientX, clientY)
+}
+
+function createNewModuleAtPosition(clientX, clientY) {
+  const allModules = builderStore.availableModules
+  const moduleFile = allModules.find((f) => f.modules?.some((m) => m.componentName === 'new_module'))
+  const moduleEntry = moduleFile?.modules?.find((m) => m.componentName === 'new_module')
+
+  if (!moduleEntry) {
+    notify.warning({ title: 'Module Not Found', message: 'new_module is not available.' })
+    return
+  }
+
+  const moduleData = {
+    name: moduleEntry.name,
+    componentName: moduleEntry.componentName,
+    sourceFile: moduleFile.filename,
+    configs: moduleEntry.configs || null,
+    configIndex: 0,
+    ports: moduleEntry.ports || [],
+    portOptions: moduleEntry.portOptions || [],
+  }
+
+  const position = screenToFlowCoordinate({ x: clientX, y: clientY })
+  createModuleNode(moduleData, position)
+}
+
 function handleAutoLayout() {
   relayoutNodes(nodes.value, edges.value)
 }
@@ -2088,8 +2162,6 @@ watch(
   stroke-width: 5px;
 }
 
-/* (Optional) You can also make selected edges stand out 
-*/
 .vue-flow__edge.selected .vue-flow__edge-path {
   stroke: #409eff; /* Element Plus primary color */
   stroke-width: 7px;

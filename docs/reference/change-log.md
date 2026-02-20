@@ -26,6 +26,10 @@
 * Fix parameter export format by [@jmdowrick](https://github.com/jmdowrick) in [#287](https://github.com/physiomelinks/phlynx/pull/287)
 
 
+#### Maintenance Work
+* Make module creation easier by [@jmdowrick](https://github.com/jmdowrick) in [#334](https://github.com/physiomelinks/phlynx/pull/334)
+
+
 #### Contributors
 
 <kbd>

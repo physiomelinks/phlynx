@@ -153,25 +153,11 @@
         </template>
       </el-tooltip>
     </template>
-    <!-- context menu -->
-    <teleport to="body">
-      <div
-        v-if="contextMenuVisible"
-        ref="contextMenu"
-        class="context-menu"
-        :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
-        @click.stop
-      >
-        <ul class="context-menu-list">
-          <li @click="openReplacementDialog('replace')">Replace module</li>
-        </ul>
-      </div>
-    </teleport>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { Handle, useVueFlow } from '@vue-flow/core'
 import { NodeResizer } from '@vue-flow/node-resizer'
 import { Delete, Edit, Key, Place, WarningFilled, Operation } from '@element-plus/icons-vue'
@@ -206,11 +192,9 @@ const props = defineProps({
 const emit = defineEmits([
   'open-cellml-editor-dialog',
   'open-edit-dialog',
-  'open-replacement-dialog',
   'open-parameter-editor-dialog',
+  'open-context-menu',
 ])
-
-const moduleNode = ref(null)
 
 async function openEditDialog() {
   emit('open-edit-dialog', {
@@ -410,100 +394,14 @@ function saveEdit() {
   }, 100) // Delay to ensure the DOM has updated
 }
 
-const contextMenuVisible = ref(false)
-const contextMenuX = ref(0)
-const contextMenuY = ref(0)
-
-const moduleListClickEl = ref(null)
-
-function onDocumentPointerDown(event) {
-  // If the pointer down is inside the context menu, do nothing
-  const path = event.composedPath ? event.composedPath() : event.path || []
-  const cm = document.querySelector('.context-menu')
-  if (cm && path.includes(cm)) return
-  closeContextMenu()
-}
-
-function removeMenuOpenListeners() {
-  document.removeEventListener('click', closeContextMenu)
-  document.removeEventListener('pointerdown', onDocumentPointerDown, true)
-  document.removeEventListener('dragstart', closeContextMenu)
-  if (moduleListClickEl.value) {
-    moduleListClickEl.value.removeEventListener('click', closeContextMenu)
-    moduleListClickEl.value = null
-  }
-}
-
-function closeContextMenu() {
-  contextMenuVisible.value = false
-  removeMenuOpenListeners()
-}
-
-onMounted(() => {
-  document.addEventListener('module-context-open', handleExternalContextOpen)
-  document.addEventListener('contextmenu', handleDocumentContextmenu)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('module-context-open', handleExternalContextOpen)
-  document.removeEventListener('contextmenu', handleDocumentContextmenu)
-  removeMenuOpenListeners()
-})
-
-async function openContextMenu(event) {
-  event.stopPropagation()
-  event.preventDefault()
-
-  let x = event.clientX
-  let y = event.clientY
-
-  const pad = 8
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const menuWidth = 150
-  const menuHeight = 200
-  if (x + menuWidth + pad > vw) x = vw - menuWidth - pad
-  if (y + menuHeight + pad > vh) y = vh - menuHeight - pad
-
-  contextMenuX.value = x
-  contextMenuY.value = y
-  contextMenuVisible.value = true
-
-  await nextTick()
-
-  // close when clicking elsewhere and pointer down/drag start
-  document.addEventListener('click', closeContextMenu)
-  document.addEventListener('dragstart', closeContextMenu)
-  document.addEventListener('pointerdown', onDocumentPointerDown, true)
-}
-
-async function openReplacementDialog() {
-  emit('open-replacement-dialog', {
+function openContextMenu(event) {
+  emit('open-context-menu', {
+    clientX: event.clientX,
+    clientY: event.clientY,
     nodeId: props.id,
-    nodeData: props.data,
-    name: props.data.name,
-    portOptions: props.data.portOptions,
-    portLabels: props.data.portLabels,
   })
-  closeContextMenu()
 }
 
-// Close when another module opens a context menu or when right-click happens outside this node
-function handleExternalContextOpen(e) {
-  const openId = e?.detail?.nodeId ?? null
-  if (openId !== props.id) {
-    closeContextMenu()
-  }
-}
-
-function handleDocumentContextmenu(e) {
-  // If the right-click target is not inside this module node, close the menu.
-  if (!moduleNode.value) return
-  const path = e.composedPath ? e.composedPath() : e.path || []
-  if (!path.includes(moduleNode.value)) {
-    closeContextMenu()
-  }
-}
 </script>
 
 <style lang="scss" scoped>
@@ -549,7 +447,6 @@ function handleDocumentContextmenu(e) {
 
 .warning-icon {
   color: var(--el-color-warning);
-  /* Standard Element Plus Orange */
   font-size: 18px;
   cursor: help;
 
