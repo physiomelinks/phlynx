@@ -1,6 +1,6 @@
 import Papa from 'papaparse'
 
-import { IMPORT_KEYS } from './constants'
+import { IMPORT_KEYS, IMPORT_LABELS } from './constants'
 import { isCellML } from './cellml'
 
 // TODO: really need to rename to check complete or something similar?
@@ -418,7 +418,7 @@ export function createDynamicFields(validation) {
 
     fields.push({
       key: IMPORT_KEYS.CELLML_FILE,
-      label: 'CellML Module File (.cellml or .xml)',
+      label: IMPORT_LABELS.CELLML_FILE,
       required: true,
       accept: '.cellml, .xml',
       parser: parseCellML,
@@ -430,7 +430,7 @@ export function createDynamicFields(validation) {
   if (validation.needsConfigFile) {
     fields.push({
       key: IMPORT_KEYS.MODULE_CONFIG,
-      label: 'Module Configuration (.json)',
+      label: IMPORT_LABELS.MODULE_CONFIG,
       required: true,
       accept: '.json',
       parser: parseModuleJson,
@@ -448,7 +448,7 @@ const configs = {
     fields: [
       {
         key: IMPORT_KEYS.VESSEL,
-        label: 'Select Vessel Array (.csv)',
+        label: IMPORT_LABELS.VESSEL,
         accept: '.csv',
         limit: 1,
         required: true,
@@ -458,7 +458,7 @@ const configs = {
       },
       {
         key: IMPORT_KEYS.PARAMETER,
-        label: 'Select Parameter File (.csv)',
+        label: IMPORT_LABELS.PARAMETER,
         accept: '.csv',
         required: false,
         parser: parseParametersFile,
@@ -470,7 +470,7 @@ const configs = {
     fields: [
       {
         key: IMPORT_KEYS.MODULE_CONFIG,
-        label: 'Module JSON',
+        label: IMPORT_LABELS.MODULE_CONFIG,
         accept: '.json',
         parser: parseModuleJson,
       },
@@ -481,7 +481,7 @@ const configs = {
     fields: [
       {
         key: IMPORT_KEYS.CELLML_FILE,
-        label: 'Select CellML File (.cellml or .xml)',
+        label: IMPORT_LABELS.CELLML_FILE,
         required: true,
         accept: '.cellml, .xml',
         parser: parseCellML,
@@ -493,7 +493,7 @@ const configs = {
     fields: [
       {
         key: IMPORT_KEYS.PARAMETER,
-        label: 'Select Parameter File (.csv)',
+        label: IMPORT_LABELS.PARAMETER,
         accept: '.csv',
         parser: parseParametersFile,
       },
@@ -504,7 +504,7 @@ const configs = {
     fields: [
       {
         key: IMPORT_KEYS.UNITS,
-        label: 'Select Units Config (.cellml or .xml)',
+        label: IMPORT_LABELS.UNITS,
         accept: '.cellml, .xml',
         parser: parseCellML,
       },
