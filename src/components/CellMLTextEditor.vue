@@ -50,7 +50,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'save'])
+const emit = defineEmits(['update:code', 'save'])
 
 const cellmlText = ref('')
 
@@ -176,7 +176,7 @@ watch(cellmlText, (newText) => {
       errors.value = parsed.errors
       if (errors.value.length === 0 && parsed.xml) {
         currentDoc = parser['doc']
-        emit('update:modelValue', parsed.xml)
+        emit('update:code', parsed.xml)
         await nextTick()
         updatePreview()
       }
