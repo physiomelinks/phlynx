@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-20
+###### Includes changes up to 2026-02-21
 
 #### Not Specified
 * Improve consistency of import dialog fields by [@jmdowrick](https://github.com/jmdowrick) in [#332](https://github.com/physiomelinks/phlynx/pull/332)
@@ -11,10 +11,12 @@
 
 
 #### New Features
+* Add reset view to right click menu by [@jmdowrick](https://github.com/jmdowrick) in [#338](https://github.com/physiomelinks/phlynx/pull/338)
 * Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 
 
 #### Fixed Bugs
+* Fix cellml editing behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#339](https://github.com/physiomelinks/phlynx/pull/339)
 * Update import dialog to Hugh's liking by [@jmdowrick](https://github.com/jmdowrick) in [#331](https://github.com/physiomelinks/phlynx/pull/331)
 * Ensure that warning dialog checks against the same store by [@jmdowrick](https://github.com/jmdowrick) in [#328](https://github.com/physiomelinks/phlynx/pull/328)
 * Fix form behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#325](https://github.com/physiomelinks/phlynx/pull/325)

@@ -386,6 +386,7 @@ const {
   edges,
   findEdge,
   findNode,
+  fitView,
   fromObject,
   getSelectedNodes,
   getSelectedEdges,
@@ -1399,6 +1400,7 @@ function updateGraphNodesAndPorts(updatedData, updatedModule) {
     // Check if node is the specific target OR if it uses the same module (for reusability).
     const isTargetNode = node.id === updatedData.nodeId
     const isMatchingModule =
+      updatedData.scope !== 'single' &&
       node.data.sourceFile === updatedData.originalSourceFile &&
       node.data.componentName === updatedData.originalComponentName
 
@@ -1496,12 +1498,16 @@ const contextMenuRef = ref(null)
 
 const paneContextMenuItems = [
   {
-    label: 'Create New Module',
+    label: 'Create Module',
     action: () => createNewModuleAtPosition(mousePosition.value.x, mousePosition.value.y),
   },
   {
     label: 'Select All',
     action: () => selectAllNodes(),
+  },
+  { 
+    label: 'Fit View',
+    action: () => fitView(),
   },
   {
     label: 'Clear Workspace',

@@ -19,27 +19,44 @@
         <span v-if="isInternalModule" class="tag internal">
           <i class="icon-lock"></i> Read-Only Source (Internal)
         </span>
-        <span v-else class="tag user"> <i class="icon-user"></i> Editable Source (User Workspace) </span>
+        <span v-else class="tag user">
+          <i class="icon-user"></i> Editable Source (User Workspace)
+        </span>
       </div>
     </div>
 
     <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="handleCancel">Cancel</el-button>
+      <div class="dialog-footer">
+        <!-- "Apply to all" checkbox — only shown when sibling nodes exist -->
+        <el-tooltip
+          v-if="siblingCount > 0"
+          :content="`Also update ${siblingCount} other node${siblingCount !== 1 ? 's' : ''} using ${props.nodeData.componentName} from ${props.nodeData.sourceFile}`"
+          placement="top"
+          effect="light"
+        >
+          <el-checkbox v-model="applyToAll" class="apply-all-checkbox">
+            Apply to all instances
+            <el-tag size="small" type="info" style="margin-left: 6px">
+              {{ siblingCount + 1 }}
+            </el-tag>
+          </el-checkbox>
+        </el-tooltip>
 
-        <el-button v-if="isInternalModule" type="primary" @click="handleSave('fork')" :disabled="!isDirty">
-          Save As
-        </el-button>
-
-        <el-button v-else type="primary" @click="handleSave('update')" :disabled="!isDirty"> Save Changes </el-button>
-      </span>
+        <div class="footer-buttons">
+          <el-button @click="handleCancel">Cancel</el-button>
+          <el-button type="primary" @click="handleSave('button')" :disabled="!isDirty">
+            Save Changes
+          </el-button>
+        </div>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { ElButton, ElDialog, ElMessageBox } from 'element-plus'
+import { ElButton, ElCheckbox, ElDialog, ElMessageBox, ElTag, ElTooltip } from 'element-plus'
+import { useVueFlow } from '@vue-flow/core'
 import CellMLTextEditor from './CellMLTextEditor.vue'
 import { useBuilderStore } from '../stores/builderStore'
 import { useGtm } from '../composables/useGtm'
@@ -60,7 +77,7 @@ const props = defineProps({
   nodeData: {
     type: Object,
     required: true,
-    // Expected: { nodeId, name, sourceFile, componentName }
+    // Expected: { nodeId, name, sourceFile, componentName, configIndex }
   },
 })
 
@@ -68,9 +85,12 @@ const emit = defineEmits(['update:modelValue', 'save'])
 
 const store = useBuilderStore()
 const { trackEvent } = useGtm()
+const { nodes } = useVueFlow()
+
 const loading = ref(false)
 const currentCode = ref('')
 const originalCode = ref('')
+const applyToAll = ref(false)
 
 const isInternalModule = computed(() => {
   const sourceFile = props.nodeData.sourceFile
@@ -85,7 +105,24 @@ const dialogTitle = computed(() => {
   return `Editing: ${props.nodeData.name} (${props.nodeData.componentName} - ${props.nodeData.sourceFile})`
 })
 
-// Load Data when Dialog Opens
+/**
+ * Count of other nodes sharing the same sourceFile and componentName.
+ */
+const siblingCount = computed(() => {
+  if (!props.nodeData?.sourceFile || !props.nodeData?.componentName) return 0
+  return nodes.value.filter(
+    (n) =>
+      n.id !== props.nodeData.nodeId &&
+      n.data?.sourceFile === props.nodeData.sourceFile &&
+      n.data?.componentName === props.nodeData.componentName
+  ).length
+})
+
+// Reset the checkbox whenever the dialog opens for a new node.
+watch(() => props.nodeData, () => { applyToAll.value = false })
+
+// ── Load content when dialog opens ──────────────────────────────────────────
+
 watch(
   () => props.nodeData,
   async (newData) => {
@@ -97,9 +134,7 @@ watch(
         if (errors.length > 0) {
           console.error('Errors while extracting component for editing:', errors)
           ElMessageBox.alert(
-            `Failed to load the CellML source for editing.\n\nError${errors.length === 1 ? '' : 's'}:\n- ${errors.join(
-              '\n- '
-            )}\n\nPlease create an issue if the problem persists.`,
+            `Failed to load the CellML source for editing.\n\nError${errors.length === 1 ? '' : 's'}:\n- ${errors.join('\n- ')}\n\nPlease create an issue if the problem persists.`,
             'Load Error',
             { type: 'error' }
           )
@@ -120,113 +155,83 @@ watch(
 const checkDirtyAndProceed = (confirmAction) => {
   if (isDirty.value) {
     ElMessageBox.confirm('You have unsaved changes. Are you sure you want to close?', 'Warning', { type: 'warning' })
-      .then(() => {
-        // User clicked "OK", proceed with the action (closing)
-        confirmAction()
-      })
-      .catch(() => {
-        // User clicked "Cancel", do nothing (stay open)
-      })
+      .then(() => confirmAction())
+      .catch(() => {})
   } else {
-    // Not dirty, proceed immediately
     confirmAction()
   }
 }
 
-const handleBeforeClose = (done) => {
-  checkDirtyAndProceed(done)
-}
+const handleBeforeClose = (done) => checkDirtyAndProceed(done)
+const handleCancel = () => checkDirtyAndProceed(() => emit('update:modelValue', false))
 
-const handleCancel = () => {
-  checkDirtyAndProceed(() => {
-    emit('update:modelValue', false)
-  })
-}
+// ── Save ─────────────────────────────────────────────────────────────────────
+//
+// Both scope: single and scope: all perform identical merge logic — the
+// component is written to USER_MODULES_FILE under whatever name is in the
+// editor. The only difference is which nodes get redirected in BuilderView:
+//   scope: single → only the editing node
+//   scope: all    → all nodes sharing originalSourceFile + originalComponentName
 
-function formSaveData(componentName, modelString = null) {
-  return {
-    ...props.nodeData,
-    code: modelString,
-    componentName: componentName,
-    sourceFile: USER_MODULES_FILE,
-    originalSourceFile: props.nodeData.sourceFile,
-    originalComponentName: props.nodeData.componentName,
-    originalConfigIndex: props.nodeData.configIndex,
-  }
-}
-
-/**
- * Handler for saving CellML changes.
- * The 'source' parameter determines the source of the save event it can
- * be 'fork', 'update', or 'key'. We block 'key' save events if the save buttons
- * are disabled.
- */
 const handleSave = async (source) => {
-  if (source === 'key' && !isDirty.value) {
+  if (source === 'key' && !isDirty.value) return
+
+  const componentNames = getModelComponentNames(currentCode.value)
+  if (!componentNames || componentNames.length === 0) {
+    ElMessageBox.alert('Could not find a valid component name in the code.', 'Parse Error', { type: 'error' })
     return
   }
 
-  const mode = source === 'key' ? (isInternalModule.value ? 'fork' : 'update') : source
+  const newName = componentNames[0].trim()
+  const currentName = props.nodeData.componentName
 
   try {
-    // Parse the new component name from the editor content.
-    const componentNames = getModelComponentNames(currentCode.value)
-    if (!componentNames || componentNames.length === 0) {
-      ElMessageBox.alert('Could not find a valid component name in the code.', 'Parse Error', { type: 'error' })
+    const existingModelString = await store.getModuleContent(USER_MODULES_FILE)
+
+    // Block if the name is already taken by a different component.
+    // Updating in place (newName === currentName and we own it) is always allowed.
+    const nameExists = doesComponentExistInModel(existingModelString, newName)
+    const isUpdatingInPlace = nameExists && newName === currentName
+
+    if (nameExists && !isUpdatingInPlace) {
+      ElMessageBox.alert(
+        `A component named "${newName}" already exists in User Modules. Please rename the component in the editor before saving.`,
+        'Name Conflict',
+        { type: 'error' }
+      )
       return
     }
-    const newName = componentNames[0].trim()
-    const currentName = props.nodeData.componentName
 
-    // Fetch existing User Modules to check for collisions.
-    const existingModelString = await store.getModuleContent(USER_MODULES_FILE)
-    const nameExists = doesComponentExistInModel(existingModelString, newName)
+    // For internal (read-only) source modules we are always writing to
+    // USER_MODULES_FILE for the first time — no old entry to replace.
+    const oldNameForMerge = isInternalModule.value ? undefined : currentName
 
-    // Validation Logic.
-    if (mode === 'fork') {
-      // FORK: Name must be unique. Period.
-      if (nameExists) {
-        ElMessageBox.alert(
-          `A component named "${newName}" already exists. Please rename the component in the code before forking.`,
-          'Name Conflict',
-          { type: 'error' }
-        )
-        return
-      }
-    } else {
-      // UPDATE: Name must be unique if renaming.
-      // If we are renaming (newName !== currentName), the *target* name must not be taken by someone else.
-      // If we are just saving in place (newName === currentName), existence is expected.
-      if (newName !== currentName && nameExists) {
-        ElMessageBox.alert(
-          `Cannot rename to "${newName}" because a component with that name already exists.`,
-          'Name Conflict',
-          { type: 'error' }
-        )
-        return
-      }
-    }
+    const mergedModelString = mergeModelComponents(
+      existingModelString,
+      currentCode.value,
+      newName,
+      oldNameForMerge
+    )
+    if (!mergedModelString) throw new Error('Merge operation returned empty string.')
 
-    // Merge Logic
-    // If updating, we pass 'currentName' so the merger knows what to replace/remove.
-    // If forking, we pass undefined so the merger just appends the new one.
-    const oldNameForMerge = mode === 'update' ? currentName : undefined
-
-    const mergedModelString = mergeModelComponents(existingModelString, currentCode.value, newName, oldNameForMerge)
-
-    if (!mergedModelString) {
-      throw new Error('Merge operation returned empty string.')
-    }
-
-    // Analytics & Events
     trackEvent('editor_action', {
       category: 'Editor',
-      action: mode === 'fork' ? 'fork_save' : 'save',
+      action: applyToAll.value ? 'save_all' : 'save_single',
       label: newName,
       file_type: 'cellml',
     })
 
-    emit('save', formSaveData(newName, mergedModelString))
+    emit('save', {
+      nodeId: props.nodeData.nodeId,
+      // scope controls which nodes BuilderView redirects — not the merge logic.
+      scope: applyToAll.value ? 'all' : 'single',
+      code: mergedModelString,
+      componentName: newName,
+      sourceFile: USER_MODULES_FILE,
+      originalComponentName: currentName,
+      originalSourceFile: props.nodeData.sourceFile,
+      originalConfigIndex: props.nodeData.configIndex,
+    })
 
     emit('update:modelValue', false)
   } catch (error) {
@@ -242,17 +247,38 @@ const handleSave = async (source) => {
   display: flex;
   flex-direction: column;
 }
+
 .editor-wrapper {
   flex: 1;
   overflow: hidden;
   position: relative;
 }
+
 .tag.internal {
   color: orange;
   font-weight: bold;
 }
+
 .tag.user {
   color: green;
   font-weight: bold;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  width: 100%;
+}
+
+.apply-all-checkbox {
+  margin-right: auto;
+  font-size: 13px;
+}
+
+.footer-buttons {
+  display: flex;
+  gap: 8px;
 }
 </style>
