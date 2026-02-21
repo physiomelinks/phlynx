@@ -5,6 +5,7 @@
 ###### Includes changes up to 2026-02-21
 
 #### Not Specified
+* Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
 * Improve consistency of import dialog fields by [@jmdowrick](https://github.com/jmdowrick) in [#332](https://github.com/physiomelinks/phlynx/pull/332)
 * Add missing units to the user units file by [@jmdowrick](https://github.com/jmdowrick) in [#313](https://github.com/physiomelinks/phlynx/pull/313)
 * Add testing packages to phlynx by [@jmdowrick](https://github.com/jmdowrick) in [#308](https://github.com/physiomelinks/phlynx/pull/308)

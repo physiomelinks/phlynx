@@ -12,7 +12,12 @@
       <div v-if="loading" class="loading">Loading CellML source...</div>
 
       <div v-else class="editor-wrapper">
-        <CellMLTextEditor v-model="currentCode" :regenerate-on-change="modelValue" @save="handleSave('key')" />
+        <CellMLTextEditor
+          :model-value="currentCode"
+          :regenerate-on-change="modelValue"
+          @update:code="currentCode = $event"
+          @save="handleSave('key')"
+        />
       </div>
 
       <div class="status-bar">
@@ -106,7 +111,9 @@ const dialogTitle = computed(() => {
 })
 
 /**
- * Count of other nodes sharing the same sourceFile and componentName.
+ * Count of other nodes sharing the same sourceFile AND componentName.
+ * Nodes from a different sourceFile are never included, even if the component
+ * name happens to match.
  */
 const siblingCount = computed(() => {
   if (!props.nodeData?.sourceFile || !props.nodeData?.componentName) return 0
@@ -118,7 +125,7 @@ const siblingCount = computed(() => {
   ).length
 })
 
-// Reset the checkbox whenever the dialog opens for a new node.
+// Reset checkbox when dialog opens for a new node.
 watch(() => props.nodeData, () => { applyToAll.value = false })
 
 // ── Load content when dialog opens ──────────────────────────────────────────
@@ -202,9 +209,17 @@ const handleSave = async (source) => {
       return
     }
 
-    // For internal (read-only) source modules we are always writing to
-    // USER_MODULES_FILE for the first time — no old entry to replace.
-    const oldNameForMerge = isInternalModule.value ? undefined : currentName
+    // Determine whether to replace an existing UserModules entry or append.
+    //
+    // We must NOT replace when other nodes still point to currentName:
+    //   - Internal modules: always appending (first write to UserModules).
+    //   - scope 'single' with siblings: other nodes depend on currentName,
+    //     so we append newName alongside it rather than removing currentName.
+    //   - scope 'single' with no siblings: safe to replace in place.
+    //   - scope 'all': replace in place, all nodes will be redirected to newName.
+    const hasSiblings = siblingCount.value > 0
+    const isAppending = isInternalModule.value || (!applyToAll.value && hasSiblings)
+    const oldNameForMerge = isAppending ? undefined : currentName
 
     const mergedModelString = mergeModelComponents(
       existingModelString,
@@ -223,7 +238,6 @@ const handleSave = async (source) => {
 
     emit('save', {
       nodeId: props.nodeData.nodeId,
-      // scope controls which nodes BuilderView redirects — not the merge logic.
       scope: applyToAll.value ? 'all' : 'single',
       code: mergedModelString,
       componentName: newName,
