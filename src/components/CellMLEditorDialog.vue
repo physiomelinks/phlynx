@@ -193,12 +193,23 @@ const handleSave = async (source) => {
   const currentName = props.nodeData.componentName
 
   try {
+    // Determine whether to replace an existing UserModules entry or append.
+    //
+    // We must not replace when other nodes still point to currentName:
+    //   - Internal modules: always appending (first write to UserModules).
+    //   - scope 'single' with siblings: other nodes depend on currentName,
+    //     so we append newName alongside it rather than removing currentName.
+    //   - scope 'single' with no siblings: safe to replace in place.
+    //   - scope 'all': replace in place, all nodes will be redirected to newName.
+    const hasSiblings = siblingCount.value > 0
+    const isAppending = isInternalModule.value || (!applyToAll.value && hasSiblings)
+
     const existingModelString = await store.getModuleContent(USER_MODULES_FILE)
 
     // Block if the name is already taken by a different component.
     // Updating in place (newName === currentName and we own it) is always allowed.
     const nameExists = doesComponentExistInModel(existingModelString, newName)
-    const isUpdatingInPlace = nameExists && newName === currentName
+    const isUpdatingInPlace = nameExists && newName === currentName && !isAppending
 
     if (nameExists && !isUpdatingInPlace) {
       ElMessageBox.alert(
@@ -209,16 +220,6 @@ const handleSave = async (source) => {
       return
     }
 
-    // Determine whether to replace an existing UserModules entry or append.
-    //
-    // We must NOT replace when other nodes still point to currentName:
-    //   - Internal modules: always appending (first write to UserModules).
-    //   - scope 'single' with siblings: other nodes depend on currentName,
-    //     so we append newName alongside it rather than removing currentName.
-    //   - scope 'single' with no siblings: safe to replace in place.
-    //   - scope 'all': replace in place, all nodes will be redirected to newName.
-    const hasSiblings = siblingCount.value > 0
-    const isAppending = isInternalModule.value || (!applyToAll.value && hasSiblings)
     const oldNameForMerge = isAppending ? undefined : currentName
 
     const mergedModelString = mergeModelComponents(

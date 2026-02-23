@@ -1393,55 +1393,77 @@ async function handleCellMLSave(saveData) {
  * Separated from data fetching for clarity.
  */
 function updateGraphNodesAndPorts(updatedData, updatedModule) {
-  const validPortNames = new Set(updatedModule?.portOptions?.map((p) => p.name) || [])
+  const validPortNames = new Set(
+    updatedModule?.portOptions?.map((p) => p.name) || []
+  )
+
+  const updatedModuleVariableMap = new Map(
+    (updatedModule?.variables || []).map((v) => [v.name, v])
+  )
+
   let updatedCount = 0
 
   nodes.value.forEach((node) => {
-    // Check if node is the specific target OR if it uses the same module (for reusability).
     const isTargetNode = node.id === updatedData.nodeId
     const isMatchingModule =
       updatedData.scope !== 'single' &&
       node.data.sourceFile === updatedData.originalSourceFile &&
       node.data.componentName === updatedData.originalComponentName
 
-    if (isTargetNode || isMatchingModule) {
-      // Logic to clean existing variables/ports on the node.
-      const cleanLabels = (node.data.portLabels || []).map((labelObj) => ({
-        ...labelObj,
-        option: labelObj.option.filter((opt) => validPortNames.has(opt)),
-      }))
+    if (!isTargetNode && !isMatchingModule) return
 
-      const existingVariableNames = new Set(node.data.variables.map((item) => item.name))
-      const cleanVariables = (node.data.variables || []).filter((v) => validPortNames.has(v.name))
+    // Capture original variable names BEFORE filtering
+    const originalVariableNames = new Set(
+      (node.data.variables || []).map((v) => v.name)
+    )
 
-      // Add new variables found in the CellML.
-      const newItems = (updatedModule.variables || []).filter((item) => !existingVariableNames.has(item.name))
-      cleanVariables.push(...newItems)
+    // Remove invalid variables and update metadata
+    const cleanVariables = (node.data.variables || [])
+      .filter((v) => validPortNames.has(v.name))
+      .map((v) => {
+        const updatedMeta = updatedModuleVariableMap.get(v.name)
+        return updatedMeta
+          ? { ...v, units: updatedMeta.units }
+          : v
+      })
 
-      // Construct new node data.
-      const newData = {
-        ...JSON.parse(JSON.stringify(node.data)),
-        componentName: updatedData.componentName, // Update to NEW name
-        sourceFile: updatedData.sourceFile, // Update to NEW file
-        label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
-        portLabels: cleanLabels,
-        portOptions: updatedModule.portOptions || [],
-        variables: cleanVariables,
-      }
+    // Add only truly new variables (preserve old behavior)
+    const newItems = (updatedModule?.variables || [])
+      .filter((v) => !originalVariableNames.has(v.name))
 
-      updatedCount++
-      updateNodeData(node.id, newData)
+    cleanVariables.push(...newItems)
+
+    // Clean port labels
+    const cleanLabels = (node.data.portLabels || []).map((labelObj) => ({
+      ...labelObj,
+      option: (labelObj.option || []).filter((opt) =>
+        validPortNames.has(opt)
+      ),
+    }))
+
+    const newData = {
+      ...JSON.parse(JSON.stringify(node.data)),
+      componentName: updatedData.componentName,
+      sourceFile: updatedData.sourceFile,
+      label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
+      portLabels: cleanLabels,
+      portOptions: updatedModule?.portOptions || [],
+      variables: cleanVariables,
     }
+
+    updatedCount++
+    updateNodeData(node.id, newData)
   })
 
   notify.success({
     title: 'Module Updated',
-    message: `Updated ${updatedCount} node${updatedCount !== 1 ? 's' : ''} to ${updatedData.componentName}.`,
+    message: `Updated ${updatedCount} node${
+      updatedCount !== 1 ? 's' : ''
+    } to ${updatedData.componentName}.`,
   })
 
   return validPortNames
 }
-
 function onOpenMacroBuilderDialog() {
   macroBuilderDialogVisible.value = true
 }
