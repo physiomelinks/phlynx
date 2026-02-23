@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-21
+###### Includes changes up to 2026-02-23
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -17,6 +17,8 @@
 
 
 #### Fixed Bugs
+* Ensure units update following cellml edit by [@jmdowrick](https://github.com/jmdowrick) in [#350](https://github.com/physiomelinks/phlynx/pull/350)
+* Fix cellml module save behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#349](https://github.com/physiomelinks/phlynx/pull/349)
 * Fix cellml editing behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#339](https://github.com/physiomelinks/phlynx/pull/339)
 * Update import dialog to Hugh's liking by [@jmdowrick](https://github.com/jmdowrick) in [#331](https://github.com/physiomelinks/phlynx/pull/331)
 * Ensure that warning dialog checks against the same store by [@jmdowrick](https://github.com/jmdowrick) in [#328](https://github.com/physiomelinks/phlynx/pull/328)
