@@ -2,7 +2,7 @@ import { MarkerType } from '@vue-flow/core'
 
 export const SOURCE_PORT_TYPE = 'source'
 export const TARGET_PORT_TYPE = 'target'
-export const USER_MODULES_FILE = 'UserModules.cellml'
+export const USER_MODULES_FILE = 'User_Modules.cellml'
 
 export const TOOLTIP_AUTO_CLOSE = 1200
 export const RESCALE_ASPECT_RATIO = 3

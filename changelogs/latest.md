@@ -30,6 +30,7 @@
 
 
 #### Maintenance Work
+* Improve module list ux by [@jmdowrick](https://github.com/jmdowrick) in [#352](https://github.com/physiomelinks/phlynx/pull/352)
 * Make module creation easier by [@jmdowrick](https://github.com/jmdowrick) in [#334](https://github.com/physiomelinks/phlynx/pull/334)
 
 
