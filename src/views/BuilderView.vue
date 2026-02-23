@@ -410,7 +410,7 @@ const historyStore = useFlowHistoryStore()
 const { loadFromVesselArray } = useLoadFromVesselArray()
 const { capture } = useScreenshot()
 const { trackEvent } = useGtm()
-const { width: asideWidth, startResize } = useResizableAside(200, 150, 400)
+const { width: asideWidth, startResize } = useResizableAside(300, 150, 400)
 
 const helperLineHorizontal = ref(null)
 const helperLineVertical = ref(null)

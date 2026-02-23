@@ -979,7 +979,7 @@ export function mergeModelComponents(targetModelString, sourceModelString, newCo
 
   if (!targetModel) {
     targetModel = new _libcellml.Model()
-    targetModel.setName('UserModules')
+    targetModel.setName('User_Modules')
   }
 
   let sourceModel = null

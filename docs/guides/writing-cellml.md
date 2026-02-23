@@ -26,7 +26,7 @@ There are three main components to this dialog:
 > [!TIP]
 > **Saving Changes:** 
 >* If you are editing a **Custom Module**, clicking `Save` updates the file directly.
-> * If you are editing a **Library Module**, you must click `Save As`. This creates a copy of the module in the `UserModules.cellml` container in your Module List, leaving the original library version untouched.
+> * If you are editing a **Library Module**, you must click `Save As`. This creates a copy of the module in the `User_Modules.cellml` container in your Module List, leaving the original library version untouched.
 
 ## Writing CellML Text
 
