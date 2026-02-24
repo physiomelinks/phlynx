@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-23
+###### Includes changes up to 2026-02-24
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -12,11 +12,13 @@
 
 
 #### New Features
+* Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
 * Add reset view to right click menu by [@jmdowrick](https://github.com/jmdowrick) in [#338](https://github.com/physiomelinks/phlynx/pull/338)
 * Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 
 
 #### Fixed Bugs
+* Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
 * Ensure units update following cellml edit by [@jmdowrick](https://github.com/jmdowrick) in [#350](https://github.com/physiomelinks/phlynx/pull/350)
 * Fix cellml module save behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#349](https://github.com/physiomelinks/phlynx/pull/349)
 * Fix cellml editing behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#339](https://github.com/physiomelinks/phlynx/pull/339)
