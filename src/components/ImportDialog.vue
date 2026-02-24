@@ -186,7 +186,7 @@ import { useGtm } from '../composables/useGtm'
 import { notify } from '../utils/notify'
 import { IMPORT_KEYS, MAX_VISIBLE_TAGS } from '../utils/constants'
 import { createDynamicFields, validateVesselData } from '../utils/import'
-import { processModuleData } from '../utils/cellml'
+import { processCellMLData } from '../utils/cellml'
 import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
 
 const props = defineProps({
@@ -593,9 +593,9 @@ async function stageFile(field, parsedData, fileName) {
 
   // Perform the staging logic
   if (field.processUpload === 'cellml') {
-    const result = processModuleData(data)
+    const result = processCellMLData(data)
     if (result.type === 'success') {
-      const augmentedData = result.data.map((item) => ({
+      const augmentedData = result.components?.data.map((item) => ({
         ...item,
         sourceFile: fileName,
       }))
@@ -604,7 +604,7 @@ async function stageFile(field, parsedData, fileName) {
         payload: {
           filename: fileName,
           modules: augmentedData,
-          model: result.model,
+          model: result.components?.model,
         },
       })
     }
