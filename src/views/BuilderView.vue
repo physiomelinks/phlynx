@@ -1936,6 +1936,13 @@ const handleKeyDown = (event) => {
     return
   }
 
+  // Don't intercept shortcuts when the CellML text editor dialog is open.
+  // CodeMirror uses contenteditable divs rather than INPUT/TEXTAREA, so the
+  // check above doesn't catch it. We guard on both the dialog-open state and
+  // on whether focus is inside any CodeMirror editor element.
+  if (cellMLEditorDialogVisible.value) return
+  if (event.target.closest('.cm-editor')) return
+
   const isCtrl = event.ctrlKey || event.metaKey // metaKey for Mac Cmd
   const isShift = event.shiftKey
 
