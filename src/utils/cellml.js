@@ -12,132 +12,88 @@ export function initLibCellML(instance) {
   _libcellml = instance
 }
 
-export function processModuleData(cellmlString) {
-  let parser = new _libcellml.Parser(false)
-  let printer = new _libcellml.Printer()
+/**
+ * Parses a CellML file once and extracts both component and units data.
+ *
+ * @param {string} cellmlString - Raw CellML XML string.
+ */
+export function processCellMLData(cellmlString) {
+  const parser = new _libcellml.Parser(false)
   let model = null
+
+  // --- Parse ---
   try {
     model = parser.parseModel(cellmlString)
   } catch (err) {
     parser.delete()
-    printer.delete()
-
     return {
-      issues: [
-        {
-          description: 'Failed to parse model.  Reason:' + err.message,
-        },
-      ],
       type: 'parser',
+      issues: [{ description: 'Failed to parse model. Reason: ' + err.message }],
     }
   }
 
-  let errors = []
-  let i = 0
   if (parser.errorCount()) {
-    while (i < parser.errorCount()) {
-      let e = parser.error(i)
-      errors.push({
-        description: e.description(),
-      })
+    const issues = []
+    for (let i = 0; i < parser.errorCount(); i++) {
+      const e = parser.error(i)
+      issues.push({ description: e.description() })
       e.delete()
-      i++
     }
     parser.delete()
-    printer.delete()
     model.delete()
-
-    return { issues: errors, type: 'parser' }
+    return { type: 'parser', issues }
   }
 
   parser.delete()
-  printer.delete()
 
-  let data = []
-  for (i = 0; i < model.componentCount(); i++) {
-    let comp = model.componentByIndex(i)
-    let options = []
-    let variables = []
+  // --- Extract components ---
+  const componentData = []
+  for (let i = 0; i < model.componentCount(); i++) {
+    const comp = model.componentByIndex(i)
+    const options = []
+    const variables = []
+
     for (let j = 0; j < comp.variableCount(); j++) {
-      let varr = comp.variableByIndex(j)
-      
-      if (varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC) ||
-    varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC_AND_PRIVATE)) {
-        let units = varr.units()
-        options.push({
-          name: varr.name(),
-          units: units.name(),
-        })
+      const varr = comp.variableByIndex(j)
+      if (
+        varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC) ||
+        varr.hasInterfaceType(_libcellml.Variable.InterfaceType.PUBLIC_AND_PRIVATE)
+      ) {
+        const units = varr.units()
+        const entry = { name: varr.name(), units: units.name() }
+        options.push(entry)
         if (isPossibleParameter(varr)) {
-          variables.push({
-            name: varr.name(),
-            units: units.name(),
-          })
+          variables.push(entry)
         }
         units.delete()
       }
       varr.delete()
     }
-    data.push({
+
+    componentData.push({
       name: comp.name(),
       portOptions: options,
       ports: [],
       componentName: comp.name(),
-      variables
+      variables,
     })
     comp.delete()
   }
 
-  model.delete()
-  return { type: 'success', data, model: cellmlString }
-}
-
-export function processUnitsData(content) {
-  let parser = new _libcellml.Parser(false)
-  let model = null
-  try {
-    model = parser.parseModel(content)
-  } catch (err) {
-    parser.delete()
-
-    return {
-      issues: [
-        {
-          description: 'Failed to parse model.  Reason:' + err.message,
-        },
-      ],
-      type: 'parser',
-    }
-  }
-
-  const errorCount = parser.errorCount()
-  parser.delete()
-  if (errorCount) {
-    model.delete()
-    return {
-      issues: [
-        {
-          description: 'Found parsing errors in model.',
-        },
-      ],
-      type: 'parser',
-    }
-  }
-
-  let unitsModel = new _libcellml.Model()
+  // --- Extract units into a stripped model ---
+  const unitsModel = new _libcellml.Model()
   unitsModel.setName('OnlyUnitsFrom_' + model.name())
   const unitsCount = model.unitsCount()
 
-  let i = 0
-  for (i = 0; i < unitsCount; i++) {
-    let units = model.unitsByIndex(i)
-    let clonedUnits = units.clone()
-    unitsModel.addUnits(clonedUnits)
+  for (let i = 0; i < unitsCount; i++) {
+    const units = model.unitsByIndex(i)
+    const cloned = units.clone()
+    unitsModel.addUnits(cloned)
     units.delete()
-    clonedUnits.delete()
+    cloned.delete()
   }
 
-  let printer = new _libcellml.Printer()
+  const printer = new _libcellml.Printer()
   const unitsModelString = printer.printModel(unitsModel, false)
 
   model.delete()
@@ -146,8 +102,14 @@ export function processUnitsData(content) {
 
   return {
     type: 'success',
-    model: unitsModelString,
-    units: { count: unitsCount },
+    components: {
+      data: componentData,
+      model: cellmlString,
+    },
+    units: {
+      model: unitsModelString,
+      count: unitsCount,
+    },
   }
 }
 

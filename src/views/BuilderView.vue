@@ -347,7 +347,7 @@ import { getHelperLines } from '../utils/helperLines'
 import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
 import { useClearWorkspace } from '../utils/workspace'
 import { relayoutNodes } from '../services/layouts/physics'
-import { generateFlattenedModel, initLibCellML, processModuleData, processUnitsData } from '../utils/cellml'
+import { generateFlattenedModel, initLibCellML, processCellMLData } from '../utils/cellml'
 import {
   edgeLineOptions,
   CELLML_FILE_TYPES,
@@ -484,13 +484,7 @@ const importOptions = computed(() => [
     label: 'Parameters',
     icon: markRaw(IconParameters),
     disabled: false,
-  },
-  {
-    key: IMPORT_KEYS.UNITS,
-    label: 'Units',
-    icon: markRaw(UnitsIcon),
-    disabled: libcellml.status !== 'ready',
-  },
+  }
 ])
 currentImportMode.value = importOptions.value[0]
 
@@ -913,108 +907,83 @@ function updateNodesWithNewParameters() {
   })
 }
 
-const loadCellMLModuleData = (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
+const loadCellMLData = (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
   return new Promise((resolve) => {
-    const result = processModuleData(content)
+    const result = processCellMLData(content)
+
     if (result.type === 'success') {
-      const augmentedData = result.data.map((item) => ({
+      // Register components (modules) with the store
+      const modules = result.components.data.map((item) => ({
         ...item,
         sourceFile: filename,
       }))
       builderStore.addModuleFile({
-        filename: filename,
-        modules: augmentedData,
-        model: result.model,
+        filename,
+        modules: modules,
+        model: result.components.model,
       })
-      if (trackEvents) {
-        trackEvent('modules_load_action', {
-          category: 'Modules',
-          action: 'load_cellml_module',
-          label: `Modules: ${result.data.length}`,
-          file_type: 'cellml',
-        })
-      }
-      if (shouldNotify) {
-        notify.success({
-          title: 'CellML Modules Loaded',
-          message: `Loaded ${result.data.length} modules from ${filename}.`,
-        })
-      }
-    } else if (result.issues) {
-      if (trackEvents) {
-        trackEvent('modules_load_action', {
-          category: 'Modules',
-          action: 'load_cellml_module',
-          label: `Error: encountered ${result.issues.length} error(s)`,
-          file_type: 'cellml',
-        })
-      }
-      if (shouldNotify) {
-        notify.error({
-          title: 'Loading Module Error',
-          message: `${result.issues.length} issues found in model file.`,
-        })
-      }
-      console.error('Model import issues:', result.issues)
-    }
 
-    resolve(result.type === 'success'
-      ? { ok: true, count: result.data.length }
-      : { ok: false, count: 0 }
-    )
-  })
-}
-
-const loadCellMLUnitsData = (content, filename, { notify: shouldNotify = true, trackEvents = true } = {}) => {
-  return new Promise((resolve) => {
-    const result = processUnitsData(content)
-    if (result.type === 'success') {
+      // Register units with the store
       builderStore.addUnitsFile({
-        filename: filename,
-        model: result.model,
+        filename,
+        model: result.units.model,
       })
+
       if (trackEvents) {
-        trackEvent('units_load_action', {
-          category: 'Units',
-          action: 'load_cellml_units',
-          label: `Units: ${result.units.count}`,
+        trackEvent('cellml_load_action', {
+          category: 'CellML',
+          action: 'load_cellml_file',
+          label: `Modules: ${result.components.data.length}, Units: ${result.units.count}`,
           file_type: 'cellml',
         })
       }
+
       if (shouldNotify) {
-        if (result.units.count > 0) {
+        const moduleCount = result.components.data.length
+        const unitCount = result.units.count
+
+        if (moduleCount > 0 && unitCount > 0) {
+          notify.success({
+            title: 'CellML File Loaded',
+            message: `Loaded ${moduleCount} module${moduleCount !== 1 ? 's' : ''} and ${unitCount} unit${unitCount !== 1 ? 's' : ''} from ${filename}.`,
+          })
+        } else if (moduleCount > 0) {
+          notify.success({
+            title: 'CellML Modules Loaded',
+            message: `Loaded ${moduleCount} module${moduleCount !== 1 ? 's' : ''} from ${filename}.`,
+          })
+        } else if (unitCount > 0) {
           notify.success({
             title: 'CellML Units Loaded',
-            message: `Loaded ${result.units.count} units from ${filename}.`,
+            message: `Loaded ${unitCount} unit${unitCount !== 1 ? 's' : ''} from ${filename}.`,
           })
         } else {
           notify.info({
-            title: 'No CellML Units Loaded',
-            message: `${filename} contained no unit definitions.`,
+            title: 'CellML File Loaded',
+            message: `${filename} contained no modules or unit definitions.`,
           })
         }
       }
-    } else if (result.issues) {
+
+      resolve({ ok: true, moduleCount: result.components.data.length, unitCount: result.units.count })
+    } else {
       if (trackEvents) {
-        trackEvent('units_load_action', {
-          category: 'Units',
-          action: 'load_cellml_units',
+        trackEvent('cellml_load_action', {
+          category: 'CellML',
+          action: 'load_cellml_file',
           label: `Error: encountered ${result.issues.length} error(s)`,
           file_type: 'cellml',
         })
       }
       if (shouldNotify) {
         notify.error({
-          title: 'Loading Units Error',
-          message: `${result.issues[0].description}`,
+          title: 'CellML Load Error',
+          message: `${result.issues.length} issue${result.issues.length !== 1 ? 's' : ''} found in ${filename}.`,
         })
       }
+      console.error('CellML import issues:', result.issues)
+      resolve({ ok: false, moduleCount: 0, unitCount: 0 })
     }
-
-    resolve(result.type === 'success'
-      ? { ok: true, count: result.units.count }
-      : { ok: false, count: 0 }
-    )
   })
 }
 
@@ -1138,25 +1107,30 @@ async function onImportConfirm(importPayload, updateProgress) {
     const multiFile = importPayload.size > 1
     const results = await Promise.all(
       [...importPayload].map(([filename, data]) =>
-        loadCellMLModuleData(data?.payload, filename, { notify: !multiFile })
+        loadCellMLData(data?.payload, filename, { notify: !multiFile })
       )
     )
     if (multiFile) {
       const succeeded = results.filter(r => r.ok)
       const failed = results.length - succeeded.length
-      const totalModules = succeeded.reduce((sum, r) => sum + r.count, 0)
+      const totalModules = succeeded.reduce((sum, r) => sum + r.moduleCount, 0)
+      const totalUnits = succeeded.reduce((sum, r) => sum + r.unitCount, 0)
+      const summary = [
+        totalModules > 0 ? `${totalModules} module${totalModules !== 1 ? 's' : ''}` : '',
+        totalUnits > 0 ? `${totalUnits} unit${totalUnits !== 1 ? 's' : ''}` : '',
+      ].filter(Boolean).join(' and ')
       if (succeeded.length > 0 && failed === 0) {
-        notify.success({ 
-          title: 'CellML Modules Loaded', 
-          message: `Loaded ${totalModules} modules from ${succeeded.length} files.`, 
+        notify.success({
+          title: 'CellML Files Loaded',
+          message: `Loaded ${summary} from ${succeeded.length} file${succeeded.length !== 1 ? 's' : ''}.`,
         })
       } else if (succeeded.length > 0) {
-        notify.warning({ 
-          title: 'Partial Import', 
-        message: `Loaded ${totalModules} modules from ${succeeded.length} files. ${failed} file(s) failed.`,
-      })
+        notify.warning({
+          title: 'Partial Import',
+          message: `Loaded ${summary} from ${succeeded.length} file${succeeded.length !== 1 ? 's' : ''}. ${failed} file(s) failed.`,
+        })
       } else {
-        notify.error({ 
+        notify.error({
           title: 'Import Failed',
           message: `Failed to load all ${failed} file(s).`,
         })
@@ -1219,34 +1193,6 @@ async function onImportConfirm(importPayload, updateProgress) {
       }
     }
     updateNodesWithNewParameters()
-  } else if (currentImportMode.value.key === IMPORT_KEYS.UNITS) {
-    const multiFile = importPayload.size > 1
-    const results = await Promise.all(
-      [...importPayload].map(([filename, data]) =>
-        loadCellMLUnitsData(data?.payload, filename, { notify: !multiFile })
-      )
-    )
-    if (multiFile) {
-      const succeeded = results.filter(r => r.ok)
-      const failed = results.length - succeeded.length
-      const totalUnits = succeeded.reduce((sum, r) => sum + r.count, 0)
-      if (succeeded.length > 0 && failed === 0) {
-        notify.success({
-          title: 'CellML Units Loaded',
-          message: `Loaded ${totalUnits} units from ${succeeded.length} files.`,
-        })
-      } else if (succeeded.length > 0) {
-        notify.warning({ 
-          title: 'Partial Import',
-          message: `Loaded ${totalUnits} units from ${succeeded.length} files. ${failed} file(s) failed.`,
-        })
-      } else {
-        notify.error({
-          title: 'Import Failed', 
-          message: `Failed to load all ${failed} file(s).`,
-        })
-      }
-    }
   } else {
     console.log("Cannot get here this shouldn't be an import:", currentImportMode.value.key)
   }
@@ -1348,7 +1294,7 @@ async function handleCellMLSave(saveData) {
 
   // Load the New Data into the Store
   // This registers the module under the name found in 'code'.
-  await loadCellMLModuleData(code, sourceFile, { notify: false })
+  await loadCellMLData(code, sourceFile, { notify: false })
 
   // Retrieve the "Target" Module (The one we just loaded)
   let targetModule = builderStore.getModulesModule(sourceFile, componentName)
@@ -2018,8 +1964,8 @@ async function fetchAndLoadResource(entry, resourceType) {
     const content = await response.text()
 
     // Load the content
-    if (resourceType === 'cellml module') {
-      await loadCellMLModuleData(content, entry.file, { notify: false })
+    if (resourceType === 'cellml module' || resourceType === 'cellml units') {
+      await loadCellMLData(content, entry.file ?? entry.name, { notify: false })
     } else if (resourceType === 'module config') {
       await loadConfigData(content, entry.name, false)
       // const jsonContent = JSON.parse(content)
@@ -2027,8 +1973,6 @@ async function fetchAndLoadResource(entry, resourceType) {
     } else if (resourceType === 'parameter file') {
       const parsed = await parseParametersFile(content)
       await loadParametersData(parsed, entry.name, { notify: false })
-    } else if (resourceType === 'cellml units') {
-      await loadCellMLUnitsData(content, entry.name, { notify: false })
     }
 
     return true
@@ -2065,11 +2009,11 @@ onMounted(async () => {
 
   const promises = []
   for (const [path, content] of Object.entries(cellmlModules)) {
-    promises.push(loadCellMLModuleData(content.default, path.split('/').pop(), { notify: false }))
+    promises.push(loadCellMLData(content.default, path.split('/').pop(), { notify: false }))
   }
 
   for (const [path, content] of Object.entries(cellmlUnits)) {
-    promises.push(loadCellMLUnitsData(content.default, path.split('/').pop(), { notify: false }))
+    promises.push(loadCellMLData(content.default, path.split('/').pop(), { notify: false }))
   }
 
   // if (manifest?.modules) {
