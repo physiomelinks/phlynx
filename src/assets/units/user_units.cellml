@@ -4,6 +4,9 @@
         <unit prefix="milli" units="mole"/>
         <unit exponent="-1" units="litre"/>
     </units>
+    <units name="mM">
+        <unit units="mmol_per_l"/>
+    </units>
     <units name="l_per_mmol">
         <unit units="litre"/>
         <unit exponent="-1" prefix="milli" units="mole"/>

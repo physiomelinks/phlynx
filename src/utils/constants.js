@@ -22,6 +22,51 @@ export const FLOW_IDS = {
   MACRO: 'macro-builder-editor',
 }
 
+export const AFFINE_UNIT_CONVERSIONS = {
+  celsius:    { baseUnit: 'kelvin',  scale: 1,        offset: 273.15  },
+  fahrenheit: { baseUnit: 'kelvin',  scale: 5 / 9,    offset: 255.372 },
+}
+
+export const STANDARD_UNITS = [
+    'ampere',
+    'becquerel',
+    'candela',
+    'coulomb',
+    'dimensionless',
+    'farad',
+    'gram',
+    'gray',
+    'henry',
+    'hertz',
+    'joule',
+    'kat',
+    'kelvin',
+    'kilogram',
+    'liter',
+    'litre',
+    'lumen',
+    'lux',
+    'meter',
+    'metre',
+    'mole',
+    'newton',
+    'ohm',
+    'pascal',
+    'radian',
+    'second',
+    'siemens',
+    'sievert',
+    'steradian',
+    'tesla',
+    'volt',
+    'watt',
+    'weber',
+]
+
+export const EXCLUDED_COMPONENTS = new Set(['environment'])
+export const TIME_UNITS = new Set(['second', 'millisecond', 'microsecond', 'minute', 'hour', 'ms', 's'])
+export const TIME_NAMES = new Set(['time', 't'])
+
 export const MAX_VISIBLE_TAGS = 1
 
 export const GHOST_NODE_TYPE = 'ghostNode'

@@ -316,6 +316,7 @@ import {
   Operation as IconParameters,
   Setting as IconModuleConfig,
 } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 import CellMLIcon from '../components/icons/CellMLIcon.vue'
 import UnitsIcon from '../components/icons/UnitsIcon.vue'
 
@@ -326,6 +327,8 @@ import { useBuilderStore } from '../stores/builderStore'
 import { useFlowHistoryStore } from '../stores/historyStore'
 import useDragAndDrop from '../composables/useDnD'
 import { useLoadFromVesselArray } from '../composables/useLoadFromVesselArray'
+import { useLoadFromCellML } from '../composables/useLoadFromCellML'
+import { parseCellMLConnections } from '../services/import/parseCellMLConnections'
 import { useResizableAside } from '../composables/useResizableAside'
 import { useGtm } from '../composables/useGtm'
 import ModuleList from '../components/ModuleList.vue'
@@ -405,9 +408,209 @@ const { processMacroGeneration } = useMacroGenerator()
 
 const pendingHistoryNodes = new Set()
 
-const { onDragOver, onDrop, onDragLeave, isDragOver, createModuleNode } = useDragAndDrop(pendingHistoryNodes)
+const { onDragOver: onDragOverModule, onDrop: onDropModule, onDragLeave, isDragOver, createModuleNode } = useDragAndDrop(pendingHistoryNodes)
+
+/**
+ * Shared multi-file notification helper.
+ * `results` must be an array of `{ ok, summary }` objects where `summary` is a
+ * human-readable description of what was loaded (e.g. "3 modules and 2 units").
+ * Titles are customisable so each import type can use its own wording.
+ */
+const notifyMultiFileResults = (results, { successTitle, partialTitle = 'Partial Import', failTitle = 'Import Failed' }) => {
+  const succeeded = results.filter((r) => r.ok)
+  const failed = results.length - succeeded.length
+  const fileWord = (n) => `${n} file${n !== 1 ? 's' : ''}`
+
+  if (succeeded.length > 0 && failed === 0) {
+    notify.success({ title: successTitle, message: `Loaded from ${fileWord(succeeded.length)}.` })
+  } else if (succeeded.length > 0) {
+    notify.warning({ title: partialTitle, message: `Loaded from ${fileWord(succeeded.length)}. ${fileWord(failed)} failed.` })
+  } else {
+    notify.error({ title: failTitle, message: `Failed to load all ${fileWord(failed)}.` })
+  }
+}
+
+/**
+ * Read a File object as text.
+ */
+const readFileAsText = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
+    reader.readAsText(file)
+  })
+
+/**
+ * Load an array of CellML entries, each being either a browser File object or a
+ * plain `{ name, content }` object (used when content is already in memory).
+ *
+ * If a single file contains inter-component connections it is treated as a
+ * connection graph and loaded into the workspace via loadFromCellML.
+ * Otherwise (or for multiple files) the files are registered as module/unit
+ * libraries via loadCellMLData as usual.
+ *
+ * Shows per-file notifications for a single file; a combined summary for multiple.
+ */
+const loadCellMLFiles = async (entries) => {
+  // Single-file fast path: check for connections and load as a graph if present
+  if (entries.length === 1) {
+    const entry = entries[0]
+    const content = entry instanceof File ? await readFileAsText(entry) : entry.content
+    const { components } = parseCellMLConnections(content, entry.name)
+    if (components.length > 0) {
+      if (nodes.value.length > 0) {
+        try {
+          await ElMessageBox.confirm(
+            'The workspace already contains nodes. What would you like to do?',
+            'Workspace Not Empty',
+            {
+              distinguishCancelAndClose: true,
+              confirmButtonText: 'Overwrite',
+              cancelButtonText: 'Add to Workspace',
+              type: 'warning',
+            }
+          )
+          // confirmed — overwrite, fall through to normal loadFromCellML below
+        } catch (action) {
+          if (action === 'cancel') {
+            // Snapshot current workspace before wiping it
+            const snapshot = toObject()
+
+            // Load new graph into clean workspace using the normal path
+            const result = await loadCellMLData(content, entry.name, { notify: false })
+            await loadFromCellML(content, entry.name)
+
+            // Remap snapshotted node IDs to avoid clashes with newly loaded nodes
+            const existingIds = new Set(nodes.value.map((n) => n.id))
+            const idRemap = new Map()
+
+            const restoredNodes = snapshot.nodes.map((n) => {
+              let newId = n.id
+              let counter = 1
+              while (existingIds.has(newId)) {
+                newId = `${n.id}_${counter++}`
+              }
+              existingIds.add(newId)
+              idRemap.set(n.id, newId)
+
+              return {
+                ...n,
+                id: newId,
+                position: { x: n.position.x + 1500, y: n.position.y },
+                data: { ...n.data, name: newId },
+              }
+            })
+
+            // Remap edge source/target to use new IDs
+            const restoredEdges = snapshot.edges.map((e) => ({
+              ...e,
+              id: `${e.id}_restored_${crypto.randomUUID()}`,
+              source: idRemap.get(e.source) ?? e.source,
+              target: idRemap.get(e.target) ?? e.target,
+            }))
+
+            addNodes(restoredNodes)
+            addEdges(restoredEdges)
+
+            return [result]
+          }
+          // 'close' — user dismissed with X, do nothing
+          return []
+        }
+      }
+      // Register modules/units in the store first, then build the graph.
+      // loadCellMLData is kept silent here since loadFromCellML provides its own feedback.
+      const result = await loadCellMLData(content, entry.name, { notify: false })
+      await loadFromCellML(content, entry.name)
+      return [result]
+    }
+    // No connections — fall through to the standard module-registration path
+    try {
+      const result = await loadCellMLData(content, entry.name)
+      return [result]
+    } catch {
+      return [{ ok: false, moduleCount: 0, unitCount: 0 }]
+    }
+  }
+
+  // Multi-file path: always register as module/unit libraries
+  const multiFile = entries.length > 1
+  const results = await Promise.all(
+    entries.map(async (entry) => {
+      try {
+        const content = entry instanceof File ? await readFileAsText(entry) : entry.content
+        return loadCellMLData(content, entry.name, { notify: !multiFile })
+      } catch {
+        return { ok: false, moduleCount: 0, unitCount: 0 }
+      }
+    })
+  )
+
+  if (multiFile) {
+    const succeeded = results.filter((r) => r.ok)
+    const failed = results.length - succeeded.length
+    const totalModules = succeeded.reduce((sum, r) => sum + r.moduleCount, 0)
+    const totalUnits = succeeded.reduce((sum, r) => sum + r.unitCount, 0)
+    const fileWord = (n) => `${n} file${n !== 1 ? 's' : ''}`
+    const summary = [
+      totalModules > 0 ? `${totalModules} module${totalModules !== 1 ? 's' : ''}` : '',
+      totalUnits > 0 ? `${totalUnits} unit${totalUnits !== 1 ? 's' : ''}` : '',
+    ].filter(Boolean).join(' and ')
+    if (succeeded.length > 0 && failed === 0) {
+      notify.success({ title: 'CellML Files Loaded', message: `Loaded ${summary} from ${fileWord(succeeded.length)}.` })
+    } else if (succeeded.length > 0) {
+      notify.warning({ title: 'Partial Import', message: `Loaded ${summary} from ${fileWord(succeeded.length)}. ${fileWord(failed)} failed.` })
+    } else {
+      notify.error({ title: 'Import Failed', message: `Failed to load all ${fileWord(failed)}.` })
+    }
+  }
+
+  return results
+}
+
+/**
+ * Unified dragover handler — accepts both module drags (internal) and file drops (.cellml from OS).
+ */
+const onDragOver = (event) => {
+  const hasFiles = event.dataTransfer?.types?.includes('Files')
+  if (hasFiles) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+  } else {
+    onDragOverModule(event)
+  }
+}
+
+/**
+ * Unified drop handler — routes OS file drops to CellML import, internal drags to the module DnD handler.
+ */
+const onDrop = async (event) => {
+  const files = event.dataTransfer?.files
+  if (files && files.length > 0) {
+    event.preventDefault()
+
+    const cellmlFiles = Array.from(files).filter((f) => f.name.toLowerCase().endsWith('.cellml'))
+
+    if (cellmlFiles.length === 0) {
+      notify.warning({ title: 'Unsupported File Type', message: 'Only .cellml files can be dropped onto the workspace.' })
+      return
+    }
+
+    if (libcellml.status !== 'ready') {
+      notify.warning({ title: 'CellML Library Not Ready', message: 'Please wait for the CellML library to finish loading and try again.' })
+      return
+    }
+
+    await loadCellMLFiles(cellmlFiles)
+  } else {
+    onDropModule(event)
+  }
+}
+
 const historyStore = useFlowHistoryStore()
 const { loadFromVesselArray } = useLoadFromVesselArray()
+const { loadFromCellML } = useLoadFromCellML()
 const { capture } = useScreenshot()
 const { trackEvent } = useGtm()
 const { width: asideWidth, startResize } = useResizableAside(300, 150, 400)
@@ -912,22 +1115,30 @@ const loadCellMLData = (content, filename, { notify: shouldNotify = true, trackE
     const result = processCellMLData(content)
 
     if (result.type === 'success') {
+      const moduleCount = result.components.data.length
+      const unitCount = result.units.count
+
       // Register components (modules) with the store
-      const modules = result.components.data.map((item) => ({
-        ...item,
-        sourceFile: filename,
-      }))
-      builderStore.addModuleFile({
-        filename,
-        modules: modules,
-        model: result.components.model,
-      })
+      if (moduleCount > 0) {
+        const modules = result.components.data.map((item) => ({
+          ...item,
+          sourceFile: filename,
+        }))
+      
+        builderStore.addModuleFile({
+          filename,
+          modules: modules,
+          model: result.components.model,
+        })
+      }
 
       // Register units with the store
-      builderStore.addUnitsFile({
-        filename,
-        model: result.units.model,
-      })
+      if (unitCount > 0) {
+        builderStore.addUnitsFile({
+          filename,
+          model: result.units.model,
+        })
+      }
 
       if (trackEvents) {
         trackEvent('cellml_load_action', {
@@ -939,9 +1150,6 @@ const loadCellMLData = (content, filename, { notify: shouldNotify = true, trackE
       }
 
       if (shouldNotify) {
-        const moduleCount = result.components.data.length
-        const unitCount = result.units.count
-
         if (moduleCount > 0 && unitCount > 0) {
           notify.success({
             title: 'CellML File Loaded',
@@ -1104,38 +1312,8 @@ async function onImportConfirm(importPayload, updateProgress) {
       })
     }
   } else if (currentImportMode.value.key === IMPORT_KEYS.CELLML_FILE) {
-    const multiFile = importPayload.size > 1
-    const results = await Promise.all(
-      [...importPayload].map(([filename, data]) =>
-        loadCellMLData(data?.payload, filename, { notify: !multiFile })
-      )
-    )
-    if (multiFile) {
-      const succeeded = results.filter(r => r.ok)
-      const failed = results.length - succeeded.length
-      const totalModules = succeeded.reduce((sum, r) => sum + r.moduleCount, 0)
-      const totalUnits = succeeded.reduce((sum, r) => sum + r.unitCount, 0)
-      const summary = [
-        totalModules > 0 ? `${totalModules} module${totalModules !== 1 ? 's' : ''}` : '',
-        totalUnits > 0 ? `${totalUnits} unit${totalUnits !== 1 ? 's' : ''}` : '',
-      ].filter(Boolean).join(' and ')
-      if (succeeded.length > 0 && failed === 0) {
-        notify.success({
-          title: 'CellML Files Loaded',
-          message: `Loaded ${summary} from ${succeeded.length} file${succeeded.length !== 1 ? 's' : ''}.`,
-        })
-      } else if (succeeded.length > 0) {
-        notify.warning({
-          title: 'Partial Import',
-          message: `Loaded ${summary} from ${succeeded.length} file${succeeded.length !== 1 ? 's' : ''}. ${failed} file(s) failed.`,
-        })
-      } else {
-        notify.error({
-          title: 'Import Failed',
-          message: `Failed to load all ${failed} file(s).`,
-        })
-      }
-    }
+    const entries = [...importPayload].map(([name, data]) => ({ name, content: data?.payload }))
+    await loadCellMLFiles(entries)
   } else if (currentImportMode.value.key === IMPORT_KEYS.MODULE_CONFIG) {
     const multiFile = importPayload.size > 1
     const results = await Promise.all(
@@ -1144,25 +1322,7 @@ async function onImportConfirm(importPayload, updateProgress) {
       )
     )
     if (multiFile) {
-      const succeeded = results.filter((r) => r.ok)
-      const failed = results.length - succeeded.length
-      const totalConfigs = succeeded.reduce((sum, r) => sum + r.count, 0)
-      if (succeeded.length > 0 && failed === 0) {
-        notify.success({
-          title: 'Configurations Loaded',
-          message: `Loaded ${totalConfigs} configurations from ${succeeded.length} files.`,
-        })
-      } else if (succeeded.length > 0) {
-        notify.warning({
-          title: 'Partial Import',
-          message: `Loaded ${totalConfigs} configurations from ${succeeded.length} files. ${failed} file(s) failed.` ,
-        })
-      } else {
-        notify.error({
-          title: 'Import Failed',
-          message: `Failed to load all ${failed} file(s).`,
-        })
-      }
+      notifyMultiFileResults(results, { successTitle: 'Configurations Loaded' })
     }
   } else if (currentImportMode.value.key === IMPORT_KEYS.PARAMETER) {
     const multiFile = importPayload.size > 1
@@ -1172,25 +1332,7 @@ async function onImportConfirm(importPayload, updateProgress) {
       )
     )
     if (multiFile) {
-      const succeeded = results.filter(r => r.ok)
-      const failed = results.length - succeeded.length
-      const totalParams = succeeded.reduce((sum, r) => sum + r.count, 0)
-      if (succeeded.length > 0 && failed === 0) {
-        notify.success({
-          title: 'Parameters Loaded',
-          message: `Loaded ${totalParams} parameters from ${succeeded.length} files.`,
-        })
-      } else if (succeeded.length > 0) {
-        notify.warning({ 
-          title: 'Partial Import', 
-          message: `Loaded ${totalParams} parameters from ${succeeded.length} files. ${failed} file(s) failed.`, 
-        })
-      } else {
-        notify.error({ 
-          title: 'Import Failed', 
-          message: `Failed to load all ${failed} file(s).`, 
-        })
-      }
+      notifyMultiFileResults(results, { successTitle: 'Parameters Loaded' })
     }
     updateNodesWithNewParameters()
   } else {
@@ -1323,6 +1465,7 @@ async function handleCellMLSave(saveData) {
     // CASE B: Simple Update -> We update the EXISTING config in place.
     // We don't push a new one, we just ensure the current one is up to date.
     targetModule.configs[originalConfigIndex] = configToMigrate
+    targetModule.configIndex = originalConfigIndex
   }
 
   // Propagate Changes (Update Nodes and Filter Configs).
