@@ -1,0 +1,13 @@
+[
+    {
+        "vessel_type":"new_module",
+        "BC_type":"phlynx",
+        "module_format":"cellml",
+        "module_file":"template_modules.cellml",
+        "module_type":"new_module",
+        "entrance_ports":[],
+        "exit_ports":[],
+        "general_ports":[],
+        "variables_and_units":[]
+    }
+]

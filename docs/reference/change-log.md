@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-02-24
+###### Includes changes up to 2026-03-02
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -12,12 +12,15 @@
 
 
 #### New Features
+* Introduce the ability to import modularised cellml files by [@jmdowrick](https://github.com/jmdowrick) in [#365](https://github.com/physiomelinks/phlynx/pull/365)
 * Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
 * Add reset view to right click menu by [@jmdowrick](https://github.com/jmdowrick) in [#338](https://github.com/physiomelinks/phlynx/pull/338)
 * Introduce the ability to import multiple files by [@jmdowrick](https://github.com/jmdowrick) in [#316](https://github.com/physiomelinks/phlynx/pull/316)
 
 
 #### Fixed Bugs
+* Fix user module config index handling  by [@jmdowrick](https://github.com/jmdowrick) in [#368](https://github.com/physiomelinks/phlynx/pull/368)
+* Change order of CellML export checks. by [@hsorby](https://github.com/hsorby) in [#363](https://github.com/physiomelinks/phlynx/pull/363)
 * Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
 * Ensure units update following cellml edit by [@jmdowrick](https://github.com/jmdowrick) in [#350](https://github.com/physiomelinks/phlynx/pull/350)
 * Fix cellml module save behaviour by [@jmdowrick](https://github.com/jmdowrick) in [#349](https://github.com/physiomelinks/phlynx/pull/349)
@@ -34,6 +37,7 @@
 
 
 #### Maintenance Work
+* Handle non-standard units requiring affine transform by [@jmdowrick](https://github.com/jmdowrick) in [#370](https://github.com/physiomelinks/phlynx/pull/370)
 * Combine unit and module file imports by [@jmdowrick](https://github.com/jmdowrick) in [#359](https://github.com/physiomelinks/phlynx/pull/359)
 * Improve module list ux by [@jmdowrick](https://github.com/jmdowrick) in [#352](https://github.com/physiomelinks/phlynx/pull/352)
 * Make module creation easier by [@jmdowrick](https://github.com/jmdowrick) in [#334](https://github.com/physiomelinks/phlynx/pull/334)
@@ -45,6 +49,11 @@
   <a href="https://github.com/jmdowrick">
     <img src="https://avatars.githubusercontent.com/u/146781982?u=94c7295b017c61161e81ba34c929524b31a423c2&v=4&s=100" width="50" height="50"><br>
     <sub>@jmdowrick</sub>
+  </a>
+</kbd> <kbd>
+  <a href="https://github.com/hsorby">
+    <img src="https://avatars.githubusercontent.com/u/778048?u=31d6ee5b17c95630c61a61e7cfe0c008b138b769&v=4&s=100" width="50" height="50"><br>
+    <sub>@hsorby</sub>
   </a>
 </kbd>
 
