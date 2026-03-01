@@ -19,6 +19,7 @@
 
 
 #### Fixed Bugs
+* Fix file naming issue by [@jmdowrick](https://github.com/jmdowrick) in [#374](https://github.com/physiomelinks/phlynx/pull/374)
 * Fix user module config index handling  by [@jmdowrick](https://github.com/jmdowrick) in [#368](https://github.com/physiomelinks/phlynx/pull/368)
 * Change order of CellML export checks. by [@hsorby](https://github.com/hsorby) in [#363](https://github.com/physiomelinks/phlynx/pull/363)
 * Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
