@@ -97,7 +97,7 @@ export function useLoadFromCellML() {
           portType: 'general_ports',
           label: p.port_type,
           option: p.variables ?? [],
-          isMultiPortSum: false,
+          multiport: 'None',
         }))
 
         const ports = createPorts(edges, compName)

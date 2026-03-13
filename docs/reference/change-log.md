@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-03-02
+###### Includes changes up to 2026-03-13
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -19,6 +19,8 @@
 
 
 #### Fixed Bugs
+* Fix cellml export for constants by [@jmdowrick](https://github.com/jmdowrick) in [#393](https://github.com/physiomelinks/phlynx/pull/393)
+* Fix multiport handling bug by [@jmdowrick](https://github.com/jmdowrick) in [#381](https://github.com/physiomelinks/phlynx/pull/381)
 * Fix naming of parseCellmlConnections by [@jmdowrick](https://github.com/jmdowrick) in [#376](https://github.com/physiomelinks/phlynx/pull/376)
 * Fix file naming issue by [@jmdowrick](https://github.com/jmdowrick) in [#374](https://github.com/physiomelinks/phlynx/pull/374)
 * Fix user module config index handling  by [@jmdowrick](https://github.com/jmdowrick) in [#368](https://github.com/physiomelinks/phlynx/pull/368)
@@ -39,6 +41,7 @@
 
 
 #### Maintenance Work
+* Improve UX for multiport sum by [@jmdowrick](https://github.com/jmdowrick) in [#384](https://github.com/physiomelinks/phlynx/pull/384)
 * Handle non-standard units requiring affine transform by [@jmdowrick](https://github.com/jmdowrick) in [#370](https://github.com/physiomelinks/phlynx/pull/370)
 * Combine unit and module file imports by [@jmdowrick](https://github.com/jmdowrick) in [#359](https://github.com/physiomelinks/phlynx/pull/359)
 * Improve module list ux by [@jmdowrick](https://github.com/jmdowrick) in [#352](https://github.com/physiomelinks/phlynx/pull/352)
