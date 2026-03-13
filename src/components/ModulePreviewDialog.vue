@@ -48,10 +48,9 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="isSum" label="Sum?" width="100" align="center">
+          <el-table-column prop="multiport" label="Multiport" width="100">
             <template #default="{ row }">
-              <el-icon v-if="row.isSum" color="var(--el-color-success)"><Check /></el-icon>
-              <span v-else>-</span>
+              {{ row.multiport }}
             </template>
           </el-table-column>
         </el-table>
@@ -66,7 +65,6 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { Check } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -129,9 +127,9 @@ const allPorts = computed(() => {
   const mapPort = (rawPort, access) => {
     const type = rawPort.port_type
     const variables = rawPort.variables ?? []
-    const isSum = rawPort.isSum ?? false
+    const multiport = rawPort.multi_port ?? 'None'
 
-    return { access, type, variables, isSum }
+    return { access, type, variables, multiport }
   }
 
   if (entrance_ports) {

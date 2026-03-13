@@ -1,44 +1,114 @@
 <template>
-  <el-dialog :model-value="modelValue" title="Edit Module" width="500px" teleported @closed="resetForm"
+  <el-dialog :model-value="modelValue" title="Edit Module" width="700px" teleported @closed="resetForm"
     @update:model-value="closeDialog" @mousedown.stop @wheel.stop>
     <el-form :model="editableData" label-position="left" @submit.prevent="handleConfirm">
       <el-form-item label="Module Name">
         <el-input v-model="editableData.name" placeholder="Enter module name" />
       </el-form-item>
 
-      <el-divider />
+     <el-divider />
 
       <label class="el-form-label">Port Labels:</label>
-      <div v-if="editableData.portLabels.length > 0" class="port-header-row">
-        <span class="port-type-header">Type</span>
-        <span class="port-label-header">Label</span>
-        <span class="port-select-header">Variable(s)</span>
-        <span class="port-checkbox-header">Sum?</span>
-        <span class="port-action-header"></span>
-      </div>
-      <div v-for="(port, index) in editableData.portLabels" :key="index" class="port-label-row">
-        <el-select v-model="port.portType" class="port-type-select">
-          <el-option v-for="options in portTypeOptions" :key="options.value" :label="options.label"
-            :value="options.value" />
-        </el-select>
-        <el-input v-model="port.label" placeholder="Enter Label" class="port-label" />
+      <el-table
+        :data="editableData.portLabels"
+        style="width: 100%; margin-top: 10px"
+        empty-text="No port labels added"
+      >
+        <!-- Type -->
+        <el-table-column label="Type" width="80">
+          <template #default="scope">
+            <el-select v-model="scope.row.portType" size="small">
+              <el-option
+                v-for="option in portTypeOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </template>
+        </el-table-column>
 
-        <el-select v-model="port.option" multiple collapse-tags collapse-tags-tooltip placeholder="Select Option"
-          class="port-select">
-          <el-option v-for="optionObj in props.portOptions" :key="optionObj.name" :label="optionObj.name"
-            :value="optionObj.name" :disabled="isOptionDisabled(optionObj.name, port.option)" />
-        </el-select>
-        <div class="port-checkbox">
-          <el-checkbox v-model="port.isMultiPortSum"></el-checkbox>
-        </div>
-        <el-button type="danger" :icon="Delete" circle plain @click="deletePortLabel(index)" />
-      </div>
+        <!-- Label -->
+        <el-table-column label="Label" width="250">
+          <template #default="scope">
+            <el-input
+              v-model="scope.row.label"
+              size="small"
+              placeholder="Enter label"
+            />
+          </template>
+        </el-table-column>
 
-      <el-tooltip content="Add Port Label" placement="bottom" :show-after="1000">
-        <el-button type="success" :icon="Plus" plain circle @click="addPortLabel" class="add-button" />
-      </el-tooltip>
+        <!-- Variables -->
+        <el-table-column label="Variable(s)" min-width="150">
+          <template #default="scope">
+            <el-select
+              v-model="scope.row.option"
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+              size="small"
+              placeholder="Select variables"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="option in props.portOptions"
+                :key="option.name"
+                :label="option.name"
+                :value="option.name"
+                :disabled="isOptionDisabled(option.name, scope.row.option)"
+              />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <!-- Multiport -->
+        <el-table-column label="Multiport" width="100">
+          <template #default="scope">
+            <el-select
+              v-model="scope.row.multiport"
+              size="small"
+              placeholder="Select"
+            >
+              <el-option
+                v-for="option in multiportOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+                :disabled="option.value === 'Sum' && scope.row.option?.length > 1"
+              />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <!-- Delete -->
+        <el-table-column label="" width="60" align="center">
+          <template #default="scope">
+            <el-button
+              type="danger"
+              :icon="Delete"
+              circle
+              plain
+              size="small"
+              @click="deletePortLabel(scope.$index)"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Add Button -->
+      <div style="margin-top: 12px">
+        <el-tooltip content="Add Port Label" placement="bottom" :show-after="1000">
+          <el-button
+            type="success"
+            :icon="Plus"
+            plain
+            circle
+            @click="addPortLabel"
+          />
+        </el-tooltip>
+      </div>
     </el-form>
-
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog">Cancel</el-button>
@@ -88,6 +158,21 @@ const editableData = reactive({
   name: '',
   portLabels: [], // Will hold objects like { option: 'var_a', label: 'label_1' }
 })
+
+const multiportOptions = [
+  {
+    value: 'True',
+    label: 'True',
+  },
+  {
+    value: 'Sum',
+    label: 'Sum',
+  },
+  {
+    value: 'None',
+    label: 'None',
+  },
+]
 
 const portTypeOptions = [
   {
@@ -168,6 +253,18 @@ watch(
   { deep: true, immediate: true }
 )
 
+watch(
+  () => editableData.portLabels.map(p => p.option),
+  (newOptions) => {
+    newOptions.forEach((opt, i) => {
+      if (opt?.length > 1 && editableData.portLabels[i].multiport === 'Sum') {
+        editableData.portLabels[i].multiport = 'None'
+      }
+    })
+  },
+  { deep: true }
+)
+
 const usedOptions = computed(() => {
   return new Set(
     editableData.portLabels
@@ -192,7 +289,7 @@ function addPortLabel() {
     portType: 'general_ports',
     option: '',
     label: '',
-    isMultiPortSum: false,
+    multiport: 'None',
   })
 }
 
@@ -204,7 +301,6 @@ function deletePortLabel(index) {
 <style scoped>
 .el-form-item {
   margin-bottom: 15px;
-  /* More space */
 }
 
 .el-form-label {
@@ -212,54 +308,5 @@ function deletePortLabel(index) {
   margin-bottom: 12px;
   font-size: 16px;
   display: block;
-}
-
-.port-header-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-weight: normal;
-  font-size: 14px;
-}
-
-.port-label-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.port-label-header,
-.port-label {
-  flex: 1;
-  min-width: 150px;
-}
-
-.port-type-header,
-.port-type-select {
-  flex: 1;
-  min-width: 60px;
-}
-
-.port-select-header,
-.port-select {
-  flex: 1;
-  min-width: 150px;
-}
-
-.port-checkbox-header,
-.port-checkbox {
-  width: 50px;
-  text-align: center;
-  align-items: center;
-}
-
-.port-action-header {
-  width: 40px;
-}
-
-.add-button {
-  margin-top: 10px;
 }
 </style>
