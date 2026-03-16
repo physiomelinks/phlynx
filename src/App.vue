@@ -8,6 +8,12 @@
         <img src="/phlynxlogo.svg" alt="PhLynx Logo" class="centred-image" />
         <strong>PhLynx v{{ appVersion }}</strong>
       </div>
+      <div class="session-name" @dblclick="startEditing">
+       <strong v-if="!isEditing">
+          {{ sessionName }}
+       </strong> 
+        <el-input v-else ref="inputRef" v-model="editingValue" @blur="saveEdit" @keyup.enter="saveEdit" @keyup.esc="cancelEdit"/>
+      </div>
       <nav>
         <router-link to="/">Workbench</router-link>
         <router-link to="/docs/" :class="{ 'force-active': isDocsActive }">User Guide</router-link>
@@ -26,15 +32,53 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { useBuilderStore } from './stores/builderStore'
 
 const appVersion = __APP_VERSION__ + __BUILD_STATE_MARKER__
 const route = useRoute()
+const builderStore = useBuilderStore()
+
+const sessionName = computed(() => builderStore.lastSaveName)
+
+const editingValue = ref('')
+const isEditing = ref(false)
+const inputRef = ref(null)
 
 const isDocsActive = computed(() => {
   return route.path.startsWith('/docs')
 })
+
+async function startEditing(e) {
+  e.stopPropagation()
+
+  editingValue.value = sessionName.value
+  isEditing.value = true
+
+  await nextTick()
+  inputRef.value?.focus()
+  inputRef.value?.select()
+}
+
+function saveEdit() {
+  const name = editingValue.value.trim()
+
+  if (!name) {
+    cancelEdit()
+    return
+  }
+
+  if (name !== sessionName.value) {
+    builderStore.setLastSaveName(name)
+  }
+
+  isEditing.value = false
+}
+
+function cancelEdit() {
+  isEditing.value = false
+}
 </script>
 
 <style>
@@ -86,5 +130,17 @@ const isDocsActive = computed(() => {
   max-width: 40px;
   height: auto;
   padding-right: 10px;
+}
+
+.session-name {
+  cursor: text;
+}
+
+.session-name:hover {
+  color: #409eff;
+}
+
+.session-name {
+  min-width: 200px;
 }
 </style>

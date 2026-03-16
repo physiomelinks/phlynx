@@ -1391,25 +1391,35 @@ function onOpenParameterEditorDialog(eventPayload) {
   editParameterDialogVisible.value = true
 }
 
-function filterConfig(config, validNamesSet) {
-  // Clean the Ports (Nested arrays).
+function filterConfig(config, validPortNames, validVariableNames, updatedModule) {
   const portFields = ['entrance_ports', 'exit_ports', 'general_ports']
-
   portFields.forEach((field) => {
     if (config[field]) {
       config[field] = config[field].map((port) => ({
         ...port,
-        // Filter the variables list inside this specific port.
-        variables: (port.variables || []).filter((name) => validNamesSet.has(name)),
+        variables: (port.variables || []).filter((name) => validPortNames.has(name)),
       }))
     }
   })
 
-  // Clean the Definitions (Array of arrays).
   if (config.variables_and_units) {
-    config.variables_and_units = config.variables_and_units.filter((entry) => validNamesSet.has(entry[0]))
+    const existingNames = new Set(config.variables_and_units.map((e) => e[0]))
+
+    // Use validVariableNames here, not validPortNames
+    config.variables_and_units = config.variables_and_units.filter((entry) =>
+      validVariableNames.has(entry[0])
+    )
+
+    if (updatedModule?.variables) {
+      const newEntries = updatedModule.variables
+        .filter((v) => !existingNames.has(v.name))
+        .map((v) => [v.name, v.units ?? 'dimensionless', 'access', 'variable'])
+
+      config.variables_and_units.push(...newEntries)
+    }
   }
 }
+
 /**
  * Handler for both Saving (Updating) and Forking CellML modules.
  * Handles:
@@ -1474,7 +1484,8 @@ async function handleCellMLSave(saveData) {
   // Clean the Config (Remove ports that no longer exist).
   // Now that we have the valid ports from the new CellML, clean the config.
   const activeConfig = targetModule.configs[targetModule.configIndex]
-  filterConfig(activeConfig, validPortNames)
+  const validVariableNames = new Set((targetModule?.variables || []).map((v) => v.name))
+  filterConfig(activeConfig, validPortNames, validVariableNames, targetModule)
 }
 
 /**
@@ -1594,17 +1605,18 @@ function onOpenReplacementDialog(eventPayload) {
 }
 
 async function onReplaceConfirm(updatedData) {
-  const nodeId = currentEditingNode.value.nodeId
+  const { nodeId, instanceId } = currentEditingNode.value 
   if (!nodeId) return
+
   const compLabel = updatedData.componentName
   const filePart = updatedData.sourceFile
-  const label = filePart ? `${compLabel} — ${filePart}` : compLabel
+  updatedData.label = filePart ? `${compLabel} — ${filePart}` : compLabel
 
-  updatedData.label = label
+  const targetInstance = instanceId || FLOW_IDS.MAIN    
+  const { updateNodeData } = useVueFlow(targetInstance) 
   updateNodeData(nodeId, updatedData)
   replacementDialogVisible.value = false
 }
-
 const contextMenuRef = ref(null)
 
 const paneContextMenuItems = [
