@@ -1925,21 +1925,40 @@ const getBoundingCenter = (nodes) => {
   }
 }
 
-const copySelection = () => {
+const copySelection = async () => {
   const nodes = getSelectedNodes.value
   const edges = getSelectedEdges.value
 
-  if (nodes.length === 0) return
-
-  // Create a deep copy to avoid reference issues
-  clipboard.value = {
+  const payload = {
     nodes: JSON.parse(JSON.stringify(nodes)),
     edges: JSON.parse(JSON.stringify(edges)),
   }
+
+  clipboard.value = payload
+
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(payload))
+  } catch (err) {
+    console.warn("Clipboard write failed", err)
+  }
 }
 
-const pasteSelection = (atMouse = false) => {
-  if (clipboard.value.nodes.length === 0) return
+const pasteSelection = async (atMouse = false) => {
+  let sourceClipboard = clipboard.value
+
+  // Try reading from system clipboard (for cross-window paste)
+  try {
+    const text = await navigator.clipboard.readText()
+    const parsed = JSON.parse(text)
+
+    if (parsed?.nodes && parsed?.edges) {
+      sourceClipboard = parsed
+    }
+  } catch (err) {
+    // Ignore clipboard read errors (browser permissions etc)
+  }
+
+  if (!sourceClipboard.nodes || sourceClipboard.nodes.length === 0) return
 
   const newNodes = []
   const newEdges = []
@@ -1952,7 +1971,7 @@ const pasteSelection = (atMouse = false) => {
     const mouseFlowPos = screenToFlowCoordinate(mousePosition.value)
 
     // Find the center of the nodes currently in the clipboard
-    const clipboardCenter = getBoundingCenter(clipboard.value.nodes)
+    const clipboardCenter = getBoundingCenter(sourceClipboard.nodes)
 
     // Calculate difference to move center -> mouse
     dx = mouseFlowPos.x - clipboardCenter.x
@@ -1963,17 +1982,19 @@ const pasteSelection = (atMouse = false) => {
   const idMap = {}
   const nodeIdSet = nodes.value.map((n) => n.id)
   const edgeIdSet = edges.value.map((e) => e.id)
-  const namesSet = new Set()
-  allNodeNames.value.forEach((name) => {
-    namesSet.add(name)
-  })
 
-  clipboard.value.nodes.forEach((node) => {
+  const namesSet = new Set()
+  allNodeNames.value.forEach((name) => namesSet.add(name))
+
+  sourceClipboard.nodes.forEach((node) => {
     const newId = getNextNodeId(nodeIdSet)
     idMap[node.id] = newId
     nodeIdSet.push(newId)
 
-    const finalName = generateUniqueModuleName({ name: node.data.componentName }, namesSet)
+    const finalName = generateUniqueModuleName(
+      { name: node.data.componentName },
+      namesSet
+    )
     namesSet.add(finalName)
 
     // Create the new node with offset position.
@@ -1993,8 +2014,7 @@ const pasteSelection = (atMouse = false) => {
     })
   })
 
-  // Only copy edges if BOTH source and target are in the copied set.
-  clipboard.value.edges.forEach((edge) => {
+  sourceClipboard.edges.forEach((edge) => {
     const newSource = idMap[edge.source]
     const newTarget = idMap[edge.target]
 

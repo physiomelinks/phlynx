@@ -10,6 +10,7 @@
 
 
 #### New Features
+* Enable users to copy between windows by [@jmdowrick](https://github.com/jmdowrick) in [#399](https://github.com/physiomelinks/phlynx/pull/399)
 * Add editable title to the application header by [@jmdowrick](https://github.com/jmdowrick) in [#397](https://github.com/physiomelinks/phlynx/pull/397)
 * Introduce the ability to import modularised cellml files by [@jmdowrick](https://github.com/jmdowrick) in [#365](https://github.com/physiomelinks/phlynx/pull/365)
 * Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
