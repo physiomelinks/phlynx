@@ -1,6 +1,6 @@
 
 ## Unofficial Release
-###### Includes changes up to 2026-03-13
+###### Includes changes up to 2026-03-16
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -10,6 +10,7 @@
 
 
 #### New Features
+* Add editable title to the application header by [@jmdowrick](https://github.com/jmdowrick) in [#397](https://github.com/physiomelinks/phlynx/pull/397)
 * Introduce the ability to import modularised cellml files by [@jmdowrick](https://github.com/jmdowrick) in [#365](https://github.com/physiomelinks/phlynx/pull/365)
 * Change shortcut intercepts when in text editor by [@jmdowrick](https://github.com/jmdowrick) in [#357](https://github.com/physiomelinks/phlynx/pull/357)
 * Add reset view to right click menu by [@jmdowrick](https://github.com/jmdowrick) in [#338](https://github.com/physiomelinks/phlynx/pull/338)
@@ -17,6 +18,8 @@
 
 
 #### Fixed Bugs
+* Ensure variables are added to user module configs by [@jmdowrick](https://github.com/jmdowrick) in [#396](https://github.com/physiomelinks/phlynx/pull/396)
+* Fix module replace dialog size by [@jmdowrick](https://github.com/jmdowrick) in [#395](https://github.com/physiomelinks/phlynx/pull/395)
 * Fix cellml export for constants by [@jmdowrick](https://github.com/jmdowrick) in [#393](https://github.com/physiomelinks/phlynx/pull/393)
 * Fix multiport handling bug by [@jmdowrick](https://github.com/jmdowrick) in [#381](https://github.com/physiomelinks/phlynx/pull/381)
 * Fix naming of parseCellmlConnections by [@jmdowrick](https://github.com/jmdowrick) in [#376](https://github.com/physiomelinks/phlynx/pull/376)
