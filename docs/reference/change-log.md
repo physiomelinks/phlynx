@@ -22,6 +22,7 @@
 
 
 #### Fixed Bugs
+* Fix detach reactivity bug by [@jmdowrick](https://github.com/jmdowrick) in [#408](https://github.com/physiomelinks/phlynx/pull/408)
 * Ensure variables are added to user module configs by [@jmdowrick](https://github.com/jmdowrick) in [#396](https://github.com/physiomelinks/phlynx/pull/396)
 * Fix module replace dialog size by [@jmdowrick](https://github.com/jmdowrick) in [#395](https://github.com/physiomelinks/phlynx/pull/395)
 * Fix cellml export for constants by [@jmdowrick](https://github.com/jmdowrick) in [#393](https://github.com/physiomelinks/phlynx/pull/393)

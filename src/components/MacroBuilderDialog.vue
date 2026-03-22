@@ -93,6 +93,7 @@ import {
   GHOST_MODULE_FILENAME,
   markerEnd,
 } from '../utils/constants'
+import { detachReactivity } from '../utils/reactivity'
 
 const {
   addEdges,

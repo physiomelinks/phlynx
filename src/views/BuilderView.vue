@@ -376,6 +376,7 @@ import {
 import { getId as getNextNodeId, generateUniqueModuleName } from '../utils/nodes'
 import { getId as getNextEdgeId } from '../utils/edges'
 import { getImportConfig, parseParametersFile } from '../utils/import'
+import { detachReactivity } from '../utils/reactivity'
 import {
   saveFileHandle, 
   saveWithDialog,
@@ -2164,8 +2165,8 @@ const copySelection = async () => {
   if (nodes.length === 0) return  
   
   const payload = {
-    nodes: detatchReactivity(nodes),
-    edges: detatchReactivity(edges),
+    nodes: detachReactivity(nodes),
+    edges: detachReactivity(edges),
   }
 
   clipboard.value = payload
