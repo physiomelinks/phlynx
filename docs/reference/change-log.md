@@ -2,7 +2,7 @@
 
 
 ## Unofficial Release
-###### Includes changes up to 2026-03-16
+###### Includes changes up to 2026-03-23
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -12,6 +12,7 @@
 
 
 #### New Features
+* Introduce edge connection dialogue by [@jmdowrick](https://github.com/jmdowrick) in [#392](https://github.com/physiomelinks/phlynx/pull/392)
 * Enable users to copy between windows by [@jmdowrick](https://github.com/jmdowrick) in [#399](https://github.com/physiomelinks/phlynx/pull/399)
 * Add editable title to the application header by [@jmdowrick](https://github.com/jmdowrick) in [#397](https://github.com/physiomelinks/phlynx/pull/397)
 * Introduce the ability to import modularised cellml files by [@jmdowrick](https://github.com/jmdowrick) in [#365](https://github.com/physiomelinks/phlynx/pull/365)
@@ -45,6 +46,7 @@
 
 
 #### Maintenance Work
+* Introduce edge connection dialogue by [@jmdowrick](https://github.com/jmdowrick) in [#392](https://github.com/physiomelinks/phlynx/pull/392)
 * Improve UX for multiport sum by [@jmdowrick](https://github.com/jmdowrick) in [#384](https://github.com/physiomelinks/phlynx/pull/384)
 * Handle non-standard units requiring affine transform by [@jmdowrick](https://github.com/jmdowrick) in [#370](https://github.com/physiomelinks/phlynx/pull/370)
 * Combine unit and module file imports by [@jmdowrick](https://github.com/jmdowrick) in [#359](https://github.com/physiomelinks/phlynx/pull/359)

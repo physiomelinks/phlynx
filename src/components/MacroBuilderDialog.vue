@@ -167,7 +167,7 @@ function closeDialog() {
 
 function generateMacro() {
   const serializedNodes = nodes.value.map((node) => {
-    const dataSnapshot = JSON.parse(JSON.stringify(node.data))
+    const dataSnapshot = detatchReactivity(node.data)
 
     return {
       id: node.id,

@@ -207,6 +207,7 @@
             @dragleave="onDragLeave"
             @nodes-change="onNodeChange"
             @edges-change="onEdgeChange"
+            @edge-double-click="onEdgeDoubleClick"
             @pane-context-menu="onPaneContextMenu"
             :max-zoom="1.5"
             :min-zoom="0.1"
@@ -292,6 +293,15 @@
   />
 
   <PaneContextMenu ref="contextMenuRef" :items="contextMenuItems" />
+
+  <EdgeConnectionDialog
+    v-model="edgeConnectionDialogVisible"
+    :source-node="edgeDialogSourceNode"
+    :target-node="edgeDialogTargetNode"
+    :active-edge="edgeDialogActiveEdge"
+    :subgraph="edgeDialogSubgraph"
+    @confirm="onEdgeConnectionConfirm"
+  />
 </template>
 
 <script>
@@ -318,7 +328,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import CellMLIcon from '../components/icons/CellMLIcon.vue'
-import UnitsIcon from '../components/icons/UnitsIcon.vue'
 
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -339,6 +348,7 @@ import ImportDialog from '../components/ImportDialog.vue'
 import ModuleReplacementDialog from '../components/ModuleReplacementDialog.vue'
 import SaveDialog from '../components/SaveDialog.vue'
 import MacroBuilderDialog from '../components/MacroBuilderDialog.vue'
+import EdgeConnectionDialog from '../components/EdgeConnectionDialog.vue'
 import HelperLines from '../components/HelperLines.vue'
 import PaneContextMenu from '../components/PaneContextMenu.vue'
 import { useScreenshot } from '../services/useScreenshot'
@@ -346,7 +356,9 @@ import { generateExportZip } from '../services/caExport'
 import { createCellMLDataFragment } from '../services/cellml'
 import { useMacroGenerator } from '../services/generate/generateWorkflow'
 import { notify } from '../utils/notify'
+import { resolvePortCouplings } from '../utils/edges'
 import { getHelperLines } from '../utils/helperLines'
+import { detachReactivity } from '../utils/reactivity'
 import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
 import { useClearWorkspace } from '../utils/workspace'
 import { relayoutNodes } from '../services/layouts/physics'
@@ -523,6 +535,7 @@ const loadCellMLFiles = async (entries) => {
       // loadCellMLData is kept silent here since loadFromCellML provides its own feedback.
       const result = await loadCellMLData(content, entry.name, { notify: false })
       await loadFromCellML(content, entry.name)
+      rebuildNodeEdgeIndex()
       return [result]
     }
     // No connections — fall through to the standard module-registration path
@@ -632,6 +645,11 @@ const importDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
 const replacementDialogVisible = ref(false)
 const macroBuilderDialogVisible = ref(false)
+const edgeConnectionDialogVisible = ref(false)
+const edgeDialogSourceNode = ref(null)
+const edgeDialogTargetNode = ref(null)
+const edgeDialogActiveEdge = ref(null)
+const edgeDialogSubgraph = ref(null)
 const currentEditingNode = ref({
   nodeId: '',
   instanceId: '',
@@ -726,10 +744,38 @@ const currentExportMode = computed(() => {
 })
 
 onConnect((connection) => {
-  // Match what we specify in connectionLineOptions.
+  const sourceNode = findNode(connection.source)
+  const targetNode = findNode(connection.target)
+
+  if (!sourceNode || !targetNode) return
+
+  // Derive ordinal indices from the existing edge graph:
+  //   sourceIndex = how many edges already leave from this source node
+  //                 (i.e. this is the Nth output being connected)
+  //   targetIndex = how many edges already arrive at this target node
+  //                 (i.e. this is the Nth input being connected)
+  // These mirror the positional semantics of out_vessels / inp_vessels.
+  const sourceIndex = edges.value.filter((e) => e.source === connection.source).length
+  const targetIndex = edges.value.filter((e) => e.target === connection.target).length
+
+  // Resolve which port labels are coupled across this conduit, using ordinal
+  // indices to select the correct slot when a label appears multiple times.
+  const couplings = resolvePortCouplings(
+    sourceNode.data.portLabels ?? [],
+    targetNode.data.portLabels ?? [],
+    sourceIndex,
+    targetIndex
+  )
+
   const newEdge = {
     ...connection,
     ...edgeLineOptions,
+    id: `${connection.source}--${connection.target}`,
+    // The resolved port-label couplings for this conduit.
+    // Downstream consumers (CellML export, validation) read from here.
+    data: {
+      couplings,
+    },
   }
 
   addEdges(newEdge)
@@ -862,10 +908,6 @@ function updateHelperLines(changes, nodes) {
     helperLineVertical.value = helperLines.vertical
     alignment.value = helperLines.alignment
   }
-}
-
-const detachReactivity = (item) => {
-  return JSON.parse(JSON.stringify(item))
 }
 
 const snapshotEdge = (change) => {
@@ -1061,8 +1103,10 @@ const onEdgeChange = (changes) => {
   const selectChanges = []
   changes.forEach((c) => {
     if (c.type === 'remove') {
+      indexRemoveEdge(c)
       removeChanges.push({ edge: snapshotEdge(c) })
     } else if (c.type === 'add') {
+      indexAddEdge(c.item)
       addChanges.push({ edge: snapshotEdge(c) })
     } else if (c.type === 'select' && undoRedoSelection) {
       const edge = findEdge(c.id)
@@ -1300,6 +1344,7 @@ async function onImportConfirm(importPayload, updateProgress) {
           updateProgress(`${statusMessage || 'Loading vessel array...'} (${current}/${total})`)
         }
       })
+      rebuildNodeEdgeIndex()
 
       notify.success({
         title: 'Import Complete',
@@ -1440,8 +1485,7 @@ async function handleCellMLSave(saveData) {
   // Safety check: If we can't find the original, create a blank config
   let configToMigrate = {}
   if (originalModule && originalModule.configs && originalModule.configs[originalConfigIndex]) {
-    // Deep copy to break reactivity
-    configToMigrate = JSON.parse(JSON.stringify(originalModule.configs[originalConfigIndex]))
+    configToMigrate = detachReactivity(originalModule.configs[originalConfigIndex])
   }
 
   // Load the New Data into the Store
@@ -1542,7 +1586,7 @@ function updateGraphNodesAndPorts(updatedData, updatedModule) {
     }))
 
     const newData = {
-      ...JSON.parse(JSON.stringify(node.data)),
+      ...detachReactivity(node.data),
       componentName: updatedData.componentName,
       sourceFile: updatedData.sourceFile,
       label: `${updatedData.componentName} — ${updatedData.sourceFile}`,
@@ -1564,6 +1608,7 @@ function updateGraphNodesAndPorts(updatedData, updatedModule) {
 
   return validPortNames
 }
+
 function onOpenMacroBuilderDialog() {
   macroBuilderDialogVisible.value = true
 }
@@ -1576,6 +1621,41 @@ async function onEditConfirm(updatedData) {
   const { updateNodeData } = useVueFlow(targetInstance)
 
   updateNodeData(nodeId, updatedData)
+
+  // Recompute couplings on every edge connected to this node
+  const updatedPortLabels = updatedData.portLabels ?? []
+
+  const outgoing = edges.value.filter((e) => e.source === nodeId)
+  outgoing.forEach((edge, sourceIndex) => {
+    const targetNode = findNode(edge.target)
+    if (!targetNode) return
+    const targetIndex = edges.value.filter((e) => e.target === edge.target && e !== edge).length
+    edge.data = {
+      ...edge.data,
+      couplings: resolvePortCouplings(
+        updatedPortLabels,
+        targetNode.data.portLabels ?? [],
+        sourceIndex,
+        targetIndex
+      ),
+    }
+  })
+
+  const incoming = edges.value.filter((e) => e.target === nodeId)
+  incoming.forEach((edge, targetIndex) => {
+    const sourceNode = findNode(edge.source)
+    if (!sourceNode) return
+    const sourceIndex = edges.value.filter((e) => e.source === edge.source && e !== edge).length
+    edge.data = {
+      ...edge.data,
+      couplings: resolvePortCouplings(
+        sourceNode.data.portLabels ?? [],
+        updatedPortLabels,
+        sourceIndex,
+        targetIndex
+      ),
+    }
+  })
 }
 
 const nodeRefs = ref({})
@@ -1595,6 +1675,100 @@ function handleMacroGeneration(macroPayload) {
   const centerY = (screenCenterY - viewport.value.y) / viewport.value.zoom
 
   processMacroGeneration(macroPayload, { x: centerX, y: centerY })
+}
+
+const nodeEdgeIndex = ref(new Map())
+
+function rebuildNodeEdgeIndex() {
+  const map = new Map()
+
+  for (const edge of edges.value) {
+    if (!map.has(edge.source)) map.set(edge.source, new Set())
+    if (!map.has(edge.target)) map.set(edge.target, new Set())
+
+    map.get(edge.source).add(edge.id)
+    map.get(edge.target).add(edge.id)
+  }
+
+  nodeEdgeIndex.value = map
+}
+
+function indexAddEdge(edge) {
+  const index = nodeEdgeIndex.value
+
+  if (!index.has(edge.source)) index.set(edge.source, new Set())
+  if (!index.has(edge.target)) index.set(edge.target, new Set())
+
+  index.get(edge.source).add(edge.id)
+  index.get(edge.target).add(edge.id)
+}
+
+function indexRemoveEdge(change) {
+  const edge = findEdge(change.id)
+  const source = edge?.source ?? change.source
+  const target = edge?.target ?? change.target
+  const index = nodeEdgeIndex.value
+
+  index.get(source)?.delete(change.id)
+  index.get(target)?.delete(change.id)
+
+  if (index.get(source)?.size === 0) index.delete(source)
+  if (index.get(target)?.size === 0) index.delete(target)
+}
+
+// Extract subgraph (1 degree of separation from the active edge).
+function buildEdgeSubgraph(activeEdge) {
+  const adjacentIds = new Set([
+    ...(nodeEdgeIndex.value.get(activeEdge.source) || []),
+    ...(nodeEdgeIndex.value.get(activeEdge.target) || [])
+  ])
+
+  const edgeSubgraph = new Map()
+  for (const edgeId of adjacentIds) {
+    const edge = findEdge(edgeId)
+    if (edge) edgeSubgraph.set(edgeId, detachReactivity(edge))
+  }
+  return edgeSubgraph
+}
+
+function onEdgeDoubleClick({ edge }) {
+  const sourceNode = findNode(edge.source)
+  const targetNode = findNode(edge.target)
+
+  if (!sourceNode || !targetNode) return
+
+  // Pass deep-cloned snapshots so the dialog has a stable, non-reactive view
+  // of the node data. Live refs mutated by updateNodeData during confirm would
+  // otherwise change the dialog's bound props mid-flight.
+  edgeDialogSubgraph.value = buildEdgeSubgraph(edge)
+  edgeDialogSourceNode.value = detachReactivity(sourceNode)
+  edgeDialogTargetNode.value = detachReactivity(targetNode)
+  edgeDialogActiveEdge.value = detachReactivity(edge)
+  edgeConnectionDialogVisible.value = true
+}
+
+function onEdgeConnectionConfirm({ sourceNodeId, targetNodeId, sourcePortLabels, targetPortLabels, couplings, foreignCouplings }) {
+  // Update portLabels on both nodes
+  updateNodeData(sourceNodeId, { portLabels: sourcePortLabels })
+  updateNodeData(targetNodeId, { portLabels: targetPortLabels })
+
+  // Write the new couplings directly onto the active edge
+  const activeEdge = findEdge(edgeDialogActiveEdge.value?.id)
+  if (activeEdge) {
+    activeEdge.data = { ...activeEdge.data, couplings }
+  }
+
+  // Apply any coupling changes to sibling edges that were displaced by the user
+  // swapping a "taken elsewhere" port. The dialog tracks these explicitly in
+  // foreignCouplings so we write them directly.
+  if (foreignCouplings) {
+    for (const [edgeId, updatedCouplings] of Object.entries(foreignCouplings)) {
+      const edge = findEdge(edgeId)
+      if (edge) {
+        edge.data = { ...edge.data, couplings: updatedCouplings }
+      }
+    }
+  }
 }
 
 function onOpenReplacementDialog(eventPayload) {
@@ -1809,6 +1983,56 @@ async function onExportConfirm(fileName, handle) {
 }
 
 /**
+ * Recomputes port-label couplings for edges that have none — e.g. files saved
+ * before couplings were introduced, or where edge data was lost on serialisation.
+ * Uses the same ordinal-index logic as the live onConnect handler so results
+ * are identical to a freshly drawn connection. Might not need in future.
+ */
+function recomputeMissingCouplings() {
+  const nodeMap = new Map(nodes.value.map((n) => [n.id, n]))
+
+  // Normalise portLabels on every node: migrate legacy field names.
+  for (const node of nodes.value) {
+    if (!node.data?.portLabels) continue
+    node.data.portLabels = node.data.portLabels.map((pl) => ({
+      ...pl,
+      // 'isMultiPortSum' was the old field name; 'multiport' is current.
+      // If multiport is absent, default to 'None' (single-connection)
+      multiport: pl.multiport ?? 'None',
+    }))
+  }
+
+  // Track inbound/outbound ordinal counts per node, matching buildEdges semantics.
+  const sourceOutCount = new Map()
+  const targetInCount  = new Map()
+
+  for (const edge of edges.value) {
+    if (edge.data?.couplings?.length) continue  // already has valid couplings
+
+    const sourceNode = nodeMap.get(edge.source)
+    const targetNode = nodeMap.get(edge.target)
+    if (!sourceNode || !targetNode) continue
+
+    const sourceIndex = sourceOutCount.get(edge.source) ?? 0
+    const targetIndex = targetInCount.get(edge.target)  ?? 0
+
+    const couplings = resolvePortCouplings(
+      sourceNode.data.portLabels ?? [],
+      targetNode.data.portLabels ?? [],
+      sourceIndex,
+      targetIndex
+    )
+
+    if (couplings.length) {
+      edge.data = { ...edge.data, couplings }
+    }
+
+    sourceOutCount.set(edge.source, sourceIndex + 1)
+    targetInCount.set(edge.target,  targetIndex  + 1)
+  }
+}
+
+/**
  * Collects all state and creates blob from it.
  */
 function createSaveBlob() {
@@ -1861,6 +2085,14 @@ function handleLoadWorkspace(file) {
       fromObject(loadedState.flow)
       // nodes.value = loadedState.flow.nodes
       // edges.value = loadedState.flow.edges
+
+      // Rebuild the edge index so the EdgeConnectionDialog subgraph is correct.
+      rebuildNodeEdgeIndex()
+
+      // Recompute couplings for any edge missing them (e.g. saved before couplings
+      // were introduced, or saved with an older serialiser that dropped edge data).
+      // resolvePortCouplings is deterministic so this is always safe to run.
+      recomputeMissingCouplings()
 
       // Restore Pinia store state.
       builderStore.loadState(loadedState.store)
@@ -1929,9 +2161,11 @@ const copySelection = async () => {
   const nodes = getSelectedNodes.value
   const edges = getSelectedEdges.value
 
+  if (nodes.length === 0) return  
+  
   const payload = {
-    nodes: JSON.parse(JSON.stringify(nodes)),
-    edges: JSON.parse(JSON.stringify(edges)),
+    nodes: detatchReactivity(nodes),
+    edges: detatchReactivity(edges),
   }
 
   clipboard.value = payload

@@ -2,6 +2,7 @@ import { buildPorts, buildPortLabels } from './buildPorts'
 import { getHandleId } from '../../utils/ports'
 import { SOURCE_PORT_TYPE, TARGET_PORT_TYPE } from '../../utils/constants'
 import { extractVariablesFromModule } from '../../utils/cellml'
+import { resolvePortCouplings, checkAndClaimCouplings, buildUsedPortKeys } from '../../utils/edges'
 
 function buildNodes(builderStore, vessels, progressCallback = null) {
 
@@ -84,54 +85,95 @@ function buildEdges(vessels, nodes) {
   const edges = []
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
-  // Track how many INPUT connections each target has received
-  const targetUsageCount = new Map()
+  // Tracks consumed single-connection port label slots across all edges built so far.
+  // Populated via checkAndClaimCouplings; see portCouplings.js for key format.
+  const usedPortKeys = new Set()
+
+  // For each target node, track how many times it has been connected to as a
+  // target so far — this is its inp_vessels ordinal index for the next edge.
+  const targetInboundCount = new Map()
 
   vessels.forEach((vessel) => {
     if (!vessel.out_vessels) return
 
     const sourceNode = nodeMap.get(vessel.name)
-    if (!sourceNode) return
+    if (!sourceNode || sourceNode.data.error) return
 
-    // Skip nodes with errors
-    if (sourceNode.data.error) return
-
-    // Get ALL valid source ports
-    const sourcePorts = sourceNode.data.ports.filter((p) => p.type === SOURCE_PORT_TYPE)
-    if (sourcePorts.length === 0) return
-
-    // Parse output vessels (space-separated)
     const targets = vessel.out_vessels.split(' ').filter((t) => t.trim())
 
-    targets.forEach((targetName, index) => {
+    targets.forEach((targetName, sourceIndex) => {
+      // sourceIndex = position of this target in the source's out_vessels list.
+      // Used to select the correct ordinal port slot on the source side.
+
       const targetNode = nodeMap.get(targetName)
-      if (!targetNode) return
+      if (!targetNode || targetNode.data.error) return
 
-      // Skip nodes with errors
-      if (targetNode.data.error) return
+      // Each port's name field holds the neighbour vessel name (set by buildPorts).
+      // Find the source handle whose name matches this specific target, and the
+      // target handle whose name matches this specific source vessel.
+      const sourcePort = sourceNode.data.ports.find(
+        (p) => p.type === SOURCE_PORT_TYPE && p.name === targetName
+      )
+      const targetPort = targetNode.data.ports.find(
+        (p) => p.type === TARGET_PORT_TYPE && p.name === vessel.name
+      )
 
-      // Use the index to pick a unique source port
-      const sourcePortIndex = Math.min(index, sourcePorts.length - 1)
-      const sourcePort = sourcePorts[sourcePortIndex]
+      if (!sourcePort || !targetPort) {
+        console.warn(
+          `[buildEdges] Could not find matching handles between "${vessel.name}" and "${targetName}" — skipping.`
+        )
+        return
+      }
 
-      // Get all valid target ports
-      const targetPorts = targetNode.data.ports.filter((p) => p.type === TARGET_PORT_TYPE)
-      if (targetPorts.length === 0) return
+      // targetIndex = how many times this target node has already been connected
+      // to as a target. Used to select the correct ordinal port slot on the target side.
+      const targetIndex = targetInboundCount.get(targetName) ?? 0
 
-      // Determine which input slot on the target we should use
-      const currentCount = targetUsageCount.get(targetName) || 0
-      const targetPortIndex = Math.min(currentCount, targetPorts.length - 1)
-      const targetPort = targetPorts[targetPortIndex]
+      // Resolve the specific port-label couplings for this conduit edge, taking
+      // ordinal position into account for repeated same-label slots.
+      const couplings = resolvePortCouplings(
+        sourceNode.data.portLabels ?? [],
+        targetNode.data.portLabels ?? [],
+        sourceIndex,
+        targetIndex
+      )
 
-      // Increment usage for next connection to this target
-      targetUsageCount.set(targetName, currentCount + 1)
+      if (couplings.length === 0) {
+        console.warn(
+          `[buildEdges] No compatible port label matches between "${vessel.name}" and "${targetName}" — conduit edge skipped.`
+        )
+        return
+      }
+
+      // Enforce the non-multiport single-connection constraint.
+      // All-or-nothing: if any coupling violates it, the whole conduit is rejected.
+      const { valid, conflicts } = checkAndClaimCouplings(
+        vessel.name,
+        targetName,
+        couplings,
+        usedPortKeys
+      )
+
+      if (!valid) {
+        console.warn(
+          `[buildEdges] Conduit "${vessel.name}" → "${targetName}" rejected:\n` +
+            conflicts.map((c) => `  • ${c}`).join('\n')
+        )
+        return
+      }
+
+      // Increment the target's inbound count only after a successful edge
+      targetInboundCount.set(targetName, targetIndex + 1)
 
       edges.push({
-        id: `e_${vessel.name}_${targetName}_${crypto.randomUUID()}`,
+        id: `${vessel.name}--${targetName}`,
         source: vessel.name,
         target: targetName,
         sourceHandle: getHandleId(sourcePort),
         targetHandle: getHandleId(targetPort),
+        data: {
+          couplings,
+        },
       })
     })
   })

@@ -20,11 +20,27 @@ export const edgeLineOptions = {
 export const FLOW_IDS = {
   MAIN: 'main-flow-editor',
   MACRO: 'macro-builder-editor',
+  EDGE: 'edge-conn-flow',
 }
 
 export const AFFINE_UNIT_CONVERSIONS = {
   celsius:    { baseUnit: 'kelvin',  scale: 1,        offset: 273.15  },
   fahrenheit: { baseUnit: 'kelvin',  scale: 5 / 9,    offset: 255.372 },
+}
+
+// Edge connection dialog parameters
+export const ROW_H    = 52          // px per port row
+export const NODE_W   = 540         // px per column
+export const MID_GAP  = 75           // px between columns
+export const PAD      = 10          // top/bottom canvas padding
+export const AUTOSCROLL_ZONE = 60   // px from canvas edge that triggers autoscroll
+export const AUTOSCROLL_SPEED = 10  // max px per frame
+
+
+export const TARGET_COMPATIBLE = {
+  entrance_ports: new Set(['general_ports']),
+  exit_ports:    new Set(['entrance_ports', 'general_ports']),
+  general_ports: new Set(['entrance_ports', 'exit_ports', 'general_ports']),
 }
 
 export const STANDARD_UNITS = [
@@ -81,6 +97,18 @@ export const GHOST_MODULE_DEFINITION = {
     },
   ],
 }
+
+export const portTypeOptions = [
+  { value: 'general_ports',  label: 'G' },
+  { value: 'entrance_ports', label: 'I' },
+  { value: 'exit_ports',     label: 'O' },  
+]
+
+export const multiportOptions = [
+  { value: 'True',  label: 'True'  },
+  { value: 'Sum',   label: 'Sum'   },
+  { value: 'None',  label: 'None'  },
+]
 
 export const DEFAULT_FILE_NAME = 'phlynx-export'
 

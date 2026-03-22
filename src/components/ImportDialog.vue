@@ -188,6 +188,7 @@ import { IMPORT_KEYS, MAX_VISIBLE_TAGS } from '../utils/constants'
 import { createDynamicFields, validateVesselData } from '../utils/import'
 import { processCellMLData } from '../utils/cellml'
 import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
+import { detachReactivity } from '../utils/reactivity'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -376,7 +377,7 @@ const getVesselPayload = () => {
 // Create a temporary store-like object for validation that includes staged files
 const createTemporaryStore = () => {
   // Create a deep copy of availableModules
-  const availableModules = JSON.parse(JSON.stringify(builderStore.availableModules))
+  const availableModules = detachReactivity(builderStore.availableModules)
 
   // Apply staged config files
   stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
