@@ -1,5 +1,52 @@
 
 /**
+ * edges.js
+ *
+ * Utilities for resolving which port labels are coupled across a conduit edge,
+ * and for enforcing the non-multiport single-connection constraint.
+ *
+ * Core concepts
+ * -------------
+ * - A conduit edge is a single VueFlow edge between two module nodes.
+ * - The CellML variable connections implied by a conduit are determined by
+ *   matching port labels between the two nodes with compatible portTypes.
+ * - Port type compatibility (source → target):
+ *     exit_ports    → entrance_ports | general_ports
+ *     general_ports → entrance_ports | exit_ports | general_ports
+ *   (entrance_ports on the source side cannot initiate a coupling)
+ *
+ * Positional (ordinal) slot assignment
+ * -------------------------------------
+ * When a label appears more than once under the same portType (e.g. a heart
+ * module with three entrance "vessel_port" slots), the Nth occurrence is
+ * assigned to the Nth neighbour in the space-separated vessel list:
+ *
+ *   out_vessels:  "a_0 a_1"          ← a_0 is index 0, a_1 is index 1
+ *   exit vessel_ports: [slot0, slot1] ← slot0 couples to a_0, slot1 to a_1
+ *
+ * The same logic applies on the target side via inp_vessels.
+ *
+ * resolvePortCouplings therefore needs both indices so it can pick the correct
+ * occurrence of each repeated label.
+ *
+ * Non-multiport constraint
+ * ------------------------
+ * A portLabel with multiport === 'None' (Python None serialised as a string,
+ * used as the default in buildPortLabels when multi_port is absent) may only
+ * participate in ONE conduit edge across the entire graph. Any other truthy
+ * value for multiport means the port is unrestricted.
+ */
+
+/** portTypes that may appear on the source (outgoing) side of a coupling. */
+const SOURCE_COMPATIBLE_TYPES = new Set(['exit_ports', 'general_ports'])
+
+/** Valid target portTypes for each source portType. */
+const TARGET_COMPATIBLE_TYPES = {
+  exit_ports: new Set(['entrance_ports', 'general_ports']),
+  general_ports: new Set(['entrance_ports', 'exit_ports', 'general_ports']),
+}
+
+/**
  * Generates a unique edge ID.
  *
  * @returns {string} Unique edge ID.
@@ -18,4 +65,182 @@ export function getId(edgeIds, prefix = 'edge_') {
 
   // Return the next ID in the sequence
   return `${prefix}${maxId + 1}`
+}
+
+/**
+ * Returns true when a portLabel entry is single-connection (non-multiport).
+ *
+ * buildPortLabels sets multiport to `p.multi_port ?? 'None'`, so:
+ *   'None'               → single-connection (Python None serialised as string)
+ *   null / undefined / false → single-connection (absent or falsy)
+ *   any other truthy value   → multiport (unrestricted)
+ */
+export function isSingleConnection(portLabel) {
+  const mp = portLabel.multiport
+  return !mp || mp === 'None'
+}
+
+/**
+ * Resolves the port-label couplings for ONE specific conduit edge.
+ *
+ * For each compatible (source portType, target portType, label) group, the
+ * correct occurrence is selected by ordinal index:
+ *   - sourceIndex: position of the target vessel in the source's out_vessels list
+ *   - targetIndex: position of the source vessel in the target's inp_vessels list
+ *
+ * Within each (portType, label) group on a given side, occurrences are ordered
+ * as they appear in portLabels (which mirrors the config file order). The Nth
+ * occurrence is selected by index, clamped to the last slot if the index exceeds
+ * the group size — matching the vessel array semantics.
+ *
+ * For labels that appear only once (the common case), the index is irrelevant
+ * and that single entry is always selected.
+ *
+ * @param {Array}  sourcePortLabels  node.data.portLabels of the source node
+ * @param {Array}  targetPortLabels  node.data.portLabels of the target node
+ * @param {number} sourceIndex  position of target in source's out_vessels (0-based)
+ * @param {number} targetIndex  position of source in target's inp_vessels (0-based)
+ * @returns {Array<{ sourcePortLabel: Object, targetPortLabel: Object }>}
+ */
+export function resolvePortCouplings(
+  sourcePortLabels,
+  targetPortLabels,
+  sourceIndex = 0,
+  targetIndex = 0
+) {
+  const couplings = []
+
+  // Group source portLabels by (portType, label) — preserving config order
+  const sourceGroups = groupByTypeAndLabel(sourcePortLabels, SOURCE_COMPATIBLE_TYPES)
+
+  for (const [groupKey, srcSlots] of sourceGroups) {
+    const [srcPortType, label] = groupKey.split('\x00')
+    const validTargetTypes = TARGET_COMPATIBLE_TYPES[srcPortType]
+
+    // Group matching target portLabels by (portType, label)
+    const targetGroups = groupByTypeAndLabel(targetPortLabels, validTargetTypes)
+
+    for (const [tgtGroupKey, tgtSlots] of targetGroups) {
+      const [, tgtLabel] = tgtGroupKey.split('\x00')
+      if (tgtLabel !== label) continue
+
+      // Pick the correct slot by ordinal index, clamped to available slots
+      const srcSlot = srcSlots[Math.min(sourceIndex, srcSlots.length - 1)]
+      const tgtSlot = tgtSlots[Math.min(targetIndex, tgtSlots.length - 1)]
+
+      couplings.push({ sourcePortLabel: srcSlot, targetPortLabel: tgtSlot })
+    }
+  }
+
+  return couplings
+}
+
+/**
+ * Checks whether adding a new conduit (with the given resolved couplings) would
+ * violate the non-multiport single-connection constraint, and if not, marks those
+ * port labels as consumed.
+ *
+ * The constraint is per port-label slot on a specific node: once a specific
+ * portLabel occurrence on node A is coupled via any edge, no further edge may
+ * also couple that same slot. The same label on a different node is unaffected.
+ *
+ * All-or-nothing: either all couplings are free (success, usedPortKeys updated)
+ * or at least one is already consumed (failure, usedPortKeys NOT modified).
+ *
+ * @param {string} sourceNodeId
+ * @param {string} targetNodeId
+ * @param {Array}  couplings     output of resolvePortCouplings()
+ * @param {Set}    usedPortKeys  mutable Set, updated in-place on success
+ * @returns {{ valid: boolean, conflicts: Array<string> }}
+ */
+export function checkAndClaimCouplings(sourceNodeId, targetNodeId, couplings, usedPortKeys) {
+  const conflicts = []
+  const toMark = []
+
+  for (const { sourcePortLabel, targetPortLabel } of couplings) {
+    if (isSingleConnection(sourcePortLabel)) {
+      const key = portKey(sourceNodeId, sourcePortLabel)
+      if (usedPortKeys.has(key)) {
+        conflicts.push(
+          `"${sourcePortLabel.label}" (${sourcePortLabel.portType}) on "${sourceNodeId}" ` +
+            `is non-multiport and already has a connection.`
+        )
+      } else {
+        toMark.push(key)
+      }
+    }
+
+    if (isSingleConnection(targetPortLabel)) {
+      const key = portKey(targetNodeId, targetPortLabel)
+      if (usedPortKeys.has(key)) {
+        conflicts.push(
+          `"${targetPortLabel.label}" (${targetPortLabel.portType}) on "${targetNodeId}" ` +
+            `is non-multiport and already has a connection.`
+        )
+      } else {
+        toMark.push(key)
+      }
+    }
+  }
+
+  if (conflicts.length === 0) {
+    toMark.forEach((k) => usedPortKeys.add(k))
+  }
+
+  return { valid: conflicts.length === 0, conflicts }
+}
+
+/**
+ * Builds the Set of already-consumed single-connection port keys from the
+ * existing edges in the graph. Call this before validating a new connection.
+ *
+ * @param {Array} edges  VueFlow edges array (each must have edge.data.couplings)
+ * @returns {Set<string>}
+ */
+export function buildUsedPortKeys(edges) {
+  const used = new Set()
+  for (const edge of edges) {
+    const couplings = edge.data?.couplings ?? []
+    for (const { sourcePortLabel, targetPortLabel } of couplings) {
+      if (isSingleConnection(sourcePortLabel)) used.add(portKey(edge.source, sourcePortLabel))
+      if (isSingleConnection(targetPortLabel)) used.add(portKey(edge.target, targetPortLabel))
+    }
+  }
+  return used
+}
+
+// --- Internal helpers --------------------------------------------------------
+
+/**
+ * Groups portLabel entries by a composite key of `portType\x00label`, but only
+ * for portTypes that are in the allowedTypes set. Preserves config-file order
+ * within each group (which defines slot assignment).
+ *
+ * @param {Array}  portLabels
+ * @param {Set}    allowedTypes
+ * @returns {Map<string, Array>}  key: "portType\x00label", value: ordered array of portLabel entries
+ */
+function groupByTypeAndLabel(portLabels, allowedTypes) {
+  const groups = new Map()
+  for (const pl of portLabels) {
+    if (!allowedTypes.has(pl.portType)) continue
+    const key = `${pl.portType}\x00${pl.label}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(pl)
+  }
+  return groups
+}
+
+/**
+ * Canonical key identifying one specific portLabel slot on one specific node.
+ * Uses object identity (via the portLabel object reference) to distinguish
+ * multiple occurrences of the same label on the same node.
+ *
+ * Format: "{nodeId}:{portType}:{label}:{slotIndex}"
+ * The slotIndex is the position of this portLabel within its (portType, label) group.
+ */
+function portKey(nodeId, portLabel) {
+  // The portLabel object itself is unique per slot — we use its option array
+  // serialised as a tiebreaker to distinguish same-label slots on the same node.
+  return `${nodeId}:${portLabel.portType}:${portLabel.label}:${JSON.stringify(portLabel.option ?? [])}`
 }

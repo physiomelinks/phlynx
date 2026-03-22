@@ -372,6 +372,11 @@ function extractUnitsFromMath(multiBlockMathString) {
  * @param {string} portType1 - Source port type one of 'general_ports', 'exit_ports', or 'entrance_ports'.
  * @param {string} portType2 - Target port type one of 'general_ports', 'exit_ports', or 'entrance_ports'.
  * @returns {boolean} True if the port types are compatible, false otherwise.
+ *
+ * @deprecated Connection generation now reads pre-resolved couplings from
+ * edge.data.couplings (computed by resolvePortCouplings in portCouplings.js),
+ * so compatibility is guaranteed before this point. This function is no longer
+ * called by generateFlattenedModel but is kept for reference.
  */
 function arePortTypesCompatible(portType1, portType2) {
   if (portType1 === 'general_ports' || portType2 === 'general_ports') {
@@ -771,70 +776,64 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     const componentTrashCan = new Set()
     const multiPortSums = new Map()
     for (const edge of edges) {
-      // Get Node Data
       const sourceNode = edge.sourceNode
       const targetNode = edge.targetNode
 
       if (!sourceNode || !targetNode) continue
 
-      // Get the specific Cloned Components
       const sourceComp = nodeComponentMap.get(edge.source)
       const targetComp = nodeComponentMap.get(edge.target)
 
-      // Iterate Source Labels to find Matches in Target
-      // Assuming node.portLabels exists based on your description
-      if (sourceNode.data?.portLabels && targetNode.data?.portLabels) {
-        for (const srcLabel of sourceNode.data.portLabels) {
-          // Find the matching label in the target
-          const tgtLabel = targetNode.data.portLabels.find((l) => l.label === srcLabel.label)
+      // Read the pre-resolved, slot-correct couplings stored on the edge.
+      // These were computed by resolvePortCouplings at edge-creation time
+      // (and recomputed on any edit), so ordinal slot assignment is already
+      // correct — no need to re-derive from portLabels here.
+      const couplings = edge.data?.couplings ?? []
 
-          if (tgtLabel) {
-            if (arePortTypesCompatible(srcLabel.portType, tgtLabel.portType)) {
-              const isSrcMultiportSum = srcLabel.multiport === 'Sum'
-              const isTgtMultiportSum = tgtLabel.multiport === 'Sum'
-              if (isSrcMultiportSum && isTgtMultiportSum) {
-                throw new Error('Multi-port-sum to Multi-port-sum connections are not supported.')
-              } else if (isSrcMultiportSum || isTgtMultiportSum) {
-                const multiSumLabel = isSrcMultiportSum ? srcLabel : tgtLabel
-                const multiSumComponent = isSrcMultiportSum ? sourceComp : targetComp
-                const operandLabel = isSrcMultiportSum ? tgtLabel : srcLabel
-                const operandComponent = isSrcMultiportSum ? targetComp : sourceComp
-                const multiKey = multiSumComponent.name() + '::' + multiSumLabel.label
-                if (!multiPortSums.has(multiKey)) {
-                  multiPortSums.set(multiKey, {
-                    sourceComp: multiSumComponent,
-                    srcLabel: multiSumLabel,
-                    targets: [],
-                  })
-                }
-                multiPortSums.get(multiKey).targets.push({
-                  component: operandComponent,
-                  label: operandLabel,
-                })
-              } else {
-                // Direct Connection (One-to-One)
-                const minLength = Math.min(srcLabel.option.length, tgtLabel.option.length)
+      for (const { sourcePortLabel: srcLabel, targetPortLabel: tgtLabel } of couplings) {
+        const isSrcMultiportSum = srcLabel.multiport === 'Sum'
+        const isTgtMultiportSum = tgtLabel.multiport === 'Sum'
 
-                for (let i = 0; i < minLength; i++) {
-                  const srcOption = srcLabel.option[i]
-                  const tgtOption = tgtLabel.option[i]
+        if (isSrcMultiportSum && isTgtMultiportSum) {
+          throw new Error('Multi-port-sum to Multi-port-sum connections are not supported.')
+        } else if (isSrcMultiportSum || isTgtMultiportSum) {
+          // Accumulate multi-port-sum operands; resolved after all edges are processed
+          const multiSumLabel = isSrcMultiportSum ? srcLabel : tgtLabel
+          const multiSumComponent = isSrcMultiportSum ? sourceComp : targetComp
+          const operandLabel = isSrcMultiportSum ? tgtLabel : srcLabel
+          const operandComponent = isSrcMultiportSum ? targetComp : sourceComp
+          const multiKey = multiSumComponent.name() + '::' + multiSumLabel.label
+          if (!multiPortSums.has(multiKey)) {
+            multiPortSums.set(multiKey, {
+              sourceComp: multiSumComponent,
+              srcLabel: multiSumLabel,
+              targets: [],
+            })
+          }
+          multiPortSums.get(multiKey).targets.push({
+            component: operandComponent,
+            label: operandLabel,
+          })
+        } else {
+          // Direct one-to-one variable equivalence
+          const minLength = Math.min(srcLabel.option.length, tgtLabel.option.length)
+          for (let i = 0; i < minLength; i++) {
+            const srcOption = srcLabel.option[i]
+            const tgtOption = tgtLabel.option[i]
 
-                  if (srcOption && tgtOption) {
-                    const v1 = sourceComp.variableByName(srcOption)
-                    const v2 = targetComp.variableByName(tgtOption)
+            if (srcOption && tgtOption) {
+              const v1 = sourceComp.variableByName(srcOption)
+              const v2 = targetComp.variableByName(tgtOption)
 
-                    if (v1 && v2) {
-                      const handled = createAffineConversionComponent(model, v1, v2, sourceComp.name(), targetComp.name())
-                      if (!handled) {
-                        _libcellml.Variable.addEquivalence(v1, v2)
-                      }
-                    }
-
-                    v1.delete()
-                    v2.delete()
-                  }
+              if (v1 && v2) {
+                const handled = createAffineConversionComponent(model, v1, v2, sourceComp.name(), targetComp.name())
+                if (!handled) {
+                  _libcellml.Variable.addEquivalence(v1, v2)
                 }
               }
+
+              v1?.delete()
+              v2?.delete()
             }
           }
         }

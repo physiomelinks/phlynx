@@ -125,6 +125,7 @@ import { Delete, Plus } from '@element-plus/icons-vue'
 import { useGtm } from '../composables/useGtm'
 import { notify } from '../utils/notify'
 import { sanitiseModuleName } from '../utils/nodes'
+import { detachReactivity } from '../utils/reactivity'
 
 const props = defineProps({
   // v-model for visibility
@@ -193,9 +194,7 @@ const { trackEvent } = useGtm()
 
 function resetForm() {
   editableData.name = props.initialName
-  editableData.portLabels = JSON.parse(
-    JSON.stringify(props.initialPortLabels || [])
-  )
+  editableData.portLabels = detachReactivity(props.initialPortLabels || [])
 }
 
 function closeDialog() {

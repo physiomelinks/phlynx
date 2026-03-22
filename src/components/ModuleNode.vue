@@ -169,6 +169,7 @@ import { sanitiseModuleName } from '../utils/nodes'
 import { notify } from '../utils/notify'
 import { isEditableVariableType, isEmpty } from '../utils/variables'
 import '../assets/vueflownode.css'
+import { detachReactivity } from '../utils/reactivity'
 
 const { addEdges, edges, removeEdges, updateNodeData, updateNodeInternals, nodes } = useVueFlow()
 const historyStore = useFlowHistoryStore()
@@ -263,7 +264,7 @@ const applyPorts = async (portsToSet) => {
 }
 
 async function removePort(portIdToRemove) {
-  const oldPorts = JSON.parse(JSON.stringify(props.data.ports))
+  const oldPorts = detachReactivity(props.data.ports)
 
   const port = oldPorts.find((p) => p.uid === portIdToRemove)
   if (!port) return
@@ -278,7 +279,7 @@ async function removePort(portIdToRemove) {
       (edge.target === props.id && edge.targetHandle === handleId)
   )
 
-  const edgesSnapshot = connectedEdges.map((edge) => JSON.parse(JSON.stringify(edge)))
+  const edgesSnapshot = connectedEdges.map((edge) => detachReactivity(edge))
 
   // Define New Ports (for Redo)
   const newPorts = props.data.ports.filter((p) => p.uid !== portIdToRemove)

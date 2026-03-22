@@ -9,6 +9,7 @@ import { notify } from '../utils/notify'
 import { useGtm } from './useGtm'
 import { processCellMLData } from '../utils/cellml'
 import { parseCellMLConnections } from '../services/import/parseCellmlConnections'
+import { resolvePortCouplings } from '../utils/edges'
 import { getHandleId } from '../utils/ports'
 import { SOURCE_PORT_TYPE } from '../utils/constants'
 
@@ -93,11 +94,16 @@ export function useLoadFromCellML() {
 
         const rawPorts = moduleConfig.general_ports ?? []
 
+        // If a component has more than one edge, set all ports to be True
+        const edgeCount = edges.filter(
+          e => e.source === compName || e.target === compName
+        ).length
+
         const portLabels = rawPorts.map((p) => ({
           portType: 'general_ports',
           label: p.port_type,
           option: p.variables ?? [],
-          multiport: 'None',
+          multiport: edgeCount > 1 ? 'True' : 'None',
         }))
 
         const ports = createPorts(edges, compName)
@@ -233,7 +239,10 @@ export function useLoadFromCellML() {
       )
       await nextTick()
 
-      // Build edges
+      // Build edges, resolving port couplings using ordinal indices
+      // (same logic as onConnect in BuilderView)
+      const srcCounts = new Map()
+      const tgtCounts = new Map()
       const flowEdges = pendingEdgeData.flatMap((edge) => {
         const { source, target } = edge
         const sourceNode = nodeMap.get(source)
@@ -251,6 +260,18 @@ export function useLoadFromCellML() {
 
         if (!sourcePort || !targetPort) return []
 
+        const sourceIndex = srcCounts.get(source) ?? 0
+        const targetIndex = tgtCounts.get(target) ?? 0
+        srcCounts.set(source, sourceIndex + 1)
+        tgtCounts.set(target, targetIndex + 1)
+
+        const couplings = resolvePortCouplings(
+          sourceNode.data.portLabels ?? [],
+          targetNode.data.portLabels ?? [],
+          sourceIndex,
+          targetIndex
+        )
+
         return [
           {
             id: `e_cellml_${source}_${target}_${crypto.randomUUID()}`,
@@ -258,6 +279,7 @@ export function useLoadFromCellML() {
             target,
             sourceHandle: getHandleId(sourcePort),
             targetHandle: getHandleId(targetPort),
+            data: { couplings },
           },
         ]
       })
