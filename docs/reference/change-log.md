@@ -22,6 +22,7 @@
 
 
 #### Fixed Bugs
+* Update BuilderView.vue by [@jmdowrick](https://github.com/jmdowrick) in [#410](https://github.com/physiomelinks/phlynx/pull/410)
 * Fix detach reactivity bug by [@jmdowrick](https://github.com/jmdowrick) in [#408](https://github.com/physiomelinks/phlynx/pull/408)
 * Ensure variables are added to user module configs by [@jmdowrick](https://github.com/jmdowrick) in [#396](https://github.com/physiomelinks/phlynx/pull/396)
 * Fix module replace dialog size by [@jmdowrick](https://github.com/jmdowrick) in [#395](https://github.com/physiomelinks/phlynx/pull/395)
