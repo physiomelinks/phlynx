@@ -281,8 +281,6 @@ function createSummationComponent(model, sourceComp, sourceVarName, targetCompon
   }
 
   // Setup Variables
-  // We need to determine the units. We'll grab the units from the first source var.
-  // (Assuming all summed variables have matching units)
   const referenceVar = sourceComp.variableByName(sourceVarName)
   const referenceUnits = referenceVar.units()
   const unitsName = referenceUnits.name() || 'dimensionless'
@@ -292,22 +290,30 @@ function createSummationComponent(model, sourceComp, sourceVarName, targetCompon
   const sumVar = new _libcellml.Variable()
   sumVar.setName(sumVarName)
   sumVar.setUnitsByName(unitsName)
-  sumVar.setInterfaceTypeByString('public') // Allows connection to target
+  sumVar.setInterfaceTypeByString('public')
   sumComp.addVariable(sumVar)
-
   _libcellml.Variable.addEquivalence(referenceVar, sumVar)
+
   // Create Input Variables in the Sum Component
-  const sumVarNames = []
-  targetComponentVarNameMap.forEach((targetVarName, component) => {
+  // if multiport sum is on target node, add; source node, subtract.
+  const addVarNames = []
+  const subVarNames = []
+
+  targetComponentVarNameMap.forEach(({ component, varName: targetVarName, isTarget }) => {
     const localVarName = nextAvailableVarName(sumComp, `op_${targetVarName}`)
-    sumVarNames.push(localVarName)
+
+    if (isTarget) {
+      addVarNames.push(localVarName)
+    } else {
+      subVarNames.push(localVarName)
+    }
 
     const opVar = new _libcellml.Variable()
     opVar.setName(localVarName)
     opVar.setUnitsByName(unitsName)
-    opVar.setInterfaceTypeByString('public') // Allows connection to source
-
+    opVar.setInterfaceTypeByString('public')
     sumComp.addVariable(opVar)
+
     const tmpVar = component.variableByName(targetVarName)
     _libcellml.Variable.addEquivalence(opVar, tmpVar)
     opVar.delete()
@@ -316,16 +322,56 @@ function createSummationComponent(model, sourceComp, sourceVarName, targetCompon
 
   referenceVar.delete()
   sumVar.delete()
+
   // Generate MathML
-  // Format: total_sum = in_0 + in_1 + in_2 ...
-  const mathML = `<math xmlns="http://www.w3.org/1998/Math/MathML">
+  // Format: sum = (a1 + a2 + ...) - (s1 + s2 + ...)
+  // Handles all four cases: adds only, subtracts only, both, or none.
+  let rhsMathML
+  if (addVarNames.length === 0 && subVarNames.length === 0) {
+    rhsMathML = `<cn cellml:units="${unitsName}">0</cn>`
+  } else if (subVarNames.length === 0) {
+    // Only additions — keep original flat plus structure
+    rhsMathML = `<apply>
+        <plus/>
+        ${addVarNames.map((name) => `<ci>${name}</ci>`).join('\n        ')}
+      </apply>`
+  } else if (addVarNames.length === 0) {
+    // Only subtractions — negate the sum
+    rhsMathML = `<apply>
+        <minus/>
+        ${subVarNames.length === 1
+          ? `<ci>${subVarNames[0]}</ci>`
+          : `<apply>
+          <plus/>
+          ${subVarNames.map((name) => `<ci>${name}</ci>`).join('\n          ')}
+        </apply>`}
+      </apply>`
+  } else {
+    // Mixed — additions minus sum-of-subtractions
+    const addsPart = addVarNames.length === 1
+      ? `<ci>${addVarNames[0]}</ci>`
+      : `<apply>
+          <plus/>
+          ${addVarNames.map((name) => `<ci>${name}</ci>`).join('\n          ')}
+        </apply>`
+    const subsPart = subVarNames.length === 1
+      ? `<ci>${subVarNames[0]}</ci>`
+      : `<apply>
+          <plus/>
+          ${subVarNames.map((name) => `<ci>${name}</ci>`).join('\n          ')}
+        </apply>`
+    rhsMathML = `<apply>
+        <minus/>
+        ${addsPart}
+        ${subsPart}
+      </apply>`
+  }
+
+  const mathML = `<math xmlns="http://www.w3.org/1998/Math/MathML" xmlns:cellml="http://www.cellml.org/cellml/2.0#">
     <apply>
       <eq/>
       <ci>${sumVarName}</ci>
-      <apply>
-        <plus/>
-        ${sumVarNames.map((name) => `<ci>${name}</ci>`).join('\n        ')}
-      </apply>
+      ${rhsMathML}
     </apply>
   </math>`
 
@@ -813,6 +859,7 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
           multiPortSums.get(multiKey).targets.push({
             component: operandComponent,
             label: operandLabel,
+            isTarget: !isSrcMultiportSum, 
           })
         } else {
           // Direct one-to-one variable equivalence
@@ -850,15 +897,15 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
         throw new Error('Multi-port-sum source must have exactly one variable representing the summed input.')
       }
       const sourceVarName = sourceVarNames[0] // Assuming single variable for source in multi-port-sum
-      const targetComponents = new Map()
+      const targetComponents = []
       for (const targetInfo of targets) {
-        const { component, label } = targetInfo
+        const { component, label, isTarget } = targetInfo
         const targetVarNames = label.option
         if (targetVarNames.length !== 1) {
           throw new Error('Multi-port-sum target must have exactly one variable to be summed.')
         }
         const targetVarName = targetVarNames[0]
-        targetComponents.set(component, targetVarName)
+        targetComponents.push({ component, varName: targetVarName, isTarget })
       }
 
       createSummationComponent(model, sourceComp, sourceVarName, targetComponents)
@@ -887,6 +934,10 @@ export function generateFlattenedModel(nodes, edges, builderStore) {
     // Resolve and Flatten
     importer.resolveImports(model, '.')
     const flattenedModel = importer.flattenModel(model)
+
+    if (!flattenedModel) {
+      handleLoggerErrors(importer, `Importer error count: ${importer.errorCount()}`)
+    }
 
     if (importer.errorCount()) {
       flattenedModel.delete()
