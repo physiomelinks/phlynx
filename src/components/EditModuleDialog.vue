@@ -128,18 +128,22 @@ import { sanitiseModuleName } from '../utils/nodes'
 import { detachReactivity } from '../utils/reactivity'
 
 const props = defineProps({
-  // v-model for visibility
   modelValue: {
     type: Boolean,
     default: false,
   },
-  // Pass the current name to edit
   initialName: {
     type: String,
     default: '',
   },
-  portOptions: { type: Array, default: () => [] },
-  initialPortLabels: { type: Array, default: () => [] },
+  portOptions: {
+    type: Array,
+    default: () => [],
+  },
+  initialPortLabels: { 
+    type: Array,
+    default: () => [],
+  },
   nodeId: {
     type: String,
     required: true,
@@ -230,9 +234,10 @@ function handleConfirm() {
   trackEvent('edit_module_action', {
     category: 'EditModule',
     action: 'edit_module',
-    label: editableData.name, // useful context
+    label: editableData.name, 
     file_type: 'JSON'
   })
+  
   emit('confirm', {
     name: editableData.name,
     nodeId: props.nodeId,

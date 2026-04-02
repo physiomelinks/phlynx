@@ -1,6 +1,6 @@
 
 ## Unofficial Release
-###### Includes changes up to 2026-03-24
+###### Includes changes up to 2026-04-02
 
 #### Not Specified
 * Bug fix code edit issue by [@jmdowrick](https://github.com/jmdowrick) in [#341](https://github.com/physiomelinks/phlynx/pull/341)
@@ -10,6 +10,7 @@
 
 
 #### New Features
+* Add module (config + component) information to copy and paste by [@jmdowrick](https://github.com/jmdowrick) in [#423](https://github.com/physiomelinks/phlynx/pull/423)
 * Introduce edge connection dialogue by [@jmdowrick](https://github.com/jmdowrick) in [#392](https://github.com/physiomelinks/phlynx/pull/392)
 * Enable users to copy between windows by [@jmdowrick](https://github.com/jmdowrick) in [#399](https://github.com/physiomelinks/phlynx/pull/399)
 * Add editable title to the application header by [@jmdowrick](https://github.com/jmdowrick) in [#397](https://github.com/physiomelinks/phlynx/pull/397)
@@ -20,6 +21,7 @@
 
 
 #### Fixed Bugs
+* Copy-paste now moves the module information by [@jmdowrick](https://github.com/jmdowrick) in [#421](https://github.com/physiomelinks/phlynx/pull/421)
 * Update BuilderView.vue by [@jmdowrick](https://github.com/jmdowrick) in [#410](https://github.com/physiomelinks/phlynx/pull/410)
 * Fix detach reactivity bug by [@jmdowrick](https://github.com/jmdowrick) in [#408](https://github.com/physiomelinks/phlynx/pull/408)
 * Ensure variables are added to user module configs by [@jmdowrick](https://github.com/jmdowrick) in [#396](https://github.com/physiomelinks/phlynx/pull/396)

@@ -361,7 +361,7 @@ import { getHelperLines } from '../utils/helperLines'
 import { getPurgedUrlForResource, getUrlForResource, loadManifest } from '../utils/resources'
 import { useClearWorkspace } from '../utils/workspace'
 import { relayoutNodes } from '../services/layouts/physics'
-import { generateFlattenedModel, initLibCellML, processCellMLData } from '../utils/cellml'
+import { generateFlattenedModel, initLibCellML, processCellMLData, extractVariablesFromModule, createEditableModelFromSourceModelAndComponent } from '../utils/cellml'
 import {
   edgeLineOptions,
   CELLML_FILE_TYPES,
@@ -2163,9 +2163,50 @@ const copySelection = async () => {
 
   if (nodes.length === 0) return  
   
+  const storeSnapshot = {}
+  for (const node of nodes) {
+    const { sourceFile, componentName, configIndex } = node.data
+    if (!sourceFile || !componentName) continue
+
+    const moduleFile = builderStore.availableModules.find((f) => f.filename === sourceFile)
+    if (!moduleFile) continue
+
+    const component = moduleFile.modules.find((m) => m.name === componentName || m.componentName === componentName)
+    if (!component) continue
+
+    const key = `${sourceFile}::${componentName}`
+    if (storeSnapshot[key]) {
+      // Component already captured — add this config if it's a new one
+      const config = component.configs?.[configIndex]
+      if (config !== undefined && !storeSnapshot[key].configs.some(
+        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+      )) {
+        storeSnapshot[key].configs.push(detachReactivity(config))
+      }
+      continue
+    }
+
+    const config = component.configs?.[configIndex]
+
+    const { xml: componentModel } = createEditableModelFromSourceModelAndComponent(
+      moduleFile.model,
+      componentName
+    )
+    if (!componentModel) continue
+
+    storeSnapshot[key] = {
+      sourceFile,
+      componentName,
+      configs: config !== undefined ? [detachReactivity(config)] : [],
+      model: componentModel,
+      filename: moduleFile.filename,
+    }
+  }
+
   const payload = {
     nodes: detachReactivity(nodes),
     edges: detachReactivity(edges),
+    storeSnapshot,
   }
 
   clipboard.value = payload
@@ -2184,7 +2225,6 @@ const pasteSelection = async (atMouse = false) => {
   try {
     const text = await navigator.clipboard.readText()
     const parsed = JSON.parse(text)
-
     if (parsed?.nodes && parsed?.edges) {
       sourceClipboard = parsed
     }
@@ -2193,6 +2233,49 @@ const pasteSelection = async (atMouse = false) => {
   }
 
   if (!sourceClipboard.nodes || sourceClipboard.nodes.length === 0) return
+
+  if (sourceClipboard.storeSnapshot) {
+    for (const entry of Object.values(sourceClipboard.storeSnapshot)) {
+      const existingFile = builderStore.availableModules.find((f) => f.filename === entry.filename)
+
+      if (!existingFile) {
+        // The whole file is absent 
+        builderStore.addModuleFile({
+          filename: entry.filename,
+          model: entry.model,
+          modules: [{
+            name: entry.componentName,
+            componentName: entry.componentName,
+            configs: entry.configs,
+          }],
+        })
+      } else {
+        // The file exists but this specific component or config may be missing
+        const existingComponent = existingFile.modules.find(
+          (m) => m.name === entry.componentName || m.componentName === entry.componentName
+        )
+
+        if (!existingComponent) {
+          existingFile.modules.push({
+            name: entry.componentName,
+            componentName: entry.componentName,
+            configs: entry.configs,
+          })
+        } else {
+          // Component exists but config is missing
+          if (!existingComponent.configs) existingComponent.configs = []
+          for (const config of entry.configs) {
+            const alreadyPresent = existingComponent.configs.some(
+              (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
+            )
+            if (!alreadyPresent) {
+              existingComponent.configs.push(config)
+            }
+          }
+        }
+      }
+    }
+  }
 
   const newNodes = []
   const newEdges = []
@@ -2265,6 +2348,38 @@ const pasteSelection = async (atMouse = false) => {
         selected: true,
       })
     }
+  })
+
+  newNodes.forEach((newNode) => {
+    const { name, sourceFile, componentName, configIndex } = newNode.data
+    if (!sourceFile || !componentName) return
+
+    const modelString = builderStore.getModuleContent(sourceFile)
+    const variables = extractVariablesFromModule(modelString, componentName)
+    newNode.data.variables = variables
+
+    const resolvedIndex = configIndex ?? 0
+    const targetModule = builderStore.getModulesModule(sourceFile, componentName)
+
+    if (targetModule && 
+    (!targetModule.configs?.[resolvedIndex]?.module_file?.length  ||
+    !targetModule.configs?.[resolvedIndex]?.module_type?.length ||
+    !targetModule.configs?.[resolvedIndex]?.variables_and_units?.length)) {
+      const syntheticConfig = {
+        module_file: sourceFile,
+        module_type: componentName,
+        variables_and_units: variables.map((v) => [v.name, v.units ?? 'dimensionless', 'access', 'variable']),
+      }
+      builderStore.addConfigFile([syntheticConfig], sourceFile)
+    }
+
+    builderStore.setVariableParameterValuesForInstance(
+      name,
+      variables,
+      sourceFile,
+      componentName,
+      resolvedIndex
+    )
   })
 
   getSelectedNodes.value.forEach((n) => (n.selected = false))

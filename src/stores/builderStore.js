@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import { isEditableVariableType } from '../utils/variables'
 
@@ -260,10 +260,6 @@ export const useBuilderStore = defineStore('builder', () => {
     addOrUpdateFile(availableModules, payload)
   }
 
-  function addUnitsFile(payload) {
-    addOrUpdateFile(availableUnits, payload)
-  }
-
   function loadState(state) {
     mergeIntoStore(state.availableModules, availableModules.value)
     mergeIntoStore(state.availableUnits, availableUnits.value)
@@ -358,6 +354,20 @@ export const useBuilderStore = defineStore('builder', () => {
     return module.configs[configIndex]
   }
 
+  const getConfigsForModule = computed(() => {
+    return (moduleName) => {
+      if (!moduleName) return []
+      
+      for (const file of availableModules.value) {
+        const module = file.modules.find((m) => m.name === moduleName)
+        if (module && module.configs) {
+          return module.configs
+        }
+      }
+      return []
+    }
+  })
+
   function getState() {
     return {
       availableModules: availableModules.value,
@@ -401,6 +411,7 @@ export const useBuilderStore = defineStore('builder', () => {
     getModuleContent,
     getModulesModule,
     getModuleConfigFromConfigIndex,
+    getConfigsForModule,
     getParameterValuesForInstanceVariable,
     getState,
     hasModuleFile,
