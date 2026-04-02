@@ -94,17 +94,34 @@ export default function useDragAndDrop(pendingHistoryNodes) {
 
     pendingHistoryNodes.add(nodeId)
 
-    const config = moduleData.configs ? moduleData.configs[moduleData.configIndex || 0] : null
-    const portLabels = config ? buildPortLabels(config) : []
-
     const modelString = builderStore.getModuleContent(sourceFile)
     const variables = extractVariablesFromModule(modelString, componentName)
+
+    const configIndex = moduleData.configIndex || 0
+    let config = moduleData.configs?.[configIndex] ?? null
+
+    if (!config) {
+      config = {
+        vessel_type: finalName,
+        BC_type: 'phlynx',
+        module_file: sourceFile,
+        module_type: componentName,
+        entrance_ports: [],
+        exit_ports:[],       
+        general_ports:[],
+        variables_and_units: variables.map((v) => [v.name, v.units ?? 'dimensionless', 'access', 'variable']),
+      }
+      builderStore.addConfigFile([config], sourceFile)
+    }
+
+    const portLabels = buildPortLabels(config)
+
     builderStore.setVariableParameterValuesForInstance(
       finalName,
       variables,
       sourceFile,
       componentName,
-      moduleData.configIndex
+      configIndex
     )
 
     const newNode = {
