@@ -10,6 +10,15 @@ body {
   height: 100%;
 }
 
+/* Edge reconnect handles from Vue Flow: hidden unless Ctrl is held (see BuilderView.vue) */
+.vue-flow__edgeupdater {
+  visibility: hidden;
+}
+.ctrl-mode .vue-flow__edgeupdater {
+  visibility: visible;
+  cursor: crosshair;
+}
+
 .dropzone-background {
   width: 100%;
   height: 100%;

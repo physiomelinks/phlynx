@@ -12,6 +12,8 @@ export const markerEnd = MarkerType.ArrowClosed
 export const edgeLineOptions = {
   type: 'smoothstep',
   markerEnd: markerEnd,
+  /** Allow Ctrl+revealed edge updater handles (see BuilderView + main.css) */
+  updatable: true,
   style: {
     strokeWidth: 5,
     // stroke: '#b1b1b7', // Can customize color if desired.
