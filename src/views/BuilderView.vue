@@ -200,7 +200,7 @@
           </el-input>
         </div>
 
-        <div class="dnd-flow" @drop="onDrop">
+        <div class="dnd-flow" :class="{ 'ctrl-mode': isCtrlHeld }" @drop="onDrop">
           <VueFlow
             :id="FLOW_IDS.MAIN"
             @dragover="onDragOver"
@@ -208,11 +208,15 @@
             @nodes-change="onNodeChange"
             @edges-change="onEdgeChange"
             @edge-double-click="onEdgeDoubleClick"
+            @edge-update-start="onEdgeUpdateStart"
+            @edge-update="onEdgeUpdate"
+            @edge-update-end="onEdgeUpdateEnd"
             @pane-context-menu="onPaneContextMenu"
             :max-zoom="1.5"
             :min-zoom="0.1"
             :default-edge-options="edgeLineOptions"
             :connection-line-options="edgeLineOptions"
+            :edges-updatable="true"
             :nodes="nodes"
             :delete-key-code="['Backspace', 'Delete']"
           >
@@ -669,6 +673,9 @@ const undoRedoSelection = false
 
 const clipboard = ref({ nodes: [], edges: [] })
 const mousePosition = ref({ x: 0, y: 0 })
+/** Ctrl/Cmd held: shows Vue Flow edge updater handles so connections can be re-dragged */
+const isCtrlHeld = ref(false)
+const edgeUpdateSucceeded = ref(false)
 
 // Search functionality
 const searchQuery = ref('')
@@ -780,6 +787,51 @@ onConnect((connection) => {
 
   addEdges(newEdge)
 })
+
+function onEdgeUpdateStart() {
+  edgeUpdateSucceeded.value = false
+}
+
+function onEdgeUpdate({ edge: oldEdgeGraph, connection }) {
+  const sourceNode = findNode(connection.source)
+  const targetNode = findNode(connection.target)
+  if (!sourceNode || !targetNode) {
+    return
+  }
+
+  edgeUpdateSucceeded.value = true
+
+  historyStore.startBatch()
+  removeEdges([oldEdgeGraph.id])
+
+  const sourceIndex = edges.value.filter((e) => e.source === connection.source).length
+  const targetIndex = edges.value.filter((e) => e.target === connection.target).length
+
+  const couplings = resolvePortCouplings(
+    sourceNode.data.portLabels ?? [],
+    targetNode.data.portLabels ?? [],
+    sourceIndex,
+    targetIndex,
+  )
+
+  addEdges({
+    ...connection,
+    ...edgeLineOptions,
+    id: `${connection.source}--${connection.target}`,
+    data: {
+      couplings,
+    },
+  })
+  historyStore.endBatch()
+}
+
+function onEdgeUpdateEnd({ edge: edgeSnapshot }) {
+  // Invalid drop keeps the edge; only restore if it disappeared unexpectedly.
+  if (!edgeUpdateSucceeded.value && edgeSnapshot?.id != null && !findEdge(edgeSnapshot.id)) {
+    addEdges(edgeSnapshot)
+  }
+  edgeUpdateSucceeded.value = false
+}
 
 const createSelectCommand = (changes, findFn) => {
   return {
@@ -2390,6 +2442,10 @@ const pasteSelection = async (atMouse = false) => {
 }
 
 const handleKeyDown = (event) => {
+  if (event.ctrlKey || event.metaKey) {
+    isCtrlHeld.value = true
+  }
+
   // Check if user is typing in an input field (don't trigger copy/paste then)
   if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
     // Allow Enter/Shift+Enter in search input for navigation
@@ -2476,6 +2532,16 @@ const handleKeyDown = (event) => {
   }
 }
 
+const handleKeyUp = (event) => {
+  if (!event.ctrlKey && !event.metaKey) {
+    isCtrlHeld.value = false
+  }
+}
+
+const handleWindowBlur = () => {
+  isCtrlHeld.value = false
+}
+
 async function fetchAndLoadResource(entry, resourceType) {
   try {
     const url = getUrlForResource(entry.path)
@@ -2519,6 +2585,8 @@ const moduleConfigs = import.meta.glob('../assets/module_configs/*.json', {
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('blur', handleWindowBlur)
   document.addEventListener('mousemove', onMouseMove)
 
   // Load the manifest and the libCellML WebAssembly module.
@@ -2606,6 +2674,8 @@ const onMouseMove = (event) => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('blur', handleWindowBlur)
   document.removeEventListener('mousemove', onMouseMove)
 })
 
