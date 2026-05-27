@@ -216,6 +216,7 @@
             :min-zoom="0.1"
             :default-edge-options="edgeLineOptions"
             :connection-line-options="edgeLineOptions"
+            :edges-updatable="true"
             :nodes="nodes"
             :delete-key-code="['Backspace', 'Delete']"
           >

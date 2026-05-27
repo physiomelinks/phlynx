@@ -10,12 +10,20 @@ body {
   height: 100%;
 }
 
-/* Edge reconnect handles from Vue Flow: hidden unless Ctrl is held (see BuilderView.vue) */
+/* Edge reconnect handles from Vue Flow: invisible and non-interactive unless Ctrl is held.
+   Vue Flow renders SVG circles with inline fill/stroke="transparent" (presentation
+   attributes); CSS rules override those since stylesheets beat presentation attributes
+   in the SVG cascade. pointer-events: none prevents invisible circles catching clicks. */
 .vue-flow__edgeupdater {
   visibility: hidden;
+  pointer-events: none;
 }
 .ctrl-mode .vue-flow__edgeupdater {
   visibility: visible;
+  pointer-events: all;
+  fill: #409eff;
+  stroke: #ffffff;
+  stroke-width: 2;
   cursor: crosshair;
 }
 
