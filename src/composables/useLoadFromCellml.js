@@ -5,6 +5,7 @@ import { notify } from '../utils/notify'
 import { useGtm } from './useGtm'
 import { useClearWorkspace } from '../composables/useClearWorkspace'
 import { buildWorkflowGraph } from '../services/import/buildWorkflow'
+import { extractComponentsFromCellmlString } from '../utils/cellml'
 import { useWorkflowLayout } from './useWorkflowLayout'
 
 export function useLoadFromCellML() {
@@ -14,7 +15,7 @@ export function useLoadFromCellML() {
   const { clearWorkspace } = useClearWorkspace()
   const { prepareLayout } = useWorkflowLayout()
 
-  const loadFromCellML = async (parsedCellmlPayload, componentFile, progressCallback = null) => {
+  const loadFromCellML = async (parsedCellmlPayload, componentFile, progressCallback = null, cellmlText = null) => {
     try {
       await clearWorkspace({ recordHistory: false })
 
@@ -22,6 +23,17 @@ export function useLoadFromCellML() {
 
       
       const { components = [], modules = [], edges = [], cellmlModuleSubtype } = parsedCellmlPayload
+
+      // Register the file's math first when the caller has not. Every node this
+      // builds carries a mathRef into that library, so without it the workspace
+      // looks right and cannot be used: export fails on the first node with
+      // "Missing math definition", and the module editor opens on an empty
+      // string. `loadCellMLFiles` registers via loadCellMLData and passes no
+      // text; an archive import has only the text, and passes it.
+      if (cellmlText) {
+        const { xml: mathComponents } = extractComponentsFromCellmlString(cellmlText)
+        store.addMathFile(componentFile, mathComponents ?? [])
+      }
 
       if (edges.length === 0) {
         notify.info({

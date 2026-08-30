@@ -1942,8 +1942,10 @@ async function processImportedOmexArchive(archivePayload, result, fileName) {
       }
     }
   } else if (result.files?.cellml) {
-    const cellmlPayload = parseCellMLConnections(await cellmlFile.async('string'), result.files.cellml)
-    await loadFromCellML(cellmlPayload, result.files.cellml)
+    // `cellmlContent` is the text already read above, and it is passed on so the
+    // graph's math is registered with it -- the workspace is unusable otherwise.
+    const cellmlPayload = parseCellMLConnections(cellmlContent, result.files.cellml)
+    await loadFromCellML(cellmlPayload, result.files.cellml, null, cellmlContent)
   }
 
   if (result.files?.simulationJson) {
