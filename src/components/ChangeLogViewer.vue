@@ -9,7 +9,7 @@ import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt({html: true, typographer: true})
 
-const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
   return self.renderToken(tokens, idx, options);
 };
 
@@ -39,8 +39,8 @@ const html = md.render(changelog['../../docs/reference/change-log.md'])
   max-height: 400px;
   overflow-y: auto;
   padding: 10px;
-  background: #f9f9f9;
-  border: 1px solid #eee;
+  background-color: var(--p-content-background, var(--surface-card, #ffffff));
+  border: none; 
   border-radius: 4px;
 }
 
@@ -48,8 +48,10 @@ const html = md.render(changelog['../../docs/reference/change-log.md'])
   max-height: 500px;
   overflow-y: auto;
   padding: 10px;
-  background: #fff;
+  background-color: var(--p-content-background, var(--surface-card, #ffffff));
+  border: none;
   border-radius: 4px;
+  color: var(--p-text-color, var(--text-color, #1f2937));
 }
 
 .changelog-entry {
@@ -58,7 +60,7 @@ const html = md.render(changelog['../../docs/reference/change-log.md'])
 
 .divider {
   margin-top: 30px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--p-content-border-color, var(--surface-border, #e5e7eb));
 }
 
 .version-badge {
@@ -71,50 +73,61 @@ const html = md.render(changelog['../../docs/reference/change-log.md'])
 }
 
 .version-badge.latest {
-  background-color: var(--el-color-warning-light-9);
-  color: var(--el-color-warning);
-  border: 1px solid var(--el-color-warning-light-5);
+  background-color: color-mix(in srgb, var(--p-warn-color, var(--warning-color, #f59e0b)) 15%, transparent);
+  color: var(--p-warn-color, var(--warning-color, #f59e0b));
+  border: 1px solid color-mix(in srgb, var(--p-warn-color, var(--warning-color, #f59e0b)) 35%, transparent);
 }
 
-/* Scoped styling for Markdown content to look nice */
+/* Scoped styling for Markdown content */
+:deep(.markdown-body) {
+  color: var(--p-text-color, var(--text-color, #1f2937));
+}
+
 :deep(.markdown-body h1) { font-size: 1.4rem; margin-bottom: 0.5rem; border-bottom: none; }
 :deep(.markdown-body h2) { font-size: 1.2rem; margin-top: 1rem; }
 :deep(.markdown-body ul) { padding-left: 20px; margin: 10px 0; }
 :deep(.markdown-body li) { margin-bottom: 4px; }
 
-:deep(kbd) {
-  display: inline-block;       /* Allows them to sit side-by-side */
-  vertical-align: top;         /* Aligns them nicely if names vary in length */
-  margin: 0 4px 4px 0;         /* Spacing between tiles */
-  padding: 8px;
-  border: 1px solid #d1d5da;   /* Light grey border */
-  border-radius: 6px;
-  background-color: #f6f8fa;   /* Very light grey background */
-  box-shadow: inset 0 -1px 0 #d1d5da; /* That subtle 3D "key" effect */
-  text-align: center;          /* Centers the image and text */
-  line-height: 0;              /* Removes extra space around image */
+:deep(.markdown-body a) {
+  color: var(--p-primary-color, var(--primary-color, #3b82f6));
+  text-decoration: none;
 }
 
-/* 2. Reset the link styles inside the kbd so they don't look like text links */
+:deep(.markdown-body a:hover) {
+  text-decoration: underline;
+}
+
+/* Key tiles (kbd) styled with adaptive surfaces */
+:deep(kbd) {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0 4px 4px 0;
+  padding: 8px;
+  border: 1px solid var(--p-content-border-color, var(--surface-border, #e5e7eb));
+  border-radius: 6px;
+  background-color: var(--p-surface-100, var(--surface-100, #f3f4f6));
+  box-shadow: inset 0 -1px 0 var(--p-content-border-color, var(--surface-border, #e5e7eb));
+  text-align: center;
+  line-height: 0;
+}
+
 :deep(kbd a) {
   text-decoration: none;
-  color: var(--el-text-color-primary); /* Uses your Element Plus text color */
+  color: var(--p-text-color, var(--text-color, #1f2937));
   font-weight: bold;
 }
 
-/* 3. Style the username text */
 :deep(kbd sub) {
-  display: block;              /* Forces it to its own line (safer than relying on <br>) */
+  display: block;
   margin-top: 4px;
   font-size: 11px;
-  color: var(--el-text-color-secondary);
+  color: var(--p-text-muted-color, var(--text-color-secondary, #6b7280));
 }
 
-/* 4. Ensure images are circular (optional, but looks polished) */
 :deep(kbd img) {
   border-radius: 50%;
   display: block;
-  margin: 0 auto;              /* Centers image horizontally */
-  background-color: #fff;      /* clean background behind transparent pngs */
+  margin: 0 auto;
+  background-color: var(--p-content-background, var(--surface-card, #ffffff));
 }
 </style>

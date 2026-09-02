@@ -1,0 +1,20 @@
+name: Vitest Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: corepack enable && yarn install --frozen-lockfile
+
+      - run: yarn test

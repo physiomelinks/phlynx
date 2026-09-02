@@ -88,6 +88,6 @@ export async function relayoutNodes(nodes, edges) {
       x: x - w / 2,
       y: y - h / 2,
     }
-    node.style = { opacity: 1 }
+    node.style = { ...node.style, opacity: 1 }
   })
 }

@@ -1,4 +1,4 @@
-.module-node {
+.instance-node {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -8,7 +8,7 @@
   height: 100%;
 }
 
-.module-node.selected {
+.instance-node.selected {
   /* Use the Element Plus primary color for the border */
   border-color: #409eff;
 
@@ -16,7 +16,7 @@
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.4);
 }
 
-.module-card {
+.instance-card {
   pointer-events: auto;
   width: 100%;
   height: 100%;
@@ -24,7 +24,7 @@
   flex-direction: column;
 }
 
-.module-name {
+.instance-name {
   pointer-events: none;
   font-weight: bold;
   text-overflow: ellipsis;
@@ -33,8 +33,8 @@
   margin-bottom: 4px;
 }
 
-div.module-name,
-.module-button {
+div.instance-name,
+.instance-button {
   pointer-events: auto;
 }
 
@@ -52,14 +52,14 @@ div.module-name,
   border-radius: 8px 8px 0 0;
 }
 
-.module-header {
+.instance-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
-.module-label {
+.instance-label {
   margin-bottom: 4px;
   font-size: 11px;
   color: #6b7280;
@@ -96,22 +96,22 @@ div.module-name,
   background: #f5f7fa;
 }
 
-.domain-type-default.el-card {
-  background-color: #ffffff;
+.domain-type-default.instance-card {
+  background-color: var(--p-content-background);
 }
 
-.domain-type-compartment.el-card {
+.domain-type-compartment.instance-card {
   background-color: #ffe7e1;
 }
 
-.domain-type-membrane.el-card {
+.domain-type-membrane.instance-card {
   background-color: #ffe2ec;
 }
 
-.domain-type-process.el-card {
+.domain-type-process.instance-card {
   background-color: #e1edff;
 }
 
-.domain-type-protein.el-card {
+.domain-type-protein.instance-card {
   background-color: #d1fff0;
 }

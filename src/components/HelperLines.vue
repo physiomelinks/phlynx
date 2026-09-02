@@ -5,6 +5,7 @@
 <script setup>
 import { useVueFlow } from '@vue-flow/core'
 import { ref, watchEffect } from 'vue'
+import { useColorScheme } from '../composables/useColorScheme'
 
 const props = defineProps({
   horizontal: Number, // Position in Graph Coordinates
@@ -13,12 +14,13 @@ const props = defineProps({
 })
 
 const { viewport, dimensions } = useVueFlow()
+const { isDarkMode } = useColorScheme()
 const canvasRef = ref(null)
 
 // Define styles in a config object.
 const LINE_STYLES = {
-  centre: { color: '#394455', width: 2 },
-  default: { color: '#236AD5', width: 1 },
+  centre: { color: isDarkMode.value ? '#E5F0FE' : '#394455', width: 2 },
+  default: { color: isDarkMode.value ? '#E5F0FE' : '#236AD5', width: 1.5 },
 }
 
 function updateCanvasHelperLines() {
@@ -34,7 +36,7 @@ function updateCanvasHelperLines() {
 
   // Clear and set global settings.
   ctx.clearRect(0, 0, dimensions.value.width, dimensions.value.height)
-  ctx.globalAlpha = 0.35
+  ctx.globalAlpha = 0.4
   ctx.setLineDash([6, 6])
 
   // Encapsulate drawing logic.
@@ -70,7 +72,6 @@ function updateCanvasHelperLines() {
   }
 }
 
-// watchEffect automatically tracks dimensions, viewport, and props used inside the function.
 watchEffect(updateCanvasHelperLines)
 </script>
 
@@ -81,7 +82,7 @@ watchEffect(updateCanvasHelperLines)
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10;
+  z-index: 1;
   pointer-events: none;
 }
 </style>

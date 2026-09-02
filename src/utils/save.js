@@ -172,7 +172,6 @@ export const getFileHandle = async (baseName, fileTypes, suffix) => {
  * // After getting handle via getFileHandle
  * const blob = new Blob(['data'], { type: 'application/json' })
  * const result = await saveWithDialog(blob, handle, "workspace", ".json")
- * console.log(`Saved as: ${result.savedName}`) // "workspace"
  * 
  * // Or for legacy browsers (handle = null)
  * const result = await saveWithDialog(blob, null, "workspace", ".json")

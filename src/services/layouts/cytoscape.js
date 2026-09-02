@@ -1,5 +1,5 @@
 import fcose from 'cytoscape-fcose'
-import { getHandleId } from '../../utils/ports'
+import { getHandleId } from '../../utils/handles'
 const cytoscapePromise = import('cytoscape')
 
 export async function runFcoseLayout(nodes, edges) {
@@ -84,61 +84,6 @@ export async function runFcoseLayout(nodes, edges) {
       y: y - h / 2,
     }
 
-    // Port Sorting.
-    // Physics layouts put nodes anywhere (top, bottom, left, right).
-    // We need to dynamically decide which side ports should be on based on their neighbours.
-    if (node.data.ports) {
-      // A. Determine Side dynamically based on neighbours.
-      node.data.ports.forEach((port) => {
-        // Find the neighbour node for this port.
-        const edge = edges.find((e) => e.sourceHandle === getHandleId(port) || e.targetHandle === getHandleId(port))
-        if (!edge) return
-
-        const neighbourId = edge.source === node.id ? edge.target : edge.source
-        const neighbour = cy.getElementById(neighbourId)
-
-        if (neighbour) {
-          // Check relative position.
-          const dx = neighbour.position('x') - x
-          const dy = neighbour.position('y') - y
-
-          // If strictly horizontal > vertical distance, put on Left/Right.
-          if (Math.abs(dx) > Math.abs(dy)) {
-            port.side = dx > 0 ? 'right' : 'left'
-          } else {
-            port.side = dy > 0 ? 'bottom' : 'top'
-          }
-        }
-      })
-
-      // B. Sort Ports on those sides.
-      const sides = { top: [], right: [], bottom: [], left: [] }
-      node.data.ports.forEach((p) => {
-        if (sides[p.side]) sides[p.side].push(p)
-      })
-
-      const sortPortsByCoord = (list, isVertical) => {
-        list.sort((a, b) => {
-          // Look up neighbour positions again for sorting.
-          const getNeighborPos = (port) => {
-            const edge = edges.find((e) => e.sourceHandle === getHandleId(port) || e.targetHandle === getHandleId(port))
-            if (!edge) return 0
-            const nId = edge.source === node.id ? edge.target : edge.source
-            const n = cy.getElementById(nId)
-            return isVertical ? n.position('y') : n.position('x')
-          }
-          return getNeighborPos(a) - getNeighborPos(b)
-        })
-      }
-
-      sortPortsByCoord(sides.top, false) // Top varies by X.
-      sortPortsByCoord(sides.bottom, false) // Bottom varies by X.
-      sortPortsByCoord(sides.left, true) // Left varies by Y.
-      sortPortsByCoord(sides.right, true) // Right varies by Y.
-
-      node.data.ports = [...sides.top, ...sides.right, ...sides.bottom, ...sides.left]
-    }
-
-    node.style = { opacity: 1 }
+    node.style = { ...node.style, opacity: 1 }
   })
 }

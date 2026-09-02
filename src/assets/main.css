@@ -82,3 +82,28 @@ body {
   display: block;
   margin: 0 auto;
 }
+
+/* Helpers for debugging vue-flow nodes and edges. Uncomment to use. */
+/*
+.vue-flow__edgeupdater {
+    fill: orange !important;
+    z-index: 999999 !important;
+    stroke-width: 3px !important;
+}
+.vue-flow__handle-connecting {
+    fill: lightblue !important;
+    stroke: lightblue !important;
+    z-index: 999999 !important;
+    opacity: 0.8 !important;
+    stroke-width: 3px !important;
+}
+.vue-flow__handle {
+    width: 12px !important;
+    height: 12px !important;
+    background: red !important;
+    border: 2px solid yellow !important;
+    opacity: 1 !important;
+}
+.vue-flow__node {
+    outline: 2px solid lime;
+} */

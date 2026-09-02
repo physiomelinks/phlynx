@@ -1,11 +1,15 @@
-import { createApp } from "vue"
-import { createPinia } from "pinia"
-import ElementPlus from "element-plus"
-import libcellmlPlugin from "vue3-libcellml.js"
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
+import Ripple from 'primevue/ripple'
+import Aura from '@primevue/themes/aura'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
+import libcellmlPlugin from 'vue3-libcellml.js'
 import GlossaryLink from './components/GlossaryLink.vue'
 
-import "element-plus/dist/index.css"
-import "@vue-flow/core/dist/style.css"
+import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/minimap/dist/style.css'
 import '@vue-flow/node-resizer/dist/style.css'
@@ -13,18 +17,38 @@ import '@vue-flow/controls/dist/style.css'
 import 'markdown-it-github-alerts/styles/github-colors-light.css'
 import 'markdown-it-github-alerts/styles/github-colors-dark-class.css'
 import 'markdown-it-github-alerts/styles/github-base.css'
+import 'primeicons/primeicons.css'
 
-import "./assets/main.css"
+import './assets/style.css'
+import './assets/main.css'
+import './assets/sanitisewarning.css'
 
-import router from "./router"
-import App from "./App.vue"
+import router from './router'
+import App from './App.vue'
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
+app.use(PrimeVue, {
+  ripple: true,
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.p-dark',
+      cssLayer: {
+        name: 'primevue',
+        /* Add this strict order for Tailwind v4 compatibility */
+        order: 'theme, base, primevue, utilities',
+      },
+    },
+  },
+})
+app.use(ConfirmationService)
+app.use(ToastService)
+app.directive('tooltip', Tooltip)
+app.directive('ripple', Ripple)
 app.use(libcellmlPlugin)
 app.component('GlossaryLink', GlossaryLink)
-app.mount("#app")
+app.mount('#app')

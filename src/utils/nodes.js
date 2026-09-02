@@ -4,26 +4,26 @@ import { FLOW_IDS } from "./constants"
 const { getNodes } = useVueFlow(FLOW_IDS.MAIN)
 
 /**
- * Generates a unique module name based on the module data and existing names.
+ * Generates a unique instance name based on the instance data and existing names.
  *
- * @param {*} moduleData - The module data to generate a name for.
+ * @param {*} instanceData - The instance to generate a unqiue name for.
  * @param {*} existingNames - A set of existing names to check against.
- * @returns {string} A unique module name.
+ * @returns {string} A unique instance name.
  */
-export function generateUniqueModuleName(moduleData, existingNames) {
-  let finalName = moduleData.name
+export function generateUniqueInstanceName(currentName, existingNames) {
+  let finalName = currentName
   let counter = 1
 
   while (existingNames.has(finalName)) {
-    finalName = `${moduleData.name}_${counter}`
+    finalName = `${currentName}_${counter}`
     counter++
   }
 
   return finalName
 }
 
-export function sanitiseModuleName(name) {
-  // Sanitize: replace spaces with underscores, remove invalid characters
+export function sanitiseName(name) {
+  // Sanitise: replace spaces with underscores, remove invalid characters
   // Valid CellML component names: alphanumeric, underscore, and must start with letter or underscore
   let sanitised = name
     .trim()
@@ -64,7 +64,7 @@ export function findAnyNode() {
 }
 
 /**
- * Puts new modules in the same reference frame if user imported using vessel array
+ * Puts new modules in the same reference frame if user imported using module array
  * containing x and y (z ignored for now).
  */
 export function attachNewNodeToFrame(position, existingNodeData) {

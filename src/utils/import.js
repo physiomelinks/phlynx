@@ -1,219 +1,170 @@
 import Papa from 'papaparse'
 
-import { IMPORT_KEYS, IMPORT_LABELS } from './constants'
-import { isCellML } from './cellml'
+import { IMPORT_KEYS, IMPORT_LABELS, RELEVANT_EXTENSIONS } from './constants'
+import { isCellML, doesComponentExistInModel } from './cellml'
 
-// TODO: really need to rename to check complete or something similar?
-export const validateVesselData = (vesselData, builderStore) => {
-  const errors = []
+export function hasRelevantExtension(filename) {
+  const dot = filename.lastIndexOf('.')
+  if (dot === -1) return false
+  return RELEVANT_EXTENSIONS.has(filename.slice(dot).toLowerCase())
+}
+
+export function readEntries(dirReader) {
+  return new Promise((resolve, reject) => dirReader.readEntries(resolve, reject))
+}
+
+export function fileFromEntry(fileEntry) {
+  return new Promise((resolve, reject) => fileEntry.file(resolve, reject))
+}
+
+export async function collectEntry(entry, path, depth, maxDepth, results) {
+  if (!entry || depth > maxDepth) return
+  if (entry.name.startsWith('.') || entry.name === 'node_modules') return
+
+  const fullPath = path ? `${path}/${entry.name}` : entry.name
+
+  if (entry.isFile) {
+    if (!hasRelevantExtension(entry.name)) return
+    try {
+      const file = await fileFromEntry(entry)
+      results.push({ file, path: fullPath })
+    } catch {
+      // Unreadable file — skip it rather than aborting the whole drop.
+    }
+  } else if (entry.isDirectory) {
+    const reader = entry.createReader()
+    // readEntries only returns a batch at a time; must be called
+    // repeatedly until it resolves an empty array.
+    let batch
+    do {
+      batch = await readEntries(reader)
+      for (const child of batch) {
+        await collectEntry(child, fullPath, depth + 1, maxDepth, results)
+      }
+    } while (batch.length > 0)
+  }
+}
+
+export const checkResourcesAreLoaded = (requestedModules, store) => {
   const warnings = []
   const missingResources = {
-    configs: new Set(),
-    moduleTypes: new Set(),
-    moduleFileIssues: new Map(),
+    modules: new Set(),
+    math: new Set(),
   }
 
-  const availableCellMLModules = new Set()
-  builderStore.availableModules.forEach((file) => {
-    if (file.isStub) {
-      return
-    }
+  if (!requestedModules || requestedModules.length === 0) {
+    warnings.push('No modules specified in the module array file.')
+  }
 
-    file.modules?.forEach((module) => {
-      const moduleName = module.name || module.componentName
-      if (moduleName) {
-        availableCellMLModules.add(moduleName)
-      }
-    })
-  })
-
-  // Get all available configs (vessel_type + BC_type combinations)
-  // and the module_type they point to
-  const availableConfigs = new Map() // key: "vessel_type:BC_type", value: config object with metadata
-  const moduleTypesInConfigs = new Set()
-
-  builderStore.availableModules.forEach((file) => {
-    file.modules?.forEach((module) => {
-      module.configs?.forEach((config) => {
-        if (config.vessel_type && config.BC_type) {
-          const key = `${config.vessel_type}:${config.BC_type}`
-          // Store config with its associated file information
-          availableConfigs.set(key, config)
-
-          if (config.module_type) {
-            moduleTypesInConfigs.add(config.module_type)
-          }
-        }
-      })
-    })
-  })
-
-  // Check each vessel in the CSV
-  const missingConfigs = []
-  const missingModules = []
-
-  vesselData.forEach((vessel) => {
-    const vesselType = vessel.vessel_type?.trim()
-    const bcType = vessel.BC_type?.trim()
-
-    if (!vesselType || !bcType) return
-
-    const key = `${vesselType}:${bcType}`
-    const config = availableConfigs.get(key)
-
-    if (!config) {
-      missingConfigs.push(key)
-      missingResources.configs.add(key)
+  for (const module of requestedModules) {
+    const moduleRef = `${module.module_type}:${module.module_subtype}`
+    if (!(store.availableModules.has(moduleRef))) {
+      missingResources.modules.add(moduleRef)
     } else {
-      const moduleFileIssue = validateModuleFileAssociation(config, builderStore)
-      
-      if (moduleFileIssue) {
-        // Use composite key for automatic deduplication via Map
-        const issueKey = `${moduleFileIssue.config}:${moduleFileIssue.issue}`
-        missingResources.moduleFileIssues.set(issueKey, moduleFileIssue)
-        
-        // Add to appropriate missing resource category
-        if (moduleFileIssue.issue === 'missing_file' || moduleFileIssue.issue === 'stub_file') {
-          missingModules.push(config.module_type)
-          missingResources.moduleTypes.add(config.module_type)
-        }
-      } else {
-        // Only check for missing module if file association is valid
-        if (config.module_type && !availableCellMLModules.has(config.module_type)) {
-          missingModules.push(config.module_type)
-          missingResources.moduleTypes.add(config.module_type)
-        }
+      const mathRef = store.availableModules.get(moduleRef)?.mathRef 
+      if (!(store.availableMath.has(mathRef))) {
+        missingResources.math.add(mathRef)
       }
     }
-  })
+  }
 
   // Generate warnings
-  if (missingConfigs.length > 0) {
-    warnings.push(`Missing configurations for: ${[...new Set(missingConfigs)].join(', ')}`)
+  if (missingResources.modules.size > 0) {
+    warnings.push(`Missing modules: ${[...missingResources.modules].join(', ')}`)
   }
 
-  if (missingModules.length > 0) {
-    warnings.push(`Missing CellML modules: ${[...new Set(missingModules)].join(', ')}`)
+  if (missingResources.math.size > 0) {
+    warnings.push(`Missing math: ${[...missingResources.math].join(', ')}`)
   }
-
-  if (missingResources.moduleFileIssues.size > 0) {
-    const issueMessages = [...missingResources.moduleFileIssues.values()].map(issue => issue.message)
-    warnings.push(`Module file issues: ${[...new Set(issueMessages)].join('; ')}`)
-  }
-
-  const needsConfigFile = missingConfigs.length > 0
-  const needsModuleFile = missingModules.length > 0 || 
-    [...missingResources.moduleFileIssues.values()].some(issue => 
-      issue.issue === 'missing_file' || issue.issue === 'stub_file'
-    )
-  const hasModuleFileMismatch = [...missingResources.moduleFileIssues.values()].some(issue =>
-    issue.issue === 'module_not_in_file'
-  )
 
   return {
-    errors,
     warnings,
-    isValid: true,
-    isComplete: errors.length === 0 && warnings.length === 0,
-    missingResources: {
-      configs: [...missingResources.configs],
-      moduleTypes: [...missingResources.moduleTypes],
-      moduleFileIssues: groupModuleFileIssues([...missingResources.moduleFileIssues.values()]),
-    },
-    needsConfigFile,
-    needsModuleFile,
-    hasModuleFileMismatch,
+    resourcesAreLoaded: warnings.length === 0,
+    missingResources,
   }
 }
 
 /**
- * Validates that a config's module_file field correctly points to a file
- * that contains the specified module_type.
+ * Validates that a config's component_file field correctly points to a file
+ * that contains the specified component_type.
  * 
- * This ensures that modules come from the CellML file specified in the config.
+ * This ensures that components come from the CellML file specified in the config.
  * 
- * @param {Object} config - The configuration object with vessel_type, BC_type, module_file, module_type
- * @param {Object} builderStore - The store containing availableModules
+ * @param {Object} config - The configuration object with module_type, module_subtype, component_file, component_type
+ * @param {Object} libraryStore - The store containing availableCollections
  * @returns {Object|null} - Issue object if there's a problem, null if validation passes
  */
-function validateModuleFileAssociation(config, builderStore) {
-  const { module_file, module_type, vessel_type, BC_type } = config
+function validateCollectionFileAssociation(config, libraryStore) {
+  const { component_file, component_type, module_type, module_subtype } = config
   
-  if (!module_file) {
-    // Config doesn't specify a module file
+  // Config doesn't specify a component file
+  if (!component_file) {
     return {
-      config: `${vessel_type}:${BC_type}`,
+      config: `${module_type}:${module_subtype}`,
       expectedFile: 'unknown',
-      moduleType: module_type,
+      componentType: component_type,
       issue: 'no_file_specified',
-      message: `Config for ${vessel_type}:${BC_type} doesn't specify a module_file`,
+      message: `Config for ${module_type}:${module_subtype} doesn't specify a component_file`,
     }
   }
   
-  // Find the module file in available modules
-  const moduleFile = builderStore.availableModules.find(
-    f => f.filename === module_file
+  // Find the collection in the library
+  const collection = libraryStore.availableCollections.find(
+    f => f.componentFile === component_file
   )
   
-  if (!moduleFile) {
-    // The specified module file doesn't exist in the store
+  // Expected file is missing (or provided one is empty)
+  if (!collection || !collection.model) {
     return {
-      config: `${vessel_type}:${BC_type}`,
-      expectedFile: module_file,
-      moduleType: module_type,
+      config: `${module_type}:${module_subtype}`,
+      expectedFile: component_file,
+      componentType: component_type,
       issue: 'missing_file',
-      message: `Module file "${module_file}" not found (needed for ${vessel_type}:${BC_type})`,
+      message: `Component file "${component_file}" not found (needed for ${module_type}:${module_subtype})`,
     }
   }
   
-  // Check if it's just a stub (config was uploaded but module file wasn't)
-  if (moduleFile.isStub) {
+  // Only config provided and still need component 
+  if (collection.isStub) {
     return {
-      config: `${vessel_type}:${BC_type}`,
-      expectedFile: module_file,
-      moduleType: module_type,
+      config: `${module_type}:${module_subtype}`,
+      expectedFile: component_file,
+      componentType: component_type,
       issue: 'stub_file',
-      message: `Module file "${module_file}" needs to be uploaded (needed for ${vessel_type}:${BC_type})`,
+      message: `Component file "${component_file}" needs to be uploaded (needed for ${module_type}:${module_subtype})`,
     }
   }
   
-  // Verify modules come from the CellML file stated in the config
-  const moduleExists = moduleFile.modules?.some(
-    m => (m.name === module_type || m.componentName === module_type || m.type === module_type)
-  )
-  
-  if (!moduleExists) {
-    // The file exists but doesn't contain the expected module
-    const availableModules = moduleFile.modules?.map(m => m.name || m.componentName).join(', ') || 'none'
+  if (!doesComponentExistInModel(collection.model, component_type)) {
     return {
-      config: `${vessel_type}:${BC_type}`,
-      expectedFile: module_file,
-      moduleType: module_type,
-      issue: 'module_not_in_file',
-      message: `Module "${module_type}" not found in "${module_file}" (has: ${availableModules})`,
+      config: `${module_type}:${module_subtype}`,
+      expectedFile: component_file,
+      componentType: component_type,
+      issue: 'component_not_in_file',
+      message: `Component "${component_type}" not found in "${component_file}"`,
     }
   }
-  
-  // All checks passed - the module comes from the correct file as specified in the config
+
+  // All checks passed
   return null
 }
 
 /**
- * Groups module file issues by file AND issue type.
- * This ensures different issues (e.g., 'missing_file' vs 'module_not_in_file')
+ * Groups collection file issues by file AND issue type.
+ * This ensures different issues (e.g., 'missing_file' vs 'component_not_in_file')
  * for the same file are reported separately.
- * * @param {Array} moduleFileIssues - Array of issue objects
+ * @param {Array} componentFileIssues - Array of issue objects
  * @returns {Array} Grouped issues with consolidated messages
  */
-export function groupModuleFileIssues(moduleFileIssues) {
-  if (!moduleFileIssues || moduleFileIssues.length === 0) {
+export function groupCollectionFileIssues(componentFileIssues) {
+  if (!componentFileIssues || componentFileIssues.length === 0) {
     return []
   }
 
-  // key: "filename:issueType"
+  // key: "file:issueType"
   const issuesGrouped = new Map()
   
-  moduleFileIssues.forEach(issue => {
+  componentFileIssues.forEach(issue => {
     const file = issue.expectedFile
     // Create a composite key to separate different issues for the same file
     const groupKey = `${file}:${issue.issue}`
@@ -223,7 +174,7 @@ export function groupModuleFileIssues(moduleFileIssues) {
         file,
         issue: issue.issue,
         configs: [],
-        moduleTypes: new Set(),
+        componentTypes: new Set(),
         // Generate a unique ID for UI loops
         uniqueKey: groupKey
       })
@@ -231,8 +182,8 @@ export function groupModuleFileIssues(moduleFileIssues) {
     
     const group = issuesGrouped.get(groupKey)
     group.configs.push(issue.config)
-    if (issue.moduleType) {
-      group.moduleTypes.add(issue.moduleType)
+    if (issue.componentType) {
+      group.componentTypes.add(issue.componentType)
     }
   })
   
@@ -242,16 +193,16 @@ export function groupModuleFileIssues(moduleFileIssues) {
     
     switch (group.issue) {
       case 'missing_file':
-        message = `Module file "${group.file}" not found`
+        message = `Component file "${group.file}" not found.`
         break
       case 'stub_file':
-        message = `Module file "${group.file}" needs to be uploaded`
+        message = `Component file "${group.file}" needs to be uploaded.`
         break
-      case 'module_not_in_file':
-        message = `Module file "${group.file}" missing modules: ${[...group.moduleTypes].join(', ')}`
+      case 'component_not_in_file':
+        message = `Component file "${group.file}" missing components: ${[...group.componentTypes].join(', ')}.`
         break
       case 'no_file_specified':
-        message = `Module config doesn't specify a module file`
+        message = `Module config doesn't specify a component file.`
         break
       default:
         message = `Issue with "${group.file}"`
@@ -264,13 +215,13 @@ export function groupModuleFileIssues(moduleFileIssues) {
       issue: group.issue,
       message,
       configs: group.configs,
-      moduleTypes: [...group.moduleTypes],
+      componentTypes: [...group.componentTypes],
       uniqueKey: group.uniqueKey
     }
   })
 }
 
-const parseVesselCsv = (file, builderStore = null) => {
+const parseInstanceArray = (file, libraryStore = null) => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
@@ -282,17 +233,18 @@ const parseVesselCsv = (file, builderStore = null) => {
           !(
             results.data?.length > 0 &&
             'name' in results.data[0] &&
-            'BC_type' in results.data[0] &&
-            'vessel_type' in results.data[0] &&
-            'inp_vessels' in results.data[0] &&
-            'out_vessels' in results.data[0]
+            'module_subtype' in results.data[0] &&
+            'module_type' in results.data[0] &&
+            'inp_instances' in results.data[0] &&
+            'out_instances' in results.data[0]
           )
         ) {
-          reject(new Error(`Invalid vessel array file format: ${results.data[0]}`))
+          reject(new Error(`Invalid module array file format. Required columns: name, module_type, module_subtype, inp_instances, out_instances`))
           return
         }
-        if (builderStore) {
-          const completionStatus = validateVesselData(results.data, builderStore)
+        if (libraryStore) {
+          const requiredModules = results.data
+          const completionStatus = checkResourcesAreLoaded(requiredModules, libraryStore)
           resolve({
             data: results.data,
             // warnings: completionStatus.warnings,
@@ -311,25 +263,24 @@ const parseVesselCsv = (file, builderStore = null) => {
   })
 }
 
-const parseModuleJson = (file) => {
+const parseConfigJson = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target.result)
-        if (
-          !(
-            parsed.length > 0 &&
-            'entrance_ports' in parsed[0] &&
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          throw new Error('Config file must be a non-empty array of configuration objects.')
+        } else if (!('entrance_ports' in parsed[0] &&
             'exit_ports' in parsed[0] &&
             'general_ports' in parsed[0] &&
-            'BC_type' in parsed[0] &&
-            'vessel_type' in parsed[0] &&
+            'module_subtype' in parsed[0] &&
+            'module_type' in parsed[0] &&
             'module_format' in parsed[0] &&
-            'module_file' in parsed[0] &&
-            'module_type' in parsed[0]
-          )
-        ) {
+            'component_file' in parsed[0] &&
+            'component_type' in parsed[0]
+          ))
+          {
           throw new Error('Invalid module configuration file format.')
         }
         resolve(parsed)
@@ -348,10 +299,7 @@ export const parseParametersFile = (file) => {
       skipEmptyLines: true,
 
       complete: (results) => {
-        // results.data will be an array of objects
-        // e.g., [{ param_name: 'a', value: '1' }, { param_name: 'b', value: '2' }]
         const cleanData = results.data.filter((row) => {
-          // Check if variable_name exists and does NOT start with '#'
           return row.variable_name && !row.variable_name.trim().startsWith('#')
         })
 
@@ -384,6 +332,7 @@ const parseCellML = (file) => {
         const content = e.target.result
         if (!isCellML(content)) {
           reject(new Error('Invalid CellML file.'))
+          return
         }
         resolve(content)
       } catch (err) {
@@ -394,27 +343,30 @@ const parseCellML = (file) => {
   })
 }
 
-export function createDynamicFields(validation) {
-  const fields = []
-
-  if (validation.needsModuleFile) {
-    const helpTexts = []
-    
-    // Add module types that are missing
-    if (validation.missingResources.moduleTypes && validation.missingResources.moduleTypes.length > 0) {
-      helpTexts.push(`Required module types: ${validation.missingResources.moduleTypes.join(', ')}`)
-    }
-    
-    // Add specific file issues 
-    if (validation.missingResources.moduleFileIssues && validation.missingResources.moduleFileIssues.length > 0) {
-      const fileNames = validation.missingResources.moduleFileIssues
-        .filter(group => group.issue === 'missing_file' || group.issue === 'stub_file')
-        .map(group => group.file)
-      
-      if (fileNames.length > 0) {
-        helpTexts.push(`Required files: ${[...new Set(fileNames)].join(', ')}`)
+const parseOMEX = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result
+        // Basic validation for OMEX (COMBINE Archive)
+        if (!file.name.endsWith('.omex') && !file.name.endsWith('.zip')) {
+          reject(new Error('Invalid OMEX file.'))
+          return
+        }
+        resolve(content)
+      } catch (err) {
+        reject(err)
       }
     }
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+export function createDynamicFields(completionStatus) {
+  const fields = []
+
+  if (completionStatus.missingResources.math?.size > 0) {
 
     fields.push({
       key: IMPORT_KEYS.CELLML_FILE,
@@ -422,19 +374,19 @@ export function createDynamicFields(validation) {
       required: true,
       accept: '.cellml, .xml',
       parser: parseCellML,
-      helpText: helpTexts.length > 0 ? helpTexts.join(' | ') : 'Upload the CellML module file',
+      helpText: `Required components: ${(completionStatus.missingResources.math)}`,
       processUpload: 'cellml',
     })
   }
 
-  if (validation.needsConfigFile) {
+  if (completionStatus.missingResources.modules?.size > 0) {
     fields.push({
       key: IMPORT_KEYS.MODULE_CONFIG,
       label: IMPORT_LABELS.MODULE_CONFIG,
       required: true,
       accept: '.json',
-      parser: parseModuleJson,
-      helpText: `Required Configurations: ${(validation.missingResources.configs || []).join(', ')}`,
+      parser: parseConfigJson,
+      helpText: `Required Configurations: ${(completionStatus.missingResources.modules)}`,
       processUpload: 'config',
     })
   }
@@ -443,16 +395,16 @@ export function createDynamicFields(validation) {
 }
 
 const configs = {
-  [IMPORT_KEYS.VESSEL]: {
-    title: 'Import Vessel Array File',
+  [IMPORT_KEYS.INSTANCE_ARRAY]: {
+    title: 'Import Instance Array File',
     fields: [
       {
-        key: IMPORT_KEYS.VESSEL,
-        label: IMPORT_LABELS.VESSEL,
+        key: IMPORT_KEYS.INSTANCE_ARRAY,
+        label: IMPORT_LABELS.INSTANCE_ARRAY,
         accept: '.csv',
         limit: 1,
         required: true,
-        parser: parseVesselCsv,
+        parser: parseInstanceArray,
         requiresStore: true,
         isDynamic: true,
       },
@@ -472,7 +424,7 @@ const configs = {
         key: IMPORT_KEYS.MODULE_CONFIG,
         label: IMPORT_LABELS.MODULE_CONFIG,
         accept: '.json',
-        parser: parseModuleJson,
+        parser: parseConfigJson,
       },
     ],
   },
@@ -507,6 +459,17 @@ const configs = {
         label: IMPORT_LABELS.UNITS,
         accept: '.cellml, .xml',
         parser: parseCellML,
+      },
+    ],
+  },
+  [IMPORT_KEYS.OMEX]: {
+    title: 'Import COMBINE Archive (OMEX)',
+    fields: [
+      {
+        key: IMPORT_KEYS.OMEX,
+        label: IMPORT_LABELS.OMEX,
+        accept: '.omex, .zip',
+        parser: parseOMEX,
       },
     ],
   },

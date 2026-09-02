@@ -32,6 +32,10 @@ Indicates directionality of a port. Can be input, output, or general (directionl
 <!-- aliases: -->
 Collection of modules available for placement in workbench. 
 
+### Library {#library}
+<!-- aliases: Library -->
+Collection of modules available for placement in workbench. 
+
 ### Workbench {#workbench}
 <!-- aliases: -->
 Working area for coupling modules.
@@ -44,7 +48,7 @@ A workbench populated with modules.
 <!-- aliases: edge, link -->
 An arrow that traverses two port nodes in the workbench.
 
-### Vessel Array {#vessel-array}
+### Instance Array {#instance-array}
 <!-- aliases: -->
 A circulatory autogen configuration file that describes the connections between modules and the configurations to be used.
 
