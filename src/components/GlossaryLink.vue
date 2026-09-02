@@ -1,23 +1,14 @@
 <template>
-  <el-tooltip
-    v-if="definition"
-    :content="definition"
-    placement="top"
-    effect="dark"
-  >
-    <RouterLink
-      :to="`/docs/reference/glossary#${canonicalTerm}`"
-      class="glossary-link"
-    >
-      <slot>{{ label || term }}</slot>
-    </RouterLink>
-  </el-tooltip>
-
   <RouterLink
-    v-else
-    :to="`/docs/reference/glossary`"
-    class="glossary-link missing"
+    v-if="definition"
+    v-tooltip.top="definition"
+    :to="`/docs/reference/glossary#${canonicalTerm}`"
+    class="glossary-link"
   >
+    <slot>{{ label || term }}</slot>
+  </RouterLink>
+
+  <RouterLink v-else :to="`/docs/reference/glossary`" class="glossary-link missing">
     <slot>{{ label || term }}</slot>
   </RouterLink>
 </template>
@@ -28,13 +19,11 @@ import { resolveTerm, getDefinition } from '../router/glossaryIndex'
 
 const props = defineProps({
   term: { type: String, required: true },
-  label: { type: String, default: '' }
+  label: { type: String, default: '' },
 })
 
 const canonicalTerm = computed(() => resolveTerm(props.term))
-const definition = computed(() =>
-  canonicalTerm.value ? getDefinition(canonicalTerm.value) : null
-)
+const definition = computed(() => (canonicalTerm.value ? getDefinition(canonicalTerm.value) : null))
 
 if (import.meta.env.DEV && !canonicalTerm.value) {
   console.warn(`Glossary term not found: "${props.term}"`)

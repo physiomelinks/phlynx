@@ -1,0 +1,9 @@
+/* Define the strict hierarchy so the browser knows how to prioritize */
+@layer theme, base, primevue, utilities;
+
+/* 1. Import Tailwind components explicitly without preflight */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* 2. Import the PrimeUI plugin for Tailwind v4 */
+@import "tailwindcss-primeui";

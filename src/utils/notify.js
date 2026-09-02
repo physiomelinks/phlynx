@@ -1,26 +1,29 @@
-import { ElNotification } from 'element-plus'
-
+import ToastEventBus from 'primevue/toasteventbus'
 
 const notifyDuration = (type) => {
-  return type === 'info' || type === 'success' ? 1500 : type === 'warning' ? 3000 : 4000
+  return type === 'info' || type === 'success' ? 1500 : type === 'warning' || type === 'warn' ? 3000 : 4000
 }
 
-/**
- * A wrapper for ElNotification to make all uses consistent across the application.
- *
- * @param {Object} options
- * @returns
- */
-export const notify = (options) => {
-  return ElNotification({
-    position: 'top-right',
-    offset: 170,
-    duration: notifyDuration(options.type),
-    ...options,
-  })
+export const notify = (options = {}) => {
+  const { type, title, message, duration, ...rest } = options
+
+  const severity = type === 'warning' ? 'warn' : type
+
+  const toastMessage = {
+    severity: severity || 'info',
+    summary: title,
+    detail: message, 
+    life: duration ?? notifyDuration(type),
+    ...rest,
+  }
+
+  ToastEventBus.emit('add', toastMessage)
+
+  return {
+    close: () => ToastEventBus.emit('remove', toastMessage),
+  }
 }
 
-// Helper shortcuts
 notify.error = (options) => notify({ ...options, type: 'error' })
 notify.info = (options) => notify({ ...options, type: 'info' })
 notify.success = (options) => notify({ ...options, type: 'success' })

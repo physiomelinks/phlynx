@@ -1,0 +1,168 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+
+import { DEFAULT_CELLML_FILE_NAME } from '../utils/constants'
+
+function arrayBufferToBase64(value) {
+  if (value == null) return ''
+
+  const bytes = value instanceof Uint8Array ? value : new Uint8Array(value)
+  let binary = ''
+
+  for (let index = 0; index < bytes.byteLength; index += 1) {
+    binary += String.fromCharCode(bytes[index])
+  }
+
+  return btoa(binary)
+}
+
+function base64ToArrayBuffer(value) {
+  if (!value) return null
+
+  const binary = atob(value)
+  const bytes = new Uint8Array(binary.length)
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return bytes.buffer
+}
+
+function normaliseArchiveEntry(entry) {
+  if (!entry || !entry.location) {
+    return null
+  }
+
+  return {
+    location: entry.location,
+    format: entry.format || 'application/octet-stream',
+    payload: entry.payload ?? null,
+  }
+}
+
+function encodeEntryPayload(payload) {
+  if (payload == null) return null
+
+  if (typeof payload === 'string') {
+    return payload
+  }
+
+  if (payload instanceof ArrayBuffer) {
+    return arrayBufferToBase64(payload)
+  }
+
+  if (ArrayBuffer.isView(payload)) {
+    return arrayBufferToBase64(payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength))
+  }
+
+  return null
+}
+
+function decodeEntryPayload(payload) {
+  if (payload == null) return null
+
+  if (payload instanceof ArrayBuffer) {
+    return payload
+  }
+
+  if (ArrayBuffer.isView(payload)) {
+    return payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength)
+  }
+
+  if (typeof payload === 'string') {
+    return base64ToArrayBuffer(payload)
+  }
+
+  return null
+}
+
+export const useOmexStore = defineStore('omex', () => {
+  const archiveName = ref('')
+  const archiveType = ref('omex')
+  const cellmlFileName = ref(DEFAULT_CELLML_FILE_NAME) // Default to 'model.cellml' if not set
+  const manifestXml = ref('')
+  const preservedExtras = ref([])
+  // The archiveHash is not a hash of the archive itself but the hash of the workspace state
+  // that the content of the archive represents at the time the archive was imported.
+  // It is used to determine if the workspace has changed since the archive was imported.
+  const archiveHash = ref(0)
+
+  function resetState() {
+    archiveName.value = ''
+    archiveType.value = 'omex'
+    cellmlFileName.value = DEFAULT_CELLML_FILE_NAME
+    manifestXml.value = ''
+    preservedExtras.value = []
+    archiveHash.value = 0
+  }
+
+  function setHash(hash) {
+    archiveHash.value = hash
+  }
+
+  function setArchive({
+    archiveName: nextArchiveName = '',
+    archiveType: nextArchiveType = 'omex',
+    cellmlFileName: nextCellmlFileName = DEFAULT_CELLML_FILE_NAME,
+    manifestXml: nextManifestXml = '',
+    extras = [],
+  } = {}) {
+    archiveName.value = nextArchiveName
+    archiveType.value = nextArchiveType
+    cellmlFileName.value = nextCellmlFileName
+    manifestXml.value = nextManifestXml
+    preservedExtras.value = (Array.isArray(extras) ? extras : [])
+      .map(normaliseArchiveEntry)
+      .filter(Boolean)
+      .map((entry) => ({ ...entry, payload: decodeEntryPayload(entry.payload) }))
+  }
+
+  function loadState(state) {
+    resetState()
+
+    if (!state) {
+      return
+    }
+
+    setArchive({
+      archiveHash: state.archiveHash || 0,
+      archiveName: state.archiveName || '',
+      archiveType: state.archiveType || 'omex',
+      cellmlFileName: state.cellmlFileName || DEFAULT_CELLML_FILE_NAME,
+      manifestXml: state.manifestXml || '',
+      extras: (state.preservedExtras || []).map((entry) => ({
+        ...entry,
+        payload: entry.payload,
+      })),
+    })
+  }
+
+  function getState() {
+    return {
+      archiveHash: archiveHash.value,
+      archiveName: archiveName.value,
+      archiveType: archiveType.value,
+      cellmlFileName: cellmlFileName.value,
+      manifestXml: manifestXml.value,
+      preservedExtras: preservedExtras.value.map((entry) => ({
+        ...entry,
+        payload: encodeEntryPayload(entry.payload),
+      })),
+    }
+  }
+
+  return {
+    archiveHash,
+    archiveName,
+    archiveType,
+    cellmlFileName,
+    manifestXml,
+    preservedExtras,
+    resetState,
+    setArchive,
+    setHash,
+    loadState,
+    getState,
+  }
+})

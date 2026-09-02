@@ -1,194 +1,249 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    :title="config.title || 'Import File'"
-    width="500px"
-    @closed="closeDialog"
-    @update:model-value="closeDialog"
-    :close-on-click-modal="!isLoading"
-    :close-on-press-escape="!isLoading"
-    :show-close="!isLoading"
+  <Dialog
+    :visible="modelValue"
+    :header="config.title || 'Import File'"
+    :style="{ width: '500px' }"
+    modal
+    :dismissableMask="!isLoading"
+    :closable="!isLoading"
+    :draggable="false"
+    @update:visible="
+      (visible) => {
+        if (!visible) closeDialog()
+      }
+    "
   >
     <div
-      v-loading="isLoading"
-      :element-loading-text="loadingText"
-      :element-loading-svg="phlynxspinner"
-      element-loading-svg-view-box="0, 0, 100, 100"
-      element-loading-background="var(--el-mask-color-extra-light)"
+      class="dialog-content"
+      :class="{ 'is-drag-active': isDraggingOverForm }"
+      @dragenter.prevent="handleFormDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="handleFormDragLeave"
+      @drop.prevent="handleFormDrop"
     >
-      <el-form label-position="top" :class="{ 'is-loading-content': isLoading }">
+      <form class="import-form" :class="{ 'is-loading-content': isLoading }">
         <div class="form-header" v-if="requiredFieldsCount > 0">
           <span class="required-asterisk">*</span> Indicates required field
         </div>
+
+        <TransitionGroup name="field-pop" tag="div" class="fields-list">
         <div v-for="field in displayFields" :key="field.key" class="field-container">
-          <el-form-item class="form-item" :label="field.label" :required="field?.required ?? true" :class="{ 'is-info': field.limit }">
+          <div class="form-item" :class="{ 'is-info': field.limit }">
+            <label class="field-label">
+              <span>{{ field.label }}</span>
+              <span v-if="field?.required ?? true" class="required-asterisk">*</span>
+            </label>
+
             <div class="upload-row">
-              <div class="file-input-box" :class="{ 'is-valid': isFieldReady(field.key) }">
+              <div
+                class="file-input-box"
+                :class="{ 'is-valid': isFieldReady(field.key), 'is-drag-active': fieldsDraggedOver.has(field.key) }"
+                @dragenter.stop.prevent="handleFieldDragEnter(field.key)"
+                @dragover.stop.prevent
+                @dragleave.stop.prevent="handleFieldDragLeave(field.key)"
+                @drop.stop.prevent="(event) => handleFieldDrop(event, field)"
+              >
                 <div class="file-names-area" @click.stop>
-                  <span v-if="!formState[field.key]?.files || formState[field.key]?.files.size === 0" class="empty-text">
+                  <span
+                    v-if="!formState[field.key]?.files || formState[field.key]?.files.size === 0"
+                    class="empty-text"
+                  >
                     No file(s) selected
                   </span>
                   <template v-else>
-                    <el-tag
-                      v-for="[filename, fileData] in [...formState[field.key].files].slice(0, MAX_VISIBLE_TAGS)"
+                    <TransitionGroup name="tag-pop" tag="span" class="tags-row">
+                    <Tag
+                      v-for="[filename, fileData] in [...formState[field.key].files].slice(
+                        0,
+                        isFieldExpanded(field.key) ? formState[field.key].files.size : MAX_VISIBLE_TAGS
+                      )"
                       :key="filename"
-                      :type="fileData.isValid ? 'success' : 'warning'"
-                      closable
-                      @close="removeFile(field.key, filename)"
-                      size="small"
-                      effect="light"
+                      :severity="fileData.isValid ? 'success' : 'warn'"
                       class="file-tag"
                     >
                       <span class="tag-content">
-                        <el-icon v-if="fileData.isValid" class="tag-icon"><Check /></el-icon>
-                        <el-icon v-else class="tag-icon"><Warning /></el-icon>
+                        <i v-if="fileData.isValid" class="pi pi-check tag-icon" />
+                        <i v-else class="pi pi-exclamation-triangle tag-icon" />
                         <span>{{ filename }}</span>
+                        <i
+                          class="pi pi-times tag-remove-icon"
+                          role="button"
+                          tabindex="0"
+                          :aria-label="`Remove ${filename}`"
+                          @click.stop="removeFile(field.key, filename)"
+                          @keydown.enter.stop="removeFile(field.key, filename)"
+                        />
                       </span>
-                    </el-tag>
+                    </Tag>
+                    </TransitionGroup>
 
-                    <el-popover
+                    <Button
                       v-if="formState[field.key].files.size > MAX_VISIBLE_TAGS"
-                      placement="bottom-start"
-                      :width="280"
-                      trigger="click"
+                      class="overflow-tag"
+                      text
+                      size="small"
+                      severity="secondary"
+                      @click.stop="toggleExpandedField(field.key)"
                     >
-                      <template #reference>
-                        <el-tag size="small" type="info" effect="plain" class="overflow-tag" @click.stop>
-                          +{{ formState[field.key].files.size - MAX_VISIBLE_TAGS }} more
-                        </el-tag>
-                      </template>
-                      <div class="overflow-popover">
-                        <el-tag
-                          v-for="[filename, fileData] in [...formState[field.key].files].slice(MAX_VISIBLE_TAGS)"
-                          :key="filename"
-                          :type="fileData.isValid ? 'success' : 'warning'"
-                          closable
-                          @close="removeFile(field.key, filename)"
-                          size="small"
-                          effect="light"
-                          class="overflow-popover-tag"
-                        >
-                          <span class="tag-content">
-                            <el-icon v-if="fileData.isValid" class="tag-icon"><Check /></el-icon>
-                            <el-icon v-else class="tag-icon"><Warning /></el-icon>
-                            <span>{{ filename }}</span>
-                          </span>
-                        </el-tag>
-                      </div>
-                    </el-popover>
+                      {{
+                        isFieldExpanded(field.key)
+                          ? 'Show less'
+                          : `+${formState[field.key].files.size - MAX_VISIBLE_TAGS} more`
+                      }}
+                    </Button>
                   </template>
                 </div>
 
-                <el-upload
-                  ref="uploadRefs"
-                  action="#"
-                  multiple
-                  :limit="field?.limit"
-                  :show-file-list="false"
-                  :auto-upload="false"
-                  :on-exceed="() => handleExceed(field)"
-                  :accept="field.accept"
-                  :on-change="(file) => handleFileChange(file, field)"
-                  class="upload-trigger"
-                >
-                  <el-button
-                    :type="isFieldReady(field.key) ? 'success' : 'primary'"
+                <div class="upload-trigger">
+                  <input
+                    :ref="(el) => setFileInputRef(el, field.key)"
+                    type="file"
+                    :multiple="!(field?.limit === 1)"
+                    :accept="field.accept"
+                    class="hidden-file-input"
+                    @change="(event) => handleFileChange(event, field)"
+                  />
+                  <Button
+                    :severity="isFieldReady(field.key) ? 'success' : 'primary'"
+                    outlined
                     class="browse-button"
-                    plain
+                    @click="triggerFileInput(field.key)"
                   >
-                    <el-icon class="in-button-icon"><Check v-if="isFieldReady(field.key)" /><Upload v-else /></el-icon>
+                    <i class="pi" :class="isFieldReady(field.key) ? 'pi-check' : 'pi-upload'" />
                     Select
-                  </el-button>
-                </el-upload>
-
+                  </Button>
+                </div>
               </div>
             </div>
+
             <div v-if="field.limit" class="field-hint">
-              <el-icon><InfoFilled /></el-icon>
+              <i class="pi pi-info-circle" />
               Up to {{ field.limit }} file{{ field.limit === 1 ? '' : 's' }} allowed
             </div>
-          </el-form-item>
+          </div>
         </div>
 
-        <div v-if="importReadiness && formState[IMPORT_KEYS.VESSEL]?.readiness" class="validation-status">
-          <el-alert
-            v-if="importReadiness.isComplete"
-            title="All Required Resources Available"
-            type="success"
-            :closable="false"
-            show-icon
-          >
-            <template #default> All necessary modules and configurations are available. </template>
-          </el-alert>
+        <div v-if="isInstanceArrayImport && !importReadiness" class="folder-import-row">
+          <div class="folder-import-info">
+            <i class="pi pi-folder" />
+            <span v-if="folderStatus === 'connected'">
+              Auto-loading from <strong>{{ folderName }}</strong>
+            </span>
+            <span v-else-if="folderStatus === 'needs-permission'"> Folder access needs to be re-confirmed. </span>
+            <span v-else-if="supportsFolderAccess">
+              Connect a folder to auto-load required files, or drag & drop / select several files at once below.
+            </span>
+            <span v-else> Drag & drop a folder or file(s) and we'll sort them automatically. </span>
+          </div>
+          <div class="folder-import-actions">
+            <Button
+              v-if="supportsFolderAccess && folderStatus === 'disconnected'"
+              label="Connect Folder"
+              size="small"
+              text
+              icon="pi pi-folder-open"
+              @click="handleConnectFolder"
+            />
+            <Button
+              v-if="folderStatus === 'needs-permission'"
+              label="Reconnect"
+              size="small"
+              text
+              severity="warn"
+              icon="pi pi-refresh"
+              @click="handleReconnectFolder"
+            />
+            <Button
+              v-if="folderStatus === 'connected'"
+              label="Disconnect"
+              size="small"
+              text
+              severity="secondary"
+              icon="pi pi-times"
+              @click="handleForgetFolder"
+            />
+            <ProgressSpinner v-if="isScanningFolder" style="width: 18px; height: 18px" strokeWidth="6" />
+          </div>
+        </div>
+        </TransitionGroup>
 
-          <el-alert v-else title="Additional Files Required" type="warning" :closable="false" show-icon>
-            <template #default>
+        <div v-if="importReadiness && formState[IMPORT_KEYS.INSTANCE_ARRAY]?.readiness" class="validation-status">
+          <Message v-if="importReadiness.resourcesAreLoaded" severity="success" :closable="false">
+            <div class="message-title">All Required Resources Available</div>
+            <div class="message-content">All necessary components and configurations are available.</div>
+          </Message>
+
+          <Message v-else severity="warn" :closable="false">
+            <div class="message-title">Additional Files Required</div>
+            <div class="message-content">
               <div>Please provide the following files to complete the import:</div>
               <ul class="missing-resources">
-                <li v-if="importReadiness.needsModuleFile" class="config-note">
-                  <strong>CellML Module File</strong>
-                  <div
-                    v-if="importReadiness.missingResources?.moduleFileIssues?.length > 0"
-                    class="issue-list-container"
-                  >
-                    <div
-                      v-for="moduleFileIssue in importReadiness.missingResources.moduleFileIssues"
-                      :key="moduleFileIssue.uniqueKey"
-                      class="module-issue-item"
-                    >
-                      • {{ moduleFileIssue.message }}
-                    </div>
-                  </div>
-                  <div v-else-if="importReadiness.missingResources?.moduleTypes?.length > 0" class="module-type-list">
-                    containing: {{ importReadiness.missingResources.moduleTypes.join(', ') }}
+                <li v-if="importReadiness.missingResources?.math.size > 0" class="config-note">
+                  <strong>CellML Component File</strong>
+                  <div class="component-type-list">
+                    Required components: {{ [...importReadiness.missingResources.math].join(', ') }}
                   </div>
                 </li>
-                <li v-if="importReadiness.needsConfigFile" class="config-note">
-                  <strong>Module Configurations</strong> for vessel_types:bc_types:
-                  {{ importReadiness.missingResources?.configs?.join(', ') }} and possibly CellML modules.
+                <li v-if="importReadiness.missingResources?.modules.size > 0" class="config-note">
+                  <strong>Module Configurations</strong> for module_types:module_subtypes:
+                  {{ [...importReadiness.missingResources.modules].join(',') }} and possibly CellML components.
                 </li>
               </ul>
-              <br />
-              <div v-if="importReadiness.needsConfigFile" class="config-note">
-                <strong>NOTE:</strong> CellML Module File(s) may be required after providing the configurations.
+              <div v-if="importReadiness.missingResources?.modules.size > 0" class="config-note">
+                <strong>NOTE:</strong> CellML Component File(s) may be required after providing the configurations.
               </div>
-              <div v-if="importReadiness.hasModuleFileMismatch" class="mismatch-warning">
-                Warning: Some modules are not in the CellML files specified by their configurations.
-              </div>
-            </template>
-          </el-alert>
+            </div>
+          </Message>
         </div>
-      </el-form>
+      </form>
+
+      <Transition name="overlay-fade">
+        <div v-if="isLoading" class="loading-overlay">
+          <ProgressSpinner />
+          <span class="loading-text">{{ loadingText }}</span>
+        </div>
+      </Transition>
+
+      <Transition name="overlay-fade">
+        <div v-if="isDraggingOverForm" class="drop-overlay">
+          <i class="pi pi-cloud-upload drop-overlay-icon" />
+          <span>Drop a folder or file(s)</span>
+        </div>
+      </Transition>
     </div>
+
     <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="closeDialog" :disabled="isLoading">Cancel</el-button>
-        <el-button
-          type="primary"
-          @click="handleConfirm"
-          :disabled="!isFormValid || isLoading || !importReadiness?.isComplete"
+      <div class="dialog-footer">
+        <Button label="Cancel" severity="secondary" text :disabled="isLoading" @click="closeDialog" />
+        <Button
+          label="Import"
+          severity="primary"
+          :disabled="!isFormValid || isLoading || !importReadiness?.resourcesAreLoaded"
           :loading="isLoading"
-        >
-          Import
-        </el-button>
-      </span>
+          @click="handleConfirm"
+        />
+      </div>
     </template>
-  </el-dialog>
+  </Dialog>
 </template>
 
 <script setup>
-import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { ElDialog, ElForm, ElFormItem, ElButton, ElUpload, ElAlert, ElIcon, ElTag, ElPopover } from 'element-plus'
-import { Check, Warning, Upload, InfoFilled } from '@element-plus/icons-vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, toRaw } from 'vue'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
+import Tag from 'primevue/tag'
 
-import { useBuilderStore } from '../stores/builderStore'
+import { useLibraryStore } from '../stores/libraryStore'
 import { useGtm } from '../composables/useGtm'
+import { useFolderImport } from '../composables/useFolderImport'
+import { useFileDrop } from '../composables/useFileDrop'
 import { notify } from '../utils/notify'
 import { IMPORT_KEYS, MAX_VISIBLE_TAGS } from '../utils/constants'
-import { createDynamicFields, validateVesselData } from '../utils/import'
+import { createDynamicFields, checkResourcesAreLoaded, getImportConfig } from '../utils/import'
+import { normaliseConfig } from '../utils/config'
 import { processCellMLData } from '../utils/cellml'
-import phlynxspinner from '/src/assets/phlynxspinner.svg?raw'
-import { detachReactivity } from '../utils/reactivity'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -201,90 +256,209 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'confirm'])
 const { trackEvent } = useGtm()
-const builderStore = useBuilderStore()
+const libraryStore = useLibraryStore()
 
 // --- State Management ---
 const formState = reactive({})
-const uploadRefs = ref([])
+const fileInputRefs = ref({})
 const dynamicFields = ref([])
 const importReadiness = ref(null)
 const isLoading = ref(false)
 const loadingText = ref('Loading...')
+const expandedFields = ref(new Set())
 const stagedFiles = ref({
-  moduleFiles: [], // { filename: string, payload: object }
+  mathFiles: [], // { filename: string, payload: object }
   configFiles: [], // { filename: string, payload: object }
 })
-const isVesselReset = ref(false)
 
-// Checks if a field has valid files uploaded and all required information has been provided.
-const isFieldReady = (fieldKey) => {
-  const fieldState = formState[fieldKey]
-  if (!fieldState || fieldState.files.size === 0) {
-    return false
+// --- Folder-based auto-import ---
+const {
+  supportsFolderAccess,
+  folderStatus, // 'disconnected' | 'connected' | 'needs-permission'
+  folderName,
+  restoreFolder,
+  pickFolder,
+  reconnectFolder,
+  forgetFolder,
+  scanFolder,
+} = useFolderImport()
+
+let importQueue = Promise.resolve()
+function withImportLock(taskFn) {
+  const run = importQueue.then(taskFn, taskFn)
+  importQueue = run.catch(() => {})
+  return run
+}
+
+const isScanningFolder = ref(false)
+const foldersAttemptedFilenames = ref(new Set())
+
+// --- Drag-and-drop ---
+const { filesFromDataTransfer } = useFileDrop()
+const isDraggingOverForm = ref(false)
+let formDragCounter = 0
+const fieldsDraggedOver = ref(new Set())
+const fieldDragCounters = new Map() // fieldKey -> counter
+
+function handleFormDragEnter() {
+  if (isLoading.value) return
+  formDragCounter += 1
+  isDraggingOverForm.value = true
+}
+
+function handleFormDragLeave() {
+  if (isLoading.value) return
+  formDragCounter = Math.max(0, formDragCounter - 1)
+  if (formDragCounter === 0) {
+    isDraggingOverForm.value = false
   }
-  const filesAllValid = Array.from(fieldState.files.values()).every(file => file?.isValid)
-  if (!filesAllValid) return false
+}
 
-  // Vessel array field is ready if all its files are valid
-  if (fieldKey === IMPORT_KEYS.VESSEL) {
-    return true
+function handleFieldDragEnter(fieldKey) {
+  if (isLoading.value) return
+  const count = (fieldDragCounters.get(fieldKey) || 0) + 1
+  fieldDragCounters.set(fieldKey, count)
+  fieldsDraggedOver.value.add(fieldKey)
+}
+
+function handleFieldDragLeave(fieldKey) {
+  if (isLoading.value) return
+  const count = Math.max(0, (fieldDragCounters.get(fieldKey) || 0) - 1)
+  fieldDragCounters.set(fieldKey, count)
+  if (count === 0) {
+    fieldsDraggedOver.value.delete(fieldKey)
   }
+}
 
-  // Module config field is ready if all required configs have been supplied
-  if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
-    return !(importReadiness.value?.needsConfigFile ?? true)
+function resetAllDragState() {
+  formDragCounter = 0
+  isDraggingOverForm.value = false
+  fieldDragCounters.clear()
+  fieldsDraggedOver.value = new Set()
+}
+
+const blockOutsideDrop = (e) => {
+  const isMask = e.target.classList.contains('p-dialog-mask')
+  const insideContent = e.target.closest('.p-dialog')
+  if (isMask || !insideContent) {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'none'
   }
+}
 
-  // CellML module field is ready if all required modules have been supplied
-  if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
-    return !(importReadiness.value?.needsModuleFile ?? true)
+onMounted(() => {
+  restoreFolder()
+})
+
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      window.addEventListener('dragend', resetAllDragState)
+      window.addEventListener('dragover', blockOutsideDrop)
+      window.addEventListener('drop', blockOutsideDrop)
+    } else {
+      window.removeEventListener('dragend', resetAllDragState)
+      window.removeEventListener('dragover', blockOutsideDrop)
+      window.removeEventListener('drop', blockOutsideDrop)
+    }
+  },
+  { immediate: true }
+)
+
+const isInstanceArrayImport = computed(() =>
+  (props.config.fields || []).some((f) => f.key === IMPORT_KEYS.INSTANCE_ARRAY)
+)
+
+async function handleConnectFolder() {
+  try {
+    await pickFolder()
+  } catch (error) {
+    notify.error({ title: 'Folder Access Failed', message: error.message || 'Could not access the folder.' })
   }
+}
 
-  return true
+async function handleReconnectFolder() {
+  const granted = await reconnectFolder()
+  if (!granted) {
+    notify.warning({ title: 'Folder Access', message: 'Permission was not granted for the remembered folder.' })
+  }
+}
+
+async function handleForgetFolder() {
+  await forgetFolder()
+  foldersAttemptedFilenames.value = new Set()
 }
 
 function handleExceed(field) {
   nextTick(() => {
     notify.warning({
       title: 'Too Many Files',
-      message: `The limit is ${field.limit}.`
+      message: `The limit is ${field.limit}.`,
     })
   })
 }
 
-// Handler for removing a file via the tag's close button
+function setFileInputRef(el, fieldKey) {
+  if (el) {
+    fileInputRefs.value[fieldKey] = el
+  }
+}
+
+function triggerFileInput(fieldKey) {
+  fileInputRefs.value[fieldKey]?.click()
+}
+
+function toggleExpandedField(fieldKey) {
+  if (expandedFields.value.has(fieldKey)) {
+    expandedFields.value.delete(fieldKey)
+  } else {
+    expandedFields.value.add(fieldKey)
+  }
+}
+
+function isFieldExpanded(fieldKey) {
+  return expandedFields.value.has(fieldKey)
+}
+
 const removeFile = (fieldKey, filename) => {
   const fieldState = formState[fieldKey]
   if (fieldState && fieldState.files.has(filename)) {
-    // Remove from local form state
     fieldState.files.delete(filename)
 
-    // Remove from staged files if applicable
-    stagedFiles.value.moduleFiles = stagedFiles.value.moduleFiles.filter(f => f.filename !== filename)
-    stagedFiles.value.configFiles = stagedFiles.value.configFiles.filter(f => f.filename !== filename)
+    stagedFiles.value.mathFiles = stagedFiles.value.mathFiles.filter((f) => f.filename !== filename)
+    stagedFiles.value.configFiles = stagedFiles.value.configFiles.filter((f) => f.filename !== filename)
 
-    // Re-evaluate overall vessel dependencies
-    const vesselPayload = getVesselPayload()
-    if (vesselPayload) {
-      const temporaryStore = createTemporaryStore()
-      const newCompletionStatus = validateVesselData(vesselPayload, temporaryStore)
-      formState[IMPORT_KEYS.VESSEL].readiness = newCompletionStatus
-      updateVesselValidation(newCompletionStatus)
-    } else if (fieldKey === IMPORT_KEYS.VESSEL) {
-      // If the user deletes the vessel file, wipe completion status
+    const instanceArrayPayload = getInstanceArrayPayload()
+    if (instanceArrayPayload) {
+      const resourcesLoadStatus = checkReadiness(instanceArrayPayload)
+      updateDynamicFields(resourcesLoadStatus)
+    } else if (fieldKey === IMPORT_KEYS.INSTANCE_ARRAY) {
       resetForm()
     }
   }
 }
 
-function resetFormState() {
-  dynamicFields.value = []
-  Object.keys(formState).forEach((key) => {
-    if (!(isVesselReset.value && key === IMPORT_KEYS.VESSEL)) {
-      formState[key] = createEmptyFieldState()
-    }
-  })
-  importReadiness.value = null
+function deepToRaw(value) {
+  const raw = toRaw(value)
+  if (raw instanceof Map) {
+    return new Map([...raw].map(([k, v]) => [deepToRaw(k), deepToRaw(v)]))
+  }
+  if (raw instanceof Set) {
+    return new Set([...raw].map(deepToRaw))
+  }
+  if (Array.isArray(raw)) {
+    return raw.map(deepToRaw)
+  }
+  if (raw && typeof raw === 'object') {
+    return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, deepToRaw(v)]))
+  }
+  return raw
+}
+
+const detachReactivity = (obj) => {
+  return deepToRaw(obj)
 }
 
 function initFormFromConfig(fields = []) {
@@ -297,24 +471,24 @@ function initFormFromConfig(fields = []) {
 
 const unstageFiles = () => {
   stagedFiles.value = {
-    moduleFiles: [],
+    mathFiles: [],
     configFiles: [],
   }
 }
 
-const resetForm = () => {
-  resetFormState()
+const resetForm = (keepInstanceArray = false) => {
+  resetFormState(keepInstanceArray)
   unstageFiles()
 
-  // Clear the visual file list in the UI components
-  if (uploadRefs.value) {
-    uploadRefs.value.forEach((uploadInstance) => {
-      uploadInstance?.clearFiles()
-    })
+  Object.entries(fileInputRefs.value).forEach(([, input]) => {
+    if (input) input.value = ''
+  })
+  expandedFields.value = new Set()
+  if (!keepInstanceArray) {
+    foldersAttemptedFilenames.value = new Set()
   }
 }
 
-// Initialize formState when config changes
 watch(
   () => props.config?.fields,
   (fields) => {
@@ -324,7 +498,18 @@ watch(
   { immediate: true }
 )
 
-// --- Dynamic Fields Handling ---
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      resetFormState()
+      initFormFromConfig(props.config?.fields)
+      unstageFiles()
+      foldersAttemptedFilenames.value = new Set()
+    }
+  }
+)
+
 const displayFields = computed(() => {
   const baseFields = props.config.fields || []
   return [...baseFields, ...dynamicFields.value]
@@ -334,23 +519,19 @@ const requiredFieldsCount = computed(() => {
   return displayFields.value.filter((field) => field.required !== false).length
 })
 
-const addDynamicFields = async (completionStatus) => {
+const syncDynamicFields = async (completionStatus) => {
   try {
     const newFields = createDynamicFields(completionStatus)
-
-    // Merge new fields with existing ones
     const existingKeys = new Set(dynamicFields.value.map((f) => f.key))
 
-    newFields.forEach((newField) => {
+    for (const newField of newFields) {
       if (!existingKeys.has(newField.key)) {
         dynamicFields.value.push(newField)
-
-        // Initialize form state for new field
         if (!formState[newField.key]) {
           formState[newField.key] = createEmptyFieldState()
         }
       }
-    })
+    }
   } catch (error) {
     console.error('Failed to create dynamic fields:', error)
   }
@@ -358,213 +539,305 @@ const addDynamicFields = async (completionStatus) => {
 
 function createEmptyFieldState() {
   return {
-    files: new Map(), //  [key: filename, object: {isValid: boolean, payload: raw file contents} ]
-    readiness: null, // Selected files contain enough information to complete the import
+    files: new Map(),
+    readiness: null,
     warnings: [],
   }
 }
 
-// Helper to extract vessel payload from the new Map structure
-const getVesselPayload = () => {
-  const vesselFiles = formState[IMPORT_KEYS.VESSEL]?.files
-  if (!vesselFiles || vesselFiles.size === 0) return null
-  for (const fileData of vesselFiles.values()) {
+function resetFormState(keepInstanceArray = false) {
+  dynamicFields.value = []
+  Object.keys(formState).forEach((key) => {
+    if (!(keepInstanceArray && key === IMPORT_KEYS.INSTANCE_ARRAY)) {
+      formState[key] = createEmptyFieldState()
+    }
+  })
+  importReadiness.value = null
+}
+
+const getInstanceArrayPayload = () => {
+  const instanceFiles = formState[IMPORT_KEYS.INSTANCE_ARRAY]?.files
+  if (!instanceFiles || instanceFiles.size === 0) return null
+  for (const fileData of instanceFiles.values()) {
     if (fileData.payload) return fileData.payload
   }
   return null
 }
 
-// Create a temporary store-like object for validation that includes staged files
 const createTemporaryStore = () => {
-  // Create a deep copy of availableModules
-  const availableModules = detachReactivity(builderStore.availableModules)
+  const availableModules = detachReactivity(libraryStore.availableModules)
+  const availableMath = detachReactivity(libraryStore.availableMath)
+  const availableCollections = detachReactivity(libraryStore.availableCollections)
 
-  // Apply staged config files
-  stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
-    const configs = payload
+  for (const { filename, payload: configs } of stagedFiles.value.configFiles) {
     configs.forEach((config) => {
-      let moduleFile = availableModules.find((f) => f.filename === config.module_file)
-      if (!moduleFile) {
-        moduleFile = {
-          filename: config.module_file,
-          modules: [],
-          isStub: true,
+      const module = normaliseConfig(config)
+      if (!availableMath.has(module.mathRef)) {
+        module.isStub = true
+      }
+      if (!availableModules.has(module.moduleRef)) {
+        availableModules.set(module.moduleRef, module)
+        if (!availableCollections.has(module.mathRef)) {
+          availableCollections.set(module.mathRef, new Set())
         }
-        availableModules.push(moduleFile)
-      }
-      let module = moduleFile.modules.find((m) => m.name === config.module_type || m.type === config.module_type)
-      if (!module) {
-        module = {
-          name: config.module_type,
-          componentName: config.module_type,
-          configs: [],
-        }
-        moduleFile.modules.push(module)
-      }
-      if (!module.configs) {
-        module.configs = []
-      }
-      const configWithMetadata = {
-        ...config,
-        _sourceFile: filename,
-        _loadedAt: new Date().toISOString(),
-      }
-      const existingConfigIndex = module.configs.findIndex(
-        (c) => c.BC_type === config.BC_type && c.vessel_type === config.vessel_type
-      )
-      if (existingConfigIndex !== -1) {
-        module.configs[existingConfigIndex] = configWithMetadata
-      } else {
-        module.configs.push(configWithMetadata)
+        availableCollections.get(module.mathRef).add(module.moduleRef)
       }
     })
-  })
+  }
 
-  // Apply staged module files
-  stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
-    const existingFile = availableModules.find((f) => f.filename === filename)
-
-    if (existingFile) {
-      if (existingFile.isStub) {
-        delete existingFile.isStub
-      }
-      if (existingFile.modules) {
-        payload.modules.forEach((newMod) => {
-          const oldMod = existingFile.modules.find((m) => m.name === newMod.name)
-          if (oldMod && oldMod.configs && oldMod.configs.length > 0) {
-            newMod.configs = oldMod.configs
+  for (const { filename, payload } of stagedFiles.value.mathFiles) {
+    payload.forEach((component) => {
+      const mathRef = `${filename}:${component.name}`
+      if (!availableMath.has(mathRef)) {
+        availableMath.set(mathRef, component.math)
+        availableCollections.get(mathRef)?.forEach((moduleRef) => {
+          const moduleToUpdate = availableModules.get(moduleRef)
+          if (moduleToUpdate && moduleToUpdate.isStub) {
+            delete availableModules.get(moduleRef).isStub
           }
         })
       }
-      Object.assign(existingFile, payload)
-    } else {
-      availableModules.push(payload)
-    }
-  })
+    })
+  }
 
-  return { availableModules }
+  return {
+    availableModules,
+    availableMath,
+    availableCollections,
+  }
 }
 
-// --- Computed Validation ---
+const checkReadiness = (instanceArrayPayload) => {
+  if (!instanceArrayPayload) return null
+
+  const temporaryStore = createTemporaryStore()
+  const resourcesLoadStatus = checkResourcesAreLoaded(instanceArrayPayload, temporaryStore)
+
+  importReadiness.value = resourcesLoadStatus
+  if (formState[IMPORT_KEYS.INSTANCE_ARRAY]) {
+    formState[IMPORT_KEYS.INSTANCE_ARRAY].readiness = resourcesLoadStatus
+  }
+
+  return resourcesLoadStatus
+}
+
+const isFieldReady = (fieldKey) => {
+  const fieldState = formState[fieldKey]
+  if (!fieldState || fieldState.files.size === 0) return false
+
+  const filesAllValid = Array.from(fieldState.files.values()).every((f) => f?.isValid)
+  if (!filesAllValid) return false
+
+  if (fieldKey === IMPORT_KEYS.INSTANCE_ARRAY) {
+    return true
+  }
+
+  if (fieldKey === IMPORT_KEYS.MODULE_CONFIG) {
+    return !(importReadiness.value?.missingResources?.modules.size > 0 ?? true)
+  }
+
+  if (fieldKey === IMPORT_KEYS.CELLML_FILE) {
+    return !(importReadiness.value?.missingResources?.math.size > 0 ?? true)
+  }
+
+  return true
+}
+
 const isFormValid = computed(() => {
   if (!displayFields.value || displayFields.value.length === 0) return false
 
-  // Strictly check if all required fields have successfully parsed their files
   return displayFields.value.every((field) => {
     if (field.required === false) return true
 
     const fieldState = formState[field.key]
     if (!fieldState || fieldState.files.size === 0) return false
 
-    return Array.from(fieldState.files.values()).every(file => file?.isValid)
+    return Array.from(fieldState.files.values()).every((file) => file?.isValid)
   })
 })
 
 // --- Handlers ---
 async function parseFile(field, rawFile) {
-  if (field.requiresStore && builderStore) {
-    return field.parser(rawFile, builderStore)
+  if (field.requiresStore && libraryStore) {
+    return field.parser(rawFile, libraryStore)
   }
   return field.parser(rawFile)
 }
 
-const handleFileChange = async (uploadFile, field) => {
-  const rawFile = uploadFile.raw
-  const state = formState[field.key]
+function extensionOf(filename) {
+  const dot = filename.lastIndexOf('.')
+  return dot === -1 ? '' : filename.slice(dot).toLowerCase()
+}
 
-  if (field.processUpload === 'cellml') {
-    const moduleFileIssues = importReadiness.value?.missingResources?.moduleFileIssues
-    if (moduleFileIssues?.length > 0) {
-      const expectedFilenames = moduleFileIssues
-        .filter((issue) => issue.file)
-        .map((issue) => issue.file)
+function acceptsExtension(fieldConfig, filename) {
+  if (!fieldConfig?.accept) return true
+  return fieldConfig.accept
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .includes(extensionOf(filename))
+}
 
-      if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
-        notify.error({
-          title: 'Incorrect File Provided',
-          message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${rawFile.name}". This file will not be processed.`,
-          duration: 6000,
-        })
-        return
-      }
-    }
-  }
+function importPriority(filename) {
+  const ext = extensionOf(filename)
+  if (ext === '.csv') return 0
+  if (ext === '.json') return 1
+  if (ext === '.cellml' || ext === '.xml') return 2
+  return 3
+}
 
-  if (field.key === IMPORT_KEYS.VESSEL) {
-    const vesselFileMap = formState[IMPORT_KEYS.VESSEL]?.files
+function sortConfigsFirst(files, getName = (f) => f.name) {
+  return [...files].sort((a, b) => importPriority(getName(a)) - importPriority(getName(b)))
+}
 
-    if (vesselFileMap && vesselFileMap.size > 0 && !vesselFileMap.has(rawFile.name)) {
-      isVesselReset.value = true
-      resetForm()
-      isVesselReset.value = false
-    }
-  }
-
+async function ingestFileIntoField(field, rawFile, { cleanupOnFailure = false, notifyStaging = true } = {}) {
   const filename = rawFile.name
 
+  if (field.processUpload === 'cellml' && !validateCellMLFilename(rawFile, { silent: cleanupOnFailure || !notifyStaging })) {
+    return { ok: false, error: null, skip: !cleanupOnFailure }
+  }
+
+  if (field.key === IMPORT_KEYS.INSTANCE_ARRAY) {
+    const existingFiles = formState[IMPORT_KEYS.INSTANCE_ARRAY]?.files
+    if (existingFiles?.size > 0 && !existingFiles.has(filename)) {
+      resetForm(/* keepInstanceArray */ true)
+    }
+  }
+
+  if (!formState[field.key]) {
+    formState[field.key] = createEmptyFieldState()
+  }
+  const state = formState[field.key]
   state.files.set(filename, { isValid: false, payload: null })
 
   try {
     const parsed = await parseFile(field, rawFile)
 
-    // Normalise parser output
-    const data = parsed?.data ?? parsed
-    const warnings = parsed?.completionStatus?.warnings ?? []
-    let completionStatus = parsed?.completionStatus ?? null
+    state.files.get(filename).payload = parsed?.data ?? parsed
+    state.readiness = parsed?.completionStatus ?? null
+    state.warnings = parsed?.completionStatus?.warnings ?? []
 
-    // Re-validate using local staged files if using vessel array
-    if (field.key === IMPORT_KEYS.VESSEL) {
-      const temporaryStore = createTemporaryStore()
-      completionStatus = validateVesselData(data, temporaryStore)
-    }
-
-    state.files.get(filename).payload = data
-    state.readiness = completionStatus
-    state.warnings = warnings
-
-    // Specific logic for Dynamic Files (Configs/Modules)
     if (field.processUpload) {
-      await stageFile(field, parsed, filename)
-      // Re-validate vessel if needed
-      const vesselPayload = getVesselPayload()
-      if (vesselPayload) {
-        const temporaryStore = createTemporaryStore()
-        const newCompletionStatus = validateVesselData(vesselPayload, temporaryStore)
-        completionStatus = newCompletionStatus
-      }
+      stageValidatedFile(field, parsed, filename)
     }
-
-    // Vessel-specific validation
-    if (field.key === IMPORT_KEYS.VESSEL && completionStatus) {
-      await updateVesselValidation(completionStatus)
-    } else if (field.key !== IMPORT_KEYS.VESSEL) {
-      // For other fields:
-      const hasVesselPayload = !!getVesselPayload()
-      if (hasVesselPayload && completionStatus) {
-        await updateVesselValidation(completionStatus)
-      } else if (!hasVesselPayload) {
-        importReadiness.value = {
-          isComplete: true,
-          errors: [],
-          warnings: [],
-        }
-      }
-    }
-
-    // Surface warnings (notifications only once)
-    state.warnings.forEach(async (w) => {
-      await nextTick()
-      notify.warning({
-        title: 'Import Warning',
-        message: w,
-      })
-    })
 
     state.files.get(filename).isValid = true
+
+    const instanceArrayPayload = getInstanceArrayPayload()
+    if (instanceArrayPayload) {
+      const status = checkReadiness(instanceArrayPayload)
+
+      if (status && !status.resourcesAreLoaded) {
+        await syncDynamicFields(status)
+      }
+
+      if (field.processUpload && notifyStaging) {
+        notifyAfterStaging(field, filename, status)
+      }
+    } else {
+      importReadiness.value = {
+        resourcesAreLoaded: true,
+        errors: [],
+        warnings: [],
+      }
+    }
+
+    if (state.warnings.length && notifyStaging) {
+      await nextTick()
+      for (const w of state.warnings) {
+        notify.warning({
+          title: 'Import Warning',
+          message: w,
+        })
+      }
+    }
+
+    return { ok: true }
   } catch (error) {
-    state.files.get(filename).isValid = false
-    state.files.get(filename).payload = null
+    if (cleanupOnFailure) {
+      state.files.delete(filename)
+    } else {
+      const fileEntry = state.files.get(filename)
+      if (fileEntry) {
+        fileEntry.isValid = false
+        fileEntry.payload = null
+      }
+    }
     state.warnings = []
+
+    const isUnexpectedError = error instanceof Error && error.constructor !== Error
+    if (isUnexpectedError) {
+      console.error(`[ImportDialog] Unexpected error while processing "${filename}" for field "${field.key}":`, error)
+      if (notifyStaging) {
+        notify.error({
+          title: 'Import Error',
+          message: `Something went wrong while checking readiness after loading "${filename}": ${error.message}`,
+        })
+      }
+    }
+
+    return { ok: false, error }
+  }
+}
+
+const PROCESS_UPLOAD_BY_KEY = {
+  [IMPORT_KEYS.CELLML_FILE]: 'cellml',
+  [IMPORT_KEYS.MODULE_CONFIG]: 'config',
+}
+
+function candidateKeysExcluding(excludeKey) {
+  const keys = [IMPORT_KEYS.MODULE_CONFIG, IMPORT_KEYS.CELLML_FILE, IMPORT_KEYS.PARAMETER]
+  if (!formState[IMPORT_KEYS.INSTANCE_ARRAY]?.files?.size) {
+    keys.unshift(IMPORT_KEYS.INSTANCE_ARRAY)
+  }
+  return keys.filter((k) => k !== excludeKey)
+}
+
+async function classifyIntoOtherFields(rawFile, excludeKey) {
+  for (const key of candidateKeysExcluding(excludeKey)) {
+    const baseCandidateConfig = getImportConfig(key)?.fields?.[0]
+    if (!baseCandidateConfig) continue
+    if (!acceptsExtension(baseCandidateConfig, rawFile.name)) continue
+
+    const candidateConfig =
+      PROCESS_UPLOAD_BY_KEY[key] && !baseCandidateConfig.processUpload
+        ? { ...baseCandidateConfig, processUpload: PROCESS_UPLOAD_BY_KEY[key] }
+        : baseCandidateConfig
+
+    const result = await ingestFileIntoField(candidateConfig, rawFile, { cleanupOnFailure: true, notifyStaging: false })
+    if (result.ok) {
+      const alreadyVisible =
+        (props.config.fields || []).some((f) => f.key === candidateConfig.key) ||
+        dynamicFields.value.some((f) => f.key === candidateConfig.key)
+      if (!alreadyVisible) {
+        dynamicFields.value.push(candidateConfig)
+      }
+      return candidateConfig
+    }
+  }
+  return null
+}
+
+async function processIncomingFiles(field, rawFiles, { strict = false } = {}) {
+  return withImportLock(() => runProcessIncomingFiles(field, rawFiles, { strict }))
+}
+
+async function runProcessIncomingFiles(field, rawFiles, { strict = false } = {}) {
+  const limit = field?.limit
+  let files = sortConfigsFirst(rawFiles)
+  if (limit && files.length > limit) {
+    handleExceed(field)
+    files = files.slice(0, limit)
+  }
+
+  for (const rawFile of files) {
+    const primary = await ingestFileIntoField(field, rawFile, { notifyStaging: true })
+    if (primary.ok) continue
+    if (primary.skip) continue
+
+    if (!strict) {
+      const matchedField = await classifyIntoOtherFields(rawFile, field.key)
+      if (matchedField) continue
+    }
 
     trackEvent('import_action', {
       category: 'Import',
@@ -574,107 +847,254 @@ const handleFileChange = async (uploadFile, field) => {
     })
     notify.error({
       title: 'Import Error',
-      message: error.message || 'Failed to parse file.',
+      message: primary.error?.message || `"${rawFile.name}" is not a valid ${field.label || 'file'} for this field.`,
     })
   }
 }
 
-async function updateVesselValidation(completionStatus) {
-  importReadiness.value = completionStatus
-  if (completionStatus.isComplete) {
-    return
-  }
-  await addDynamicFields(completionStatus)
+const handleFileChange = async (event, field) => {
+  const selectedFiles = Array.from(event.target.files || [])
+  if (!selectedFiles.length) return
+
+  await processIncomingFiles(field, selectedFiles)
+
+  event.target.value = ''
 }
 
-async function stageFile(field, parsedData, fileName) {
+async function handleFieldDrop(event, field) {
+  fieldDragCounters.set(field.key, 0)
+  fieldsDraggedOver.value.delete(field.key)
+  if (isLoading.value) return
+
+  const entries = await filesFromDataTransfer(event.dataTransfer)
+  if (!entries.length) {
+    notify.warning({
+      title: 'Nothing to Import',
+      message: 'No supported files were found in what you dropped.',
+    })
+    return
+  }
+
+  await processIncomingFiles(
+    field,
+    entries.map((e) => e.file),
+    { strict: true }
+  )
+}
+
+async function handleFormDrop(event) {
+  formDragCounter = 0
+  isDraggingOverForm.value = false
+  if (isLoading.value) return
+
+  const entries = await filesFromDataTransfer(event.dataTransfer)
+  if (!entries.length) {
+    notify.warning({
+      title: 'Nothing to Import',
+      message: 'No supported files were found in what you dropped.',
+    })
+    return
+  }
+
+  await withImportLock(() => runFormDropClassification(entries))
+}
+
+async function runFormDropClassification(entries) {
+  const sorted = sortConfigsFirst(entries, (e) => e.file.name)
+  const unmatched = []
+  let stagedCount = 0
+
+  for (const { file } of sorted) {
+    const matched = await classifyIntoOtherFields(file, undefined)
+    if (matched) {
+      stagedCount++
+    } else {
+      unmatched.push(file.name)
+    }
+  }
+
+  if (stagedCount > 0) {
+    const status = importReadiness.value
+    if (status?.resourcesAreLoaded) {
+      notify.success({
+        title: 'Folder Staged Successfully',
+        message: `Processed ${stagedCount} file${stagedCount > 1 ? 's' : ''}. All required resources are ready.`,
+      })
+    } else {
+      notify.info({
+        title: 'Files Staged',
+        message: `Staged ${stagedCount} file${stagedCount > 1 ? 's' : ''}. Additional required files are still needed.`,
+      })
+    }
+  }
+
+  if (unmatched.length) {
+    notify.warning({
+      title: 'Some Files Skipped',
+      message: `${unmatched.length} file${unmatched.length > 1 ? 's' : ''} didn't match any expected import type: ${unmatched
+        .slice(0, 5)
+        .join(', ')}${unmatched.length > 5 ? '…' : ''}`,
+    })
+  }
+}
+
+// --- Folder-based auto-import ---
+async function attemptAutoFillFromFolder() {
+  return withImportLock(() => runAutoFillFromFolder())
+}
+
+async function runAutoFillFromFolder() {
+  if (isScanningFolder.value || folderStatus.value !== 'connected') return
+
+  isScanningFolder.value = true
+  let stagedAny = false
+
+  try {
+    const entries = sortConfigsFirst(await scanFolder(), (e) => e.file.name)
+
+    for (const { file } of entries) {
+      if (foldersAttemptedFilenames.value.has(file.name)) continue
+      foldersAttemptedFilenames.value.add(file.name)
+
+      const alreadyPresent = Object.values(formState).some((s) => s.files?.has(file.name))
+      if (alreadyPresent) continue
+
+      const matched = await classifyIntoOtherFields(file, IMPORT_KEYS.INSTANCE_ARRAY)
+      if (matched) stagedAny = true
+    }
+  } catch (error) {
+    notify.error({
+      title: 'Folder Import',
+      message: error.message || 'Failed to read files from the connected folder.',
+    })
+  } finally {
+    isScanningFolder.value = false
+  }
+
+  if (stagedAny && importReadiness.value && !importReadiness.value.resourcesAreLoaded) {
+    await runAutoFillFromFolder()
+  } else if (stagedAny) {
+    notify.success({
+      title: 'Folder Import',
+      message: 'Loaded the required files from the connected folder.',
+    })
+  }
+}
+
+watch(importReadiness, (status) => {
+  if (!status || status.resourcesAreLoaded) return
+  attemptAutoFillFromFolder()
+})
+
+watch(folderStatus, (status) => {
+  if (status !== 'connected') return
+  if (importReadiness.value && !importReadiness.value.resourcesAreLoaded) {
+    attemptAutoFillFromFolder()
+  }
+})
+
+async function updateDynamicFields(completionStatus) {
+  importReadiness.value = completionStatus
+  if (completionStatus.resourcesAreLoaded) {
+    return
+  }
+  await syncDynamicFields(completionStatus)
+}
+
+function validateCellMLFilename(rawFile, { silent = false } = {}) {
+  const componentFileIssues = importReadiness.value?.missingResources?.componentFileIssues
+  if (!componentFileIssues?.length) return true
+
+  const expectedFilenames = componentFileIssues.filter((issue) => issue.file).map((issue) => issue.file)
+
+  if (expectedFilenames.length > 0 && !expectedFilenames.includes(rawFile.name)) {
+    if (!silent) {
+      notify.error({
+        title: 'Incorrect File Provided',
+        message: `The configuration expects: "${expectedFilenames.join(', ')}". You provided "${
+          rawFile.name
+        }". This file will not be processed.`,
+        duration: 6000,
+      })
+    }
+    return false
+  }
+  return true
+}
+
+async function stageValidatedFile(field, parsedData, filename) {
   if (!field.processUpload) return
 
-  const data = parsedData.data || parsedData
+  const data = parsedData
 
-  // Perform the staging logic
   if (field.processUpload === 'cellml') {
     const result = processCellMLData(data)
     if (result.type === 'success') {
-      const augmentedData = result.components?.data.map((item) => ({
-        ...item,
-        sourceFile: fileName,
-      }))
-      stagedFiles.value.moduleFiles.push({
-        filename: fileName,
-        payload: {
-          filename: fileName,
-          modules: augmentedData,
-          model: result.components?.model,
-        },
+      stagedFiles.value.mathFiles.push({
+        filename,
+        payload: result.components,
       })
     }
   } else if (field.processUpload === 'config') {
     stagedFiles.value.configFiles.push({
-      filename: fileName,
+      filename,
       payload: data,
     })
   }
+}
 
-  // Re-validate the Vessel CSV with staged files to see if requirements are met
-  const vesselPayload = getVesselPayload()
-  if (vesselPayload?.data) {
-    const temporaryStore = createTemporaryStore()
-    const newCompletionStatus = validateVesselData(vesselPayload.data, temporaryStore)
+function notifyAfterStaging(field, filename, status) {
+  if (!status) return
 
-    // Update state
-    formState[IMPORT_KEYS.VESSEL].readiness = newCompletionStatus
-    updateVesselValidation(newCompletionStatus)
+  if (field.processUpload === 'cellml') {
+    const componentIssues = status.missingResources?.componentFileIssues ?? []
+    const relevantIssue = componentIssues.find((issue) => issue.file === filename)
 
-    // Specific check for CellML failures
-    if (field.processUpload === 'cellml') {
-      const moduleIssues = newCompletionStatus.missingResources.moduleFileIssues
-
-      // Look for issues related to the file we just uploaded
-      const relevantIssue = moduleIssues.find((issue) => issue.file === fileName)
-
-      if (relevantIssue) {
-        let errorMsg = `File "${fileName}" was staged, but has issues: `
-
-        if (relevantIssue.issue === 'module_not_in_file') {
-          errorMsg = `The file "${fileName}" does not contain the required modules: ${relevantIssue.moduleTypes.join(', ')}.`
-        } else if (relevantIssue.issue === 'filename_mismatch') {
-          errorMsg = `The modules were found, but the file name must be exactly "${relevantIssue.expectedFile}" as defined in your config.`
-        }
-
-        notify.error({
-          title: 'Import Requirement Not Met',
-          message: errorMsg,
-          duration: 6000,
-        })
-      } else if (newCompletionStatus.needsModuleFile) {
-        notify.warning({
-          title: 'Partial Success',
-          message: `"${fileName}" is valid, but additional CellML modules are still required.`,
-        })
-      } else {
-        notify.success({ title: 'CellML Ready', message: `${fileName} staged successfully.` })
+    if (relevantIssue) {
+      let errorMsg = `File "${filename}" was staged but has issues.`
+      if (relevantIssue.issue === 'component_not_in_file') {
+        errorMsg = `"${filename}" does not contain the required components: ${relevantIssue.componentTypes.join(', ')}.`
+      } else if (relevantIssue.issue === 'filename_mismatch') {
+        errorMsg = `The components were found, but the file name must be exactly "${relevantIssue.expectedFile}" as defined in your config.`
       }
-    } else if (field.processUpload === 'config') {
-      if (newCompletionStatus.needsConfigFile) {
-        notify.warning({
-          title: 'Config Staged',
-          message: `"${fileName}" added, but more configurations are still missing.`,
-        })
-      } else {
-        notify.success({ title: 'Success', message: 'All configurations provided.' })
-      }
+      notify.error({
+        title: 'Import Requirement Not Met',
+        message: errorMsg,
+        duration: 6000,
+      })
+    } else if (status.needsComponentFile) {
+      notify.warning({
+        title: 'Partial Success',
+        message: `"${filename}" is valid, but additional CellML components are still required.`,
+      })
+    } else {
+      notify.success({
+        title: 'CellML Ready',
+        message: `${filename} staged successfully.`,
+      })
+    }
+  } else if (field.processUpload === 'config') {
+    if (status.needsConfigFile) {
+      notify.warning({
+        title: 'Config Staged',
+        message: `"${filename}" added, but more configurations are still missing.`,
+      })
+    } else {
+      notify.success({
+        title: 'Success',
+        message: 'All configurations provided.',
+      })
     }
   }
 }
 
 const commitStagedFiles = () => {
-  stagedFiles.value.moduleFiles.forEach(({ filename, payload }) => {
-    builderStore.addModuleFile(payload)
-  })
-  stagedFiles.value.configFiles.forEach(({ filename, payload }) => {
-    builderStore.addConfigFile(payload, filename)
-  })
+  for (const { filename, payload } of stagedFiles.value.mathFiles) {
+    libraryStore.addMathFile(filename, payload)
+  }
+  for (const { filename, payload } of stagedFiles.value.configFiles) {
+    libraryStore.addConfigFile(filename, payload)
+  }
 }
 
 const handleConfirm = async () => {
@@ -686,19 +1106,11 @@ const handleConfirm = async () => {
 
   commitStagedFiles()
 
-  if (formState[IMPORT_KEYS.PARAMETER]) {
-    for (const [filename, data] of formState[IMPORT_KEYS.PARAMETER].files) {
-      if (data.isValid) {
-        builderStore.addParameterFile(filename, data.payload)
-      }
-    }
-  }
-
   const importPayload = new Map()
   displayFields.value.forEach((field) => {
-    for (const [filename, data] of formState[field.key].files) {
-      importPayload.set(filename, data)
-    }
+    const fieldFiles = toRaw(formState[field.key].files)
+    if (fieldFiles.size === 0) return
+    importPayload.set(field.key, new Map(fieldFiles))
   })
 
   trackEvent('import_action', {
@@ -707,6 +1119,7 @@ const handleConfirm = async () => {
     label: props.config.title || 'Import File',
     file_type: 'various',
   })
+
   emit('confirm', importPayload, (progressText) => {
     loadingText.value = progressText
   })
@@ -728,8 +1141,116 @@ defineExpose({
 </script>
 
 <style scoped>
+.dialog-content {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.import-form {
+  position: relative;
+  z-index: 1;
+}
+
+.dialog-content.is-drag-active {
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--p-primary-color) 10%, var(--p-content-background) 90%);
+  border-radius: 8px;
+  pointer-events: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--p-primary-color);
+}
+
+.drop-overlay-icon {
+  font-size: 2rem;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var(--p-content-background);
+  border-radius: 8px;
+}
+
+.loading-text {
+  color: var(--p-text-color);
+  font-size: 0.95rem;
+}
+
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+.fields-list {
+  position: relative;
+  display: block;
+}
+
+.field-pop-enter-active,
+.field-pop-leave-active,
+.field-pop-move {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.field-pop-enter-from,
+.field-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.field-pop-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
+.tags-row {
+  display: contents;
+}
+
+.tag-pop-enter-active,
+.tag-pop-move {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.tag-pop-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  position: absolute;
+}
+
+.tag-pop-enter-from,
+.tag-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
 .field-container {
-  margin-bottom: var(--el-spacing-small);
+  margin-bottom: 0.75rem;
 }
 
 .upload-row {
@@ -737,71 +1258,84 @@ defineExpose({
 }
 
 .form-item {
-  margin-bottom: 32;
+  margin-bottom: 1rem;
 }
 
 .form-item.is-info {
-  margin-bottom: 0;
+  margin-bottom: 0.5rem;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--p-text-color);
 }
 
 .field-hint {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--el-font-size-extra-small);
-  color: var(--el-text-color-placeholder);
-  margin-bottom: 4px;
-}
-
-.field-hint .el-icon {
-  font-size: 12px;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  margin-top: 0.35rem;
 }
 
 .file-input-box {
   display: flex;
   align-items: stretch;
   width: 100%;
-  height: 32px;
-  border: 1px solid var(--el-border-color);
-  border-radius: var(--el-border-radius-base);
-  background-color: var(--el-fill-color-blank);
+  min-height: 40px;
+  border: 1px solid var(--p-form-field-border-color, var(--p-content-border-color));
+  border-radius: 6px;
+  background-color: var(--p-form-field-background, var(--p-content-background));
   overflow: hidden;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .file-input-box:focus-within {
-  border-color: var(--el-color-primary);
-  box-shadow: 0 0 0 1px var(--el-color-primary-light-7);
+  border-color: var(--p-primary-color);
+  box-shadow: inset 0 0 0 1px var(--p-primary-color);
 }
 
 .file-input-box.is-valid {
-  border-color: var(--el-color-success);
+  border-color: var(--p-green-500, #16a34a);
+}
+
+.file-input-box.is-drag-active {
+  border-color: var(--p-primary-color);
+  box-shadow: inset 0 0 0 1px var(--p-primary-color);
+  background-color: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
 }
 
 .file-input-box.is-valid:focus-within {
-  box-shadow: 0 0 0 1px var(--el-color-success-light-5);
+  box-shadow: inset 0 0 0 1px var(--p-green-500, rgba(22, 163, 74, 0.25));
 }
 
 .file-names-area {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 8px;
   min-width: 0;
-  margin-bottom: 0;
   overflow: hidden;
   cursor: default;
+  flex-wrap: wrap;
 }
 
 .upload-trigger {
   flex-shrink: 0;
-  border-left: 1px solid var(--el-border-color);
+  border-left: 1px solid var(--p-form-field-border-color, var(--p-content-border-color));
+  display: flex;
+  align-items: center;
 }
 
-.upload-trigger :deep(.el-upload) {
-  display: flex;
-  height: 100%;
+.hidden-file-input {
+  display: none;
 }
 
 .browse-button {
@@ -813,8 +1347,8 @@ defineExpose({
 }
 
 .empty-text {
-  color: var(--el-text-color-placeholder);
-  font-size: var(--el-font-size-small);
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
@@ -842,128 +1376,145 @@ defineExpose({
 }
 
 .tag-icon {
-  font-size: 14px;
+  font-size: 0.9rem;
   flex-shrink: 0;
 }
 
-.overflow-popover {
+.tag-remove-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-left: 2px;
+  padding: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.tag-remove-icon:hover,
+.tag-remove-icon:focus-visible {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.folder-import-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px dashed var(--p-content-border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
 }
 
-.overflow-popover-tag {
-  width: 100%;
+.folder-import-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
 }
 
-.overflow-popover-tag :deep(.el-tag__content) {
-  flex: 1;
-  min-width: 0;
+.folder-import-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .form-header {
-  margin-top: var(--el-spacing-mini);
-  margin-bottom: var(--el-spacing-base);
-  font-size: var(--el-font-size-extra-small);
-  color: var(--el-text-color-secondary);
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
   text-align: right;
 }
 
-/* .validation-status {
-  margin-top: var(--el-spacing-large);
-  margin-bottom: var(--el-spacing-base);
-} */
-
 .required-asterisk {
-  color: var(--el-color-danger);
+  color: var(--p-red-500, #dc2626);
+}
+
+.validation-status {
+  margin-top: 1rem;
+}
+
+.validation-status :deep(.p-message) {
+  border-radius: 10px;
+}
+
+.validation-status :deep(.p-message-warn) {
+  background: color-mix(in srgb, var(--p-amber-500, #d97706) 10%, var(--p-content-background, #fff));
+  border: 1px solid color-mix(in srgb, var(--p-amber-500, #d97706) 30%, transparent);
+}
+
+.validation-status :deep(.p-message-warn .p-message-icon) {
+  color: var(--p-amber-600, #b45309);
+}
+
+.validation-status :deep(.p-message-success) {
+  background: color-mix(in srgb, var(--p-green-500, #22c55e) 10%, var(--p-content-background, #fff));
+  border: 1px solid color-mix(in srgb, var(--p-green-500, #22c55e) 30%, transparent);
+}
+
+.validation-status :deep(.p-message-success .p-message-icon) {
+  color: var(--p-green-600, #16a34a);
+}
+
+.validation-status :deep(.p-message-success) .message-title {
+  color: var(--p-green-700, #15803d);
+}
+
+.validation-status :deep(.p-message-warn) .message-title {
+  color: var(--p-amber-700, #92400e);
+}
+
+.message-title {
+  font-weight: 600;
+}
+
+.message-content {
+  margin-top: 0.25rem;
+  color: var(--p-text-color);
 }
 
 .missing-resources {
-  margin: var(--el-spacing-small) 0 0 0;
-  padding-left: 20px;
-  color: var(--el-text-color-regular);
+  margin: 0.5rem 0 0 0;
+  padding-left: 1rem;
+  color: var(--p-text-color);
 }
 
 .missing-resources li {
-  margin: 4px 0;
+  margin: 0.25rem 0;
 }
 
-.issue-list-container {
-  margin-top: var(--el-spacing-mini, 4px);
-}
-
-.module-issue-item {
-  font-size: var(--el-font-size-extra-small);
-  margin: 2px 0;
-  color: var(--el-color-warning);
-}
-
-.module-issue-item::first-letter {
-  color: var(--el-color-warning);
-}
-
-.module-type-list {
-  font-size: var(--el-font-size-extra-small);
-  color: var(--el-text-color-secondary);
+.component-type-list {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
 }
 
 .config-note {
-  margin-top: var(--el-spacing-base);
-  font-size: var(--el-font-size-small);
-  color: var(--el-color-warning);
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color);
 }
 
-.in-button-icon {
-  margin-right: 7px;
+.config-note strong {
+  color: var(--p-amber-700, #92400e);
 }
 
-.mismatch-warning {
-  margin-top: var(--el-spacing-small);
-  color: var(--el-color-warning);
-  font-weight: bold;
-  font-size: var(--el-font-size-small);
-}
-
-:deep(.el-alert__description) {
-  margin-top: 5px;
-  line-height: 1.6;
-}
-
-:deep(.el-loading-spinner svg) {
-  width: 120px;
-  height: 120px;
-  animation: breathe 2s ease-in-out infinite !important;
-  transform-origin: center;
-}
-
-:deep(.el-loading-spinner) {
-  transform: translateY(-35%);
+.dialog-footer {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-:deep(.el-loading-text) {
-  color: var(--el-text-color-primary);
-  font-size: var(--el-font-size-base);
-  margin-top: var(--el-spacing-small);
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .is-loading-content {
-  opacity: 0.2;
+  opacity: 0.5;
   pointer-events: none;
-  filter: grayscale(40%);
-  transition: opacity var(--el-transition-duration), filter var(--el-transition-duration);
-}
-
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(0.95);
-  }
-
-  50% {
-    transform: scale(1.05);
-  }
+  filter: grayscale(25%);
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 </style>

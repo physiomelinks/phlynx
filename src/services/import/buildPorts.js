@@ -1,42 +1,4 @@
-import { SOURCE_PORT_TYPE, TARGET_PORT_TYPE } from "../../utils/constants"
-
-function parseVesselNames(vesselField) {
-  return Array.from(
-    new Set(vesselField?.trim().split(/\s+/).filter(Boolean) ?? [])
-  )
-}
-
-function buildPorts(vessel) {
-  const ports = []
-
-  if (vessel.inp_vessels) {
-    const inputs = parseVesselNames(vessel.inp_vessels)
-    inputs.forEach((name) => {
-      ports.push({
-        uid: crypto.randomUUID(),
-        type: TARGET_PORT_TYPE,
-        side: 'left',
-        name,
-      })
-    })
-  }
-
-  if (vessel.out_vessels) {
-    const outputs = parseVesselNames(vessel.out_vessels)
-    outputs.forEach((name) => {
-      ports.push({
-        uid: crypto.randomUUID(),
-        type: SOURCE_PORT_TYPE,
-        side: 'right',
-        name,
-      })
-    })
-  }
-
-  return ports
-}
-
-function buildPortLabels(moduleData) {
+function buildPorts(moduleData) {
   return Object.entries(moduleData)
     .filter(
       ([key, value]) =>
@@ -49,10 +11,10 @@ function buildPortLabels(moduleData) {
         .map((p) => ({
           portType: type,
           label: p.port_type,
-          option: p.variables.flat(),
-          multiport: p.multi_port ?? 'None',
+          variables: p.variables.flat(),
+          multiportType: p.multi_port ?? 'None',
         }))
     )
 }
 
-export { buildPortLabels, buildPorts }
+export { buildPorts }

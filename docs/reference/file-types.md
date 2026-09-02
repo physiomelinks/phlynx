@@ -71,12 +71,12 @@ A JSON file defining the interface between CellML modules and the solver. It con
 
 | Property | Description |
 | :--- | :--- |
-| `vessel_type` | Corresponds to the `vessel_type` in the vessel array. |
-| `BC_type` | Corresponds to the `BC_type` in the vessel array (Module sub-type). |
-| `module_file` | The filename of the source `.cellml` file. |
-| `module_type` | The component name within the source `.cellml` file. |
-| `entrance_ports` | Port definitions for when this module receives input (connected as an `out_vessel`). Maps internal variables (e.g., `v_in`) to the source module's variables. |
-| `exit_ports` | Port definitions for when this module provides output (connected as an `inp_vessel`). |
+| `module_type` | Corresponds to the `module_type` in the module array. |
+| `module_subtype` | Corresponds to the `module_subtype` in the module array (Module sub-type). |
+| `component_file` | The filename of the source `.cellml` file. |
+| `component_type` | The component name within the source `.cellml` file. |
+| `entrance_ports` | Port definitions for when this module receives input (connected as an `out_module`). Maps internal variables (e.g., `v_in`) to the source module's variables. |
+| `exit_ports` | Port definitions for when this module provides output (connected as an `inp_module`). |
 | `general_ports` | Port definitions for non-directional connections. Contains `port_types` (matching name required for connection) and `variables`. |
 
 > [!NOTE]
@@ -91,20 +91,20 @@ The `variables_and_units` array defines properties for every variable in the mod
 
 ---
 
-### 2. Vessel Array (`vessel_array.csv`)
+### 2. Instance Array (`instance_array.csv`)
 
 A CSV file defining the network topology (connections) of the system. Each row represents a specific module instance in the model.
 
 | Column | Description |
 | :--- | :--- |
-| **vessel_name** | The unique name assigned to the module instance (e.g., `soma_SN`). |
-| **BC_type** | The module sub-type or boundary condition type. |
-| **vessel_type** | The generic module type (refers to the source component in the Module List). |
-| **inp_vessels** | Space-separated list of modules that connect *into* this module. |
-| **out_vessels** | Space-separated list of modules that this module *outputs to*. |
+| **module_name** | The unique name assigned to the module instance (e.g., `soma_SN`). |
+| **module_subtype** | The module sub-type or boundary condition type. |
+| **module_type** | The generic module type (refers to the source component in the Module List). |
+| **inp_module** | Space-separated list of modules that connect *into* this module. |
+| **out_module** | Space-separated list of modules that this module *outputs to*. |
 
 > [!NOTE]
 > **Optional Positioning:** You may include `x`, `y`, and `z` columns in this file to define the spatial position of nodes upon import.
 
-**Example Vessel Array:**
-![Example vessel array file](../assets/images/vessel-array.png){.align-center width="600px"}
+**Example Instance Array:**
+![Example module array file](../assets/images/vessel-array.png){.align-center width="600px"}

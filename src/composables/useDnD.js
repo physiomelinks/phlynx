@@ -1,11 +1,19 @@
 import { useVueFlow } from '@vue-flow/core'
 import { ref, shallowRef, watch } from 'vue'
-
-import { GHOST_MODULE_FILENAME, GHOST_NODE_TYPE } from '../utils/constants'
-import { getId, generateUniqueModuleName, attachNewNodeToFrame, findAnyNode } from '../utils/nodes'
-import { useBuilderStore } from '../stores/builderStore'
-import { buildPortLabels } from '../services/import/buildPorts'
-import { extractVariablesFromModule } from '../utils/cellml'
+import {
+  FLOW_IDS,
+  GHOST_MODULE_FILENAME,
+  GHOST_NODE_TYPE,
+  MAIN_NODE_TYPE,
+  NUM_GHOST_HANDLES_LEFT_RIGHT,
+  NUM_GHOST_HANDLES_TOP_BOT
+} from '../utils/constants'
+import { getId as getNextNodeId } from '../utils/nodes'
+import { generateUniqueInstanceName, findAnyNode } from '../utils/nodes'
+import { buildInstance } from '../services/import/buildWorkflow'
+import { buildGhostHandles } from '../utils/handles'
+import { useLibraryStore } from '../stores/libraryStore'
+import { extractGlobalConstants } from '../utils/variables'
 
 /**
  * In a real world scenario you'd want to avoid creating refs in a global scope like this as they might not be cleaned up properly.
@@ -20,11 +28,11 @@ const state = {
   isDragging: ref(false),
 }
 
-export default function useDragAndDrop(pendingHistoryNodes) {
+export default function useDragAndDrop(pendingHistoryNodes, flowId = FLOW_IDS.MAIN) {
   const { draggedType, isDragOver, isDragging } = state
 
-  const { addNodes, getNodes, onNodesInitialized, screenToFlowCoordinate, updateNode } = useVueFlow()
-  const builderStore = useBuilderStore()
+  const { addNodes, getNodes, onNodesInitialized, screenToFlowCoordinate, updateNode } = useVueFlow(flowId)
+  const store = useLibraryStore()
 
   const isGhostSetupOpen = ref(false)
   const pendingGhostNodeId = ref(null)
@@ -35,7 +43,7 @@ export default function useDragAndDrop(pendingHistoryNodes) {
 
   function onDragStart(event, module) {
     if (event.dataTransfer) {
-      event.dataTransfer.setData('application/vueflow', module.name)
+      event.dataTransfer.setData('application/vueflow', module.moduleRef)
       event.dataTransfer.effectAllowed = 'move'
     }
 
@@ -74,71 +82,33 @@ export default function useDragAndDrop(pendingHistoryNodes) {
   }
 
   /**
-   * Creates a new module node at the given position and adds it to the flow.
+   * Creates a new instance node at the given position and adds it to the flow.
    * Returns the new node's id and type so the caller can handle any
    * post-creation logic (e.g. opening the ghost setup dialog).
    *
-   * @param {object} moduleData - The module descriptor (componentName, sourceFile, configs, etc.)
+   * @param {object} moduleData - The module descriptor (ports, mathRef, variables)
    * @param {{x: number, y: number}} position - Flow coordinates to place the node.
    * @returns {{ nodeId: string, nodeType: string }}
    */
-  function createModuleNode(moduleData, position) {
-    const nodeId = getId(getNodes.value.map((n) => n.id))
-    const existingNames = new Set(getNodes.value.map((n) => n.data.name))
-    const finalName = generateUniqueModuleName(moduleData, existingNames)
-
-    const componentName = moduleData.componentName
-    const nodeType = moduleData.sourceFile === GHOST_MODULE_FILENAME ? GHOST_NODE_TYPE : 'moduleNode'
-    const sourceFile = moduleData.sourceFile
-    const label = sourceFile ? `${componentName} — ${sourceFile}` : componentName
-
+  function createInstanceNode(moduleData, position, handles = []) {
+    const nodeId = getNextNodeId(getNodes.value.map((n) => n.id))
     pendingHistoryNodes.add(nodeId)
 
-    const modelString = builderStore.getModuleContent(sourceFile)
-    const variables = extractVariablesFromModule(modelString, componentName)
+    const existingNames = new Set(getNodes.value.map((n) => n.data.name))
+    const instanceName = moduleData.moduleRef.includes(":") ? moduleData.moduleRef.split(":")[0] : moduleData.moduleRef
+    const finalName = generateUniqueInstanceName(instanceName, existingNames)
 
-    const configIndex = moduleData.configIndex || 0
-    let config = moduleData.configs?.[configIndex] ?? null
+    const allHandles = [...handles, ...buildGhostHandles(NUM_GHOST_HANDLES_TOP_BOT, NUM_GHOST_HANDLES_LEFT_RIGHT)]
 
-    if (!config) {
-      config = {
-        vessel_type: finalName,
-        BC_type: 'phlynx',
-        module_file: sourceFile,
-        module_type: componentName,
-        entrance_ports: [],
-        exit_ports:[],       
-        general_ports:[],
-        variables_and_units: variables.map((v) => [v.name, v.units ?? 'dimensionless', 'access', 'variable']),
-      }
-      builderStore.addConfigFile([config], sourceFile)
-    }
+    const componentFile = moduleData.mathRef.split(":")[0]
+    const nodeType = componentFile === GHOST_MODULE_FILENAME ? GHOST_NODE_TYPE : MAIN_NODE_TYPE
+    
+    const newNode = buildInstance(nodeId, finalName, nodeType, moduleData, allHandles, position)
 
-    const portLabels = buildPortLabels(config)
-
-    builderStore.setVariableParameterValuesForInstance(
-      finalName,
-      variables,
-      sourceFile,
-      componentName,
-      configIndex
-    )
-
-    const newNode = {
-      id: nodeId,
-      type: nodeType,
-      position,
-      data: {
-        componentName: moduleData.componentName,
-        configIndex: moduleData.configIndex,
-        label,
-        name: finalName,
-        portLabels,
-        portOptions: moduleData.portOptions || [],
-        ports: moduleData.ports || [],
-        sourceFile: moduleData.sourceFile,
-        variables,
-      },
+    const globalConstants = extractGlobalConstants(moduleData.variables)
+    
+    for (const g of globalConstants) {
+      store.assignGlobalConstant(g.name, g.value, g.units, g.data_reference)
     }
 
     /**
@@ -185,7 +155,7 @@ export default function useDragAndDrop(pendingHistoryNodes) {
       y: event.clientY,
     })
 
-    const { nodeId, nodeType } = createModuleNode(moduleData, position)
+    const { nodeId, nodeType } = createInstanceNode(moduleData, position)
 
     if (nodeType === GHOST_NODE_TYPE) {
       pendingGhostNodeId.value = nodeId
@@ -203,6 +173,6 @@ export default function useDragAndDrop(pendingHistoryNodes) {
     onDragLeave,
     onDragOver,
     onDrop,
-    createModuleNode,
+    createInstanceNode,
   }
 }

@@ -42,13 +42,13 @@ Saves the current state of your project.
 
 The Import menu allows you to bring various file types into PhLynx.
 
-#### 1. Vessel Array
-Populates the workspace using a [vessel array](./file-types#vessel-array) file.
+#### 1. Instance Array
+Populates the workspace using a [module array](./file-types#instance-array) file.
 * **Supported Format:** `.csv`
 * **Result:** Automatically populates the workspace with configured and connected modules based on the array definition.
 
 > [!NOTE]
-> If PhLynx does not recognize vessel types within the array, you may be prompted to provide additional module files.
+> If PhLynx does not recognize component types within the array, you may be prompted to provide additional module files.
 
 #### 2. Modules
 Imports [CellML](./cellml-module-format) components to the Module List.
@@ -82,7 +82,7 @@ Generates output files for Circulatory Autogen or standard CellML.
 
 | Export Type | Output Content | Requirements |
 | :--- | :--- | :--- |
-| **Configuration Files** | A `.zip` archive containing:<br>• `vessel_array.csv` (connections)<br>• `module_config.json` (parameters/ports) | • At least one module in workspace<br>• Parameter file loaded<br>• Ports defined for connections |
+| **Configuration Files** | A `.zip` archive containing:<br>• `instance_array.csv` (connections)<br>• `module_config.json` (parameters/ports) | • At least one module in workspace<br>• Parameter file loaded<br>• Ports defined for connections |
 | **CellML Model** | A flattened CellML 2.0 model file. | • At least one module in workspace<br>• Ports defined for connections<br>• All units defined |
 
 ---
@@ -121,7 +121,7 @@ Located in the bottom-left corner, the Control Bar offers quick access to view s
 
 ## Module Nodes
 
-A Module Node is the visual representation of a CellML module within the workspace. It displays the editable module name (exported as `vessel_name`) and its origin component.
+A Module Node is the visual representation of a CellML module within the workspace. It displays the editable module name (exported as `module_name`) and its origin component.
 
 Each node features three interactive tools for configuration:
 
@@ -187,7 +187,7 @@ Small circular nodes added to the edge of a module.
 ### Connection Arrows
 Lines indicating a shared variable relationship between two modules.
 * **Create:** Click and drag from one Port Node to another. The target node will highlight when a valid connection can be made.
-* **Direction:** The arrow points to the "destination" module. This directionality is used specifically for vessel array file exports.
+* **Direction:** The arrow points to the "destination" module. This directionality is used specifically for module array file exports.
 * **Delete:** Click the arrow to select it, then press `Delete`.
 
 ---

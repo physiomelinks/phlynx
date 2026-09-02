@@ -1,5 +1,5 @@
 const elkPromise = import('elkjs/lib/elk.bundled.js')
-import { getHandleId } from '../../utils/ports'
+import { getHandleId } from '../../utils/handles'
 
 /**
  * ELK Layout Function

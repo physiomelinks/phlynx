@@ -1,6 +1,6 @@
 # Welcome to PhLynx
 
-Physiome Links (**PhLynx** — pronounced "flinks") is a web-based graphical interface designed to couple existing <GlossaryLink term="CellML"/> modules into unified system models. It is commonly used to generate coupled biophysical cell models and blood or lymph flow networks.
+Physiome Links (**PhLynx** — pronounced "flinks") is a web-based graphical interface designed to couple existing <GlossaryLink term="CellML"/> components into unified system models. It is commonly used to generate coupled biophysical cell models and blood or lymph flow networks.
 
 ## Why PhLynx?
 
@@ -18,7 +18,7 @@ PhLynx streamlines the model-building workflow by offering the following key adv
 
 PhLynx fits seamlessly into the <GlossaryLink term="CellML"/> ecosystem to facilitate model composition:
 
-1.  **Create or Acquire:** Develop <GlossaryLink term="CellML"/> modules in your preferred IDE or download existing components.
+1.  **Create or Acquire:** Develop <GlossaryLink term="CellML"/> components in your preferred IDE or download existing components.
 2.  **Import:** Load your <GlossaryLink term="CellML"/> files into the PhLynx Workbench.
 3.  **Assemble:** Visually connect modules and define their interactions.
 4.  **Export:** Generate a flattened <GlossaryLink term="CellML"/> model.

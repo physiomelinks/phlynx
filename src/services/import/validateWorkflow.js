@@ -3,7 +3,7 @@ export function validateWorkflowModules(moduleConfig, availableModules) {
 
   availableModules.forEach(file => {
     file.modules.forEach(module => {
-      available.add(module.componentName)
+      available.add(module.componentType)
     })
   })
 

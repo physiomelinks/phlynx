@@ -1,0 +1,33 @@
+name: Playwright Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: corepack enable && yarn install --frozen-lockfile
+
+      - run: pip install -r tests/requirements.txt
+
+      - run: playwright install --with-deps chromium
+
+      - run: yarn dev &
+      
+      # Wait for app to be ready
+      - run: npx wait-on http://localhost:5173
+
+      - run: python tests/run_playwright_tests.py

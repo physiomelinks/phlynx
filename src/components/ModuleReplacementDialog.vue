@@ -1,15 +1,15 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    title="Replace Module"
-    width="700px"
-    teleported
-    @closed="resetForm"
-    @update:model-value="closeDialog"
+  <Dialog
+    v-model:visible="dialogVisible"
+    modal
+    header="Replace Module"
+    :dismissableMask="true"
+    :style="{ width: '700px' }"
+    @after-hide="resetForm"
   >
     <div class="container">
       <div class="module-list-wrapper">
-        <ModuleList selectable @select="onModuleSelected" />
+        <LibraryArea selectable @select="onModuleSelected" />
       </div>
 
       <div class="sidebar">
@@ -19,11 +19,11 @@
 
         <div v-if="selectedModule" class="selected-module">
           <div class="selected-name">
-            {{ selectedModule.name || selectedModule.filename }}
+            {{ selectedModule.name }}
           </div>
 
           <div class="selected-file">
-            {{ selectedModule.sourceFile || '' }}
+            {{ selectedModule.moduleRef || '' }}
           </div>
         </div>
 
@@ -31,57 +31,55 @@
           Select a module from the list
         </div>
 
-        <el-checkbox v-model="retainMatches" class="retain-checkbox">
-          Keep ports with matching names
-        </el-checkbox>
+        <div class="retain-checkbox">
+          <Checkbox v-model="retainMatches" binary inputId="retainMatches" />
+          <label for="retainMatches">Retain matching ports?</label>
+        </div>
       </div>
     </div>
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="closeDialog">Cancel</el-button>
-        <el-button type="primary" :disabled="!selectedModule" @click="handleConfirm">
+        <Button variant="outlined" @click="closeDialog">Cancel</Button>
+        <Button :disabled="!selectedModule" @click="handleConfirm">
           Confirm
-        </el-button>
+        </Button>
       </span>
     </template>
-  </el-dialog>
+  </Dialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ElCheckbox, ElButton } from 'element-plus'
+import { ref, computed } from 'vue'
 
-import ModuleList from './ModuleList.vue'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Checkbox from 'primevue/checkbox'
+
 import { useGtm } from '../composables/useGtm'
+import LibraryArea from './LibraryArea.vue'
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false,
   },
-  modules: {
-    type: Array,
-    default: () => [],
-  },
-  portOptions: {
-    type: Array,
-    default: () => [],
-  },
-  portLabels: {
-    type: Array,
-    default: () => [],
+  currentInstance: {
+    type: Object,
+    required: true,
   },
 })
 
-const emit = defineEmits([
-  'update:modelValue', // Required for v-model
-  'confirm', // Emits the new data
-])
+const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const selectedModule = ref(null)
 const retainMatches = ref(false)
 const { trackEvent } = useGtm()
+
+const dialogVisible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
 
 function resetForm() {
   selectedModule.value = null
@@ -97,29 +95,25 @@ function onModuleSelected(module) {
 }
 
 function handleConfirm() {
-  const moduleVariables = selectedModule.value.portOptions || []
+  const moduleVariables = new Set(selectedModule.value.variables.map((variable) => variable.name))
+  const oldPorts = props.currentInstance.data.ports
 
-  const finalPortLabels = retainMatches.value
-    ? moduleVariables
-        .map((newPort) => {
-          const match = props.portLabels.find((oldPort) => oldPort.option === newPort.name)
-          return match ? { option: newPort.name, label: match.label } : null
-        })
-        .filter(Boolean)
+  const finalPorts = retainMatches.value
+    ? oldPorts.filter((port) => port.variables.every((variable) => moduleVariables.has(variable)))
     : []
 
   trackEvent('module_replacement_action', {
     category: 'ModuleReplacement',
     action: 'confirm',
-    label: `Module: ${selectedModule.value.componentName}`, // useful context
+    label: `Module: ${selectedModule.value.moduleRef}`,
     file_type: 'json',
   })
 
   emit('confirm', {
-    componentName: selectedModule.value.componentName,
-    sourceFile: selectedModule.value.sourceFile,
-    portLabels: finalPortLabels,
-    portOptions: moduleVariables,
+    moduleRef: selectedModule.value.moduleRef,
+    mathRef: selectedModule.value.mathRef,
+    variables: selectedModule.value.variables,
+    ports: finalPorts,
   })
 
   closeDialog()
@@ -140,6 +134,7 @@ function handleConfirm() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-radius: 6px;
 }
 
 .sidebar {
@@ -194,6 +189,116 @@ function handleConfirm() {
 }
 
 .retain-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: auto;
+  font-size: 13px;
+  color: #606266;
+}
+
+.retain-checkbox label {
+  cursor: pointer;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/*
+ * The rules below reskin PrimeVue's Dialog/Button/Checkbox chrome to match
+ * Element Plus's palette (see https://element-plus.org/en-US/component/color)
+ * and give the footer buttons more breathing room. :deep() is used because
+ * Dialog, Button and Checkbox render their own internal markup that isn't
+ * part of this component's template.
+ */
+:deep(.p-dialog) {
+  border-radius: 4px;
+}
+
+:deep(.p-dialog-header) {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+:deep(.p-dialog-title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+:deep(.p-dialog-content) {
+  padding: 20px 24px;
+}
+
+:deep(.p-dialog-footer) {
+  padding: 16px 24px 20px;
+  border-top: 1px solid #e4e7ed;
+}
+
+:deep(.p-button) {
+  padding: 9px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+:deep(.p-button:not(.p-button-outlined)) {
+  background: #409eff;
+  border-color: #409eff;
+}
+
+:deep(.p-button:not(.p-button-outlined):not(:disabled):hover) {
+  background: #66b1ff;
+  border-color: #66b1ff;
+}
+
+:deep(.p-button:not(.p-button-outlined):not(:disabled):active) {
+  background: #3a8ee6;
+  border-color: #3a8ee6;
+}
+
+:deep(.p-button:not(.p-button-outlined):disabled) {
+  background: #a0cfff;
+  border-color: #a0cfff;
+  color: #fff;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+:deep(.p-button-outlined:disabled) {
+  background: #fff;
+  border-color: #ebeef5;
+  color: #c0c4cc;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+:deep(.p-button-outlined) {
+  background: #fff;
+  border-color: #dcdfe6;
+  color: #606266;
+}
+
+:deep(.p-button-outlined:not(:disabled):hover) {
+  background: #ecf5ff;
+  border-color: #c6e2ff;
+  color: #409eff;
+}
+
+:deep(.p-checkbox .p-checkbox-box) {
+  border-color: #dcdfe6;
+  border-radius: 4px;
+}
+
+:deep(.p-checkbox .p-checkbox-box.p-highlight),
+:deep(.p-checkbox.p-checkbox-checked .p-checkbox-box) {
+  background: #409eff;
+  border-color: #409eff;
+}
+
+:deep(.p-checkbox .p-checkbox-box .p-checkbox-icon) {
+  color: #fff;
 }
 </style>

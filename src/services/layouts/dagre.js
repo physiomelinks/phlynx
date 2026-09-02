@@ -1,5 +1,5 @@
 import dagre from '@dagrejs/dagre'
-import { getHandleId } from '../../utils/ports'
+import { getHandleId } from '../../utils/handles'
 
 /**
  * This function runs a dagre layout on the nodes and edges,
