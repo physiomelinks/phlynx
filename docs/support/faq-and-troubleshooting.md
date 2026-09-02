@@ -16,12 +16,12 @@ As a web-based application, PhLynx downloads files to your browser's default dow
 
 ### Import Issues
 
-#### "Vessel Array Import Failed"
+#### "Instance Array Import Failed"
 **Symptoms:** The workspace remains empty or an error notification appears after selecting a file.
 **Solution:**
 * **Check Delimiters:** Ensure your `.csv` uses commas (`,`) as delimiters, not semicolons or tabs.
-* **Verify Headers:** The file must contain these exact column headers: `vessel_name`, `BC_type`, `vessel_type`, `inp_vessels`, `out_vessels`.
-* **Unknown Types:** If your array references a `vessel_type` not in the library, ensure you provide the corresponding `module_config.json` and `.cellml` files when prompted.
+* **Verify Headers:** The file must contain these exact column headers: `module_name`, `module_subtype`, `module_type`, `inp_module`, `out_module`.
+* **Unknown Types:** If your array references a `module_type` not in the library, ensure you provide the corresponding `module_config.json` and `.cellml` files when prompted.
 
 #### "Parameter File Error"
 **Symptoms:** Constants are not being recognized during export.

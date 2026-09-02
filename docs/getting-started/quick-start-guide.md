@@ -11,13 +11,13 @@ By the end of this tutorial, you will be able to:
 
 ## Workbench Layout
 
-Before building, familiarize yourself with the three main interaction areas of the <GlossaryLink term="Workbench"/>:
+Before building, familiarize yourself with the three main interaction areas of the <GlossaryLink term="Workspace"/>:
 
 - **[Toolbar](../reference/ui-overview#toolbar) (Top):** Controls for file management and workspace operations.
-- **[Module List](../reference/ui-overview#module-list) (Left):** Library of imported <GlossaryLink term="modules"/>.
-- **[Workspace](../reference/ui-overview#workbench) (Centre):** The canvas for assembling your model.
+- **[Library](../reference/ui-overview#module-list) (Left):** Library of imported <GlossaryLink term="modules"/>.
+- **[Workspace](../reference/ui-overview#workbench) (Centre):** The area for assembling your model.
 
-![PhLynx Workbench view with workspace, toolbar, and module list labelled](../assets/images/phlynx_ui.png){.align-center min-width="600px"}
+![PhLynx Workbench view with Workspace, toolbar, and Library labelled](../assets/images/phlynx_ui.png){.align-center min-width="600px"}
 
 > [!NOTE]
 > See the [UI Overview](../reference/ui-overview) for a comprehensive description of all interface components.
@@ -31,14 +31,14 @@ PhLynx includes a library of modules describing various physiological processes.
 
 ### Placing Modules
 
-The **Module List** features a search bar to locate specific components. To add a module to the <GlossaryLink term="Workspace"/>, drag and drop it from the list onto the canvas.
+The **Library** features a search bar to locate specific components. To add a module to the <GlossaryLink term="Workspace"/>, drag and drop it from the list onto the canvas. Once a module is placed on the Workspace, it becomes an instance (i.e., an instance of a module).
 
 #### Step 1: Place and Rename
 1.  Search for and drag the following modules onto your Workspace: **SN_soma**, **SN_axon**, and **SN_varicosity**.
     
     ![PhLynx Workspace with modules in position](../assets/images/quick-start-step-one-placed.png){.align-center width="800px"}
 
-2.  Double-click each module node to rename them as follows:
+2.  Double-click each instance node to rename them as follows:
     * Rename **SN_soma** to **soma_SN**
     * Rename **SN_axon** to **axon_SN**
     * Rename **SN_varicosity** to **var_SN**
@@ -47,52 +47,52 @@ The **Module List** features a search bar to locate specific components. To add 
 
     *Note: The original component name and source file remain visible beneath the custom name.*
 
-### Connecting Modules
+### Connecting Instances
 
-Modules interact via specific tools located on the module node itself.
+Intances interact via specific tools located on the instance node itself.
 
-![Labelled module node](../assets/images/labelled-module.png){.align-center width="600px"}
+![Labelled instance node](../assets/images/labelled-module.png){.align-center width="600px"}
 
 * **[Key](../reference/ui-overview#key) (Left):** Assigns a color for visual identification.
-* **[Add Port Node](../reference/ui-overview#add-port-node) (Centre-left):** adds a <GlossaryLink term="port-node"/> connection point.
-* **[Edit Module Configuration](../reference/ui-overview#edit-module) (Centre-right):** Opens the configuration dialog.
+* **[Add Handle](../reference/ui-overview#add-port-node) (Centre-left):** adds a connection point.
+* **[Edit Instance Configuration](../reference/ui-overview#edit-module) (Centre-right):** Opens the configuration dialog.
 * **[Edit CellML](../guides/writing-cellml) (Right):** Opens the CellML text editor. 
 
 **Managing Connections**
-To connect two modules, both must have at least one **Port Node**.
+To connect two instances, both must have at least one handle (connection point).
 
-1.  **Add Port Node:** Click the central pin icon and select a position (Top, Bottom, Left, Right).
-    ![Adding a port node to the left of a module](../assets/images/add-port-node.png){.align-center width="800px"}
+1.  **Add Handle:** Click the central pin icon and select a position (Top, Bottom, Left, Right).
+    ![Adding a handle to the left of a module](../assets/images/add-port-node.png){.align-center width="800px"}
 
-2.  **Connect Port Nodes:** Click and drag from one port node to another to create a connection arrow.
-    ![Connecting two port nodes](../assets/images/connect-port-nodes.png){.align-center width="550px"}
+2.  **Connect Handles:** Click and drag from one handle to another to create a connection.
+    ![Connecting two instances](../assets/images/connect-port-nodes.png){.align-center width="550px"}
 
-3.  **Remove Port Node:** Hover over an existing node and click the trash icon.
-    ![Removing a port node from a module](../assets/images/remove-port-node.png){.align-center width="550px"}
+3.  **Remove Handle:** Hover over an existing handle and click the trash icon.
+    ![Removing a handle from an instance](../assets/images/remove-port-node.png){.align-center width="550px"}
 
 #### Step 2: Connect
-Connect the modules placed in [Step 1](#step-1-place-and-rename) as shown below.
+Connect the instances placed in [Step 1](#step-1-place-and-rename) as shown below.
 
-![PhLynx Workspace with connected modules in position](../assets/images/quick-start-step-two.png){.align-center width="800px"}
+![PhLynx Workspace with connected instances in position](../assets/images/quick-start-step-two.png){.align-center width="800px"}
 
 > [!NOTE]
 > While this example uses unique ports for each connection, multiple arrows can share a single port node.
 
-### Editing Modules
+### Editing Instances
 
-Before exporting, the model requires specific data configuration. Click the **Edit Module** (pencil) icon to open the configuration dialog.
+Before exporting, the model requires specific data configuration. Click the **Edit Instance** (pencil) icon to open the configuration dialog.
 
-![Labelled Edit Module dialog](../assets/images/edit-module-detail.png){.align-center width="800px"}
+![Labelled Edit Instance dialog](../assets/images/edit-module-detail.png){.align-center width="800px"}
 
-Use this dialog to define <GlossaryLink term="ports"/>—collections of variables shared between connected modules. A port definition consists of:
+Use this dialog to define <GlossaryLink term="ports"/>—collections of variables shared between connected instances. A port definition consists of:
 
 * **Type:** Directionality of the port. Input (I), Output (O), or General (G). See [Valid Port Configurations](../reference/valid-port-configurations.md).
-* **Label:** The shared name for the variable. This label must match the connected port's label on the target module.
+* **Label:** The shared name for the variable. This label must match the connected port's label on the target instance.
 * **Variable(s):** The internal CellML variable(s) associated with this port.
 * **Sum?:** Toggles whether this port sums values from multiple connections (e.g., summing transmembrane flux from multiple channels).
 
 #### Step 3: Configure Ports
-Configure the ports for each module using the tables below:
+Configure the ports for each instance using the tables below:
 
 **1. var_SN**
 | Type | Label | Variable(s) | Sum? |
@@ -115,7 +115,7 @@ Configure the ports for each module using the tables below:
 ## Saving and Restoring
 
 **Save Workspace**
-Click the **Save Workspace** button in the Toolbar (top-left) to download a JSON file of your current state. This preserves module positions, port definitions, and connections.
+Click the **Save Workspace** button in the Toolbar (top-left) to download a JSON file of your current state. This preserves instance positions, configurations, connections, as well as the Library state.
 
 **Test Restore**
 To verify your save file:
@@ -130,7 +130,7 @@ Once the model is built and configured, export the final system. Click the arrow
 
 **Export Options:**
 * **CellML:** Generates a flattened CellML 2.0 model file.
-* **Configuration Files:** Generates a ZIP archive containing `vessel_array.csv` and `module_config.json` for Circulatory Autogen.
+* **Configuration Files:** Generates a ZIP archive containing `instance_array.csv` and `module_config.json` for Circulatory Autogen.
 
 Select **CellML** to save the model to your Downloads folder.
 

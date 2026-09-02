@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useGtm } from '../composables/useGtm'
 
-import BuilderView from '../views/BuilderView.vue'
+import WorkspaceArea from '../views/WorkspaceArea.vue'
 import AboutView from '../views/AboutView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
@@ -12,8 +12,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'builder',
-      component: BuilderView,
+      name: 'workspace',
+      component: WorkspaceArea,
       meta: { title: 'Workflow Builder' },
     },
     {

@@ -13,19 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: source
-          fetch-depth: 0 # Critical: Must fetch all history to find tags
+          fetch-depth: 0 # Fetching all history to find tags.
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: production
           ref: production
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -33,7 +33,7 @@ jobs:
         run: corepack enable yarn
 
       - name: Enable yarn cache
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           cache: 'yarn'
           cache-dependency-path: 'source/yarn.lock'
@@ -74,15 +74,14 @@ jobs:
           echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
           echo "commit_count=$COUNT" >> $GITHUB_OUTPUT
 
-      - name: Mess about with branches
+      - name: Update Production Branch
         run: |
-          rm -rf source/.git/
-          mv production/.git source/
+          rsync -a --delete --exclude='.git' source/ production/
 
       - name: Commit Changes
         id: commit_changes
         run: |
-          cd source
+          cd production
 
           # Configure git identity
           git config user.name "github-actions[bot]"
@@ -101,7 +100,7 @@ jobs:
         if: steps.commit_changes.outputs.changes == 'true'
         id: create_branch
         run: |
-          cd source
+          cd production
 
           SHORT_SHA=$(git rev-parse --short HEAD)
           BRANCH_NAME="staging-${SHORT_SHA}"
@@ -118,7 +117,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_CREATE_PR }}
         run: |
-          cd source
+          cd production
 
           COMMIT_COUNT=${{ steps.gen_changelog.outputs.commit_count }}
           BRANCH_NAME=${{ steps.create_branch.outputs.branch_name }}
@@ -127,8 +126,12 @@ jobs:
 
           if [ "$COMMIT_COUNT" -gt 0 ]; then
             # Read the file content into a variable for the PR body
-            BODY_CONTENT=$(cat changelogs/latest.md)
-            TITLE+=" + Unreleased Changes"
+            if [ -f "changelogs/latest.md" ]; then
+              BODY_CONTENT=$(cat changelogs/latest.md)
+            else
+              BODY_CONTENT="No changelog available."
+            fi
+            TITLE+=" + Post Release Changes"
           else
             BODY_CONTENT="Release $LAST_TAG of PhLynx."
           fi

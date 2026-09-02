@@ -64,7 +64,6 @@ export function useScreenshot() {
     error.value = null
 
     const newOptions = {
-      skipFonts: true, 
       quality: 1,
       ...options,
 

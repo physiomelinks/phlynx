@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
 import fs from 'fs'
 import path from 'path'
 import Markdown from 'unplugin-vue-markdown/vite'
@@ -12,11 +13,11 @@ import { execSync } from 'child_process'
 
 const latestChangelogPath = path.resolve(__dirname, 'changelogs/latest.md')
 
-let hasLatestChangelog = false
+let buildStateMarker = ''
 if (fs.existsSync(latestChangelogPath)) {
   const content = fs.readFileSync(latestChangelogPath, 'utf8')
   if (content.trim().length > 0) {
-    hasLatestChangelog = true
+    buildStateMarker = '*'
   }
 }
 
@@ -25,7 +26,7 @@ export default defineConfig({
   define: {
     // Create a global constant. Strings must be JSON stringified.
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    __BUILD_STATE_MARKER__: JSON.stringify(!!hasLatestChangelog ? '*' : ''),
+    __BUILD_STATE_MARKER__: JSON.stringify(buildStateMarker),
     __COMMIT_HASH__: JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
     __BRANCH__: JSON.stringify(execSync('git rev-parse --abbrev-ref HEAD').toString().trim()),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
@@ -41,6 +42,7 @@ export default defineConfig({
     vue({
       include: [/\.vue$/, /\.md$/],
     }),
+    tailwindcss(),
     Markdown({
       headEnabled: false, // Set true to manage <head> tags
       markdownItSetup(md) {
@@ -69,6 +71,9 @@ export default defineConfig({
     },
   },
   server: {
+    watch: {
+      ignored: ['**/tests/playwright/**'],
+    },
     fs: {
       // Allow serving files from one level up to the project root
       // allow: [
@@ -78,6 +83,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'happy-dom'
-  }
+    environment: 'happy-dom',
+    exclude: ['tests/playwright/**', 'tests/e2e/**', 'node_modules/**'],
+  },
 })

@@ -16,10 +16,17 @@
           role="menuitem"
           @click="select(item)"
         >
-          <el-icon v-if="item.icon" class="context-menu__icon">
-            <component :is="item.icon" />
-          </el-icon>
-          {{ item.label }}
+          <component
+            v-if="item.icon && typeof item.icon !== 'string'"
+            :is="item.icon"
+            class="context-menu__icon"
+          />
+          <i
+            v-else-if="item.icon"
+            :class="['context-menu__icon', item.icon]"
+          />
+          
+          <span>{{ item.label }}</span>
         </li>
       </ul>
     </div>
@@ -28,13 +35,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElIcon } from 'element-plus'
 
 const props = defineProps({
   items: {
     type: Array,
     required: true,
-    // Each item: { label: string, action: () => void, icon?: Component }
+    // Each item: { label: string, action: () => void, icon?: Component | string }
   },
   closeDelay: {
     type: Number,
@@ -105,10 +111,11 @@ defineExpose({ open, close })
   position: fixed;
   z-index: 9999;
   min-width: 180px;
-  background: var(--el-bg-color-overlay);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: var(--el-border-radius-base);
-  box-shadow: var(--el-box-shadow-light);
+  /* Adaptive theme background & borders */
+  background: var(--p-overlay-select-background, var(--p-content-background, var(--surface-overlay, #ffffff)));
+  border: 1px solid var(--p-content-border-color, var(--surface-border, #e5e7eb));
+  border-radius: var(--p-content-border-radius, var(--border-radius, 6px));
+  box-shadow: var(--p-overlay-select-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1));
   padding: 4px 0;
   user-select: none;
 }
@@ -124,19 +131,22 @@ defineExpose({ open, close })
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  font-size: var(--el-font-size-base);
-  color: var(--el-text-color-primary);
+  font-size: 0.875rem;
+  color: var(--p-text-color, var(--text-color, #1f2937));
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .context-menu__item:hover {
-  background-color: var(--el-fill-color-light);
-  color: var(--el-color-primary);
+  /* Hover background and primary active text color */
+  background-color: var(--p-content-hover-background, var(--surface-hover, #f3f4f6));
+  color: var(--p-primary-color, var(--primary-color, #3b82f6));
 }
 
 .context-menu__icon {
   font-size: 14px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 </style>

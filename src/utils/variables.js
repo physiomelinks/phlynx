@@ -11,3 +11,7 @@ export function isEditableVariableType(variableType) {
 export function isEmpty(val) {
   return val === undefined || val === null || val === ''
 }
+
+export function extractGlobalConstants(parameterArray) {
+  return parameterArray.filter((param) => param.type === 'global_constant')
+}
