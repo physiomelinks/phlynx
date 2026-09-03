@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 function normaliseKeyword(open) {
@@ -7,14 +7,16 @@ function normaliseKeyword(open) {
 
 export function useLoadFromUrl() {
   const route = useRoute()
+  const libcellmlReadyPromise = inject('$libcellml_ready')
 
   const isLoading = ref(false)
 
   const load = async (handlers, onError) => {
-    const rawHash = route.hash.slice(1) 
+    const rawHash = route.hash.slice(1)
     if (!rawHash) return
     isLoading.value = true
-    
+    await libcellmlReadyPromise
+
     const keyword = normaliseKeyword(route.query.open)
     const handler = handlers[keyword]
 

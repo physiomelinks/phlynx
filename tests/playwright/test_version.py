@@ -21,11 +21,14 @@ class TestVersionInformation(unittest.TestCase):
             page.goto(BASE_URL)
 
             # ---------------------
-            main_version = page.get_by_text(re.compile(r"^PhLynx v[\d]+\.[\d]+\.[\d]+$"))
-            expect(main_version).to_have_text(re.compile(r"^PhLynx v[\d]+\.[\d]+\.[\d]+$"))
+            phlynx_version_regex = re.compile(r"^PhLynx v[\d]+\.[\d]+\.[\d]+[\*]?$")
+            version_regex = re.compile(r"^v[\d]+\.[\d]+\.[\d]+[\*]?$")
+            
+            main_version = page.get_by_test_id("app-version")
+            expect(main_version).to_have_text(phlynx_version_regex)
             page.get_by_role("link", name="About").click()
-            version_chip = page.locator("div").filter(has_text=re.compile(r"^v[\d]+\.[\d]+\.[\d]+$"))
-            expect(version_chip).to_have_text(re.compile(r"^v[\d]+\.[\d]+\.[\d]+$"))
+            version_chip = page.get_by_test_id("build-version")
+            expect(version_chip).to_have_text(version_regex)
             # ---------------------
 
             context.close()
