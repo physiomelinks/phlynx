@@ -58,7 +58,12 @@ jobs:
 
           # Check if latest.md is empty or only whitespace.
           if grep -q '[^[:space:]]' "changelogs/latest.md"; then
-            echo "Generated changelogs/latest.md has content."
+            if [ "$COUNT" -eq 0 ]; then
+              echo "latest.md is not empty, but the commit count is 0, so this must be a release changelog."
+              mv changelogs/latest.md changelogs/$LAST_TAG.md
+            else
+              echo "Generated changelogs/latest.md has content, and there are commits since the last release."
+            fi
           else
             # If the file exists, delete it (using -f to avoid errors if it's already gone)
             if [ -f "changelogs/latest.md" ]; then
@@ -126,10 +131,18 @@ jobs:
 
           if [ "$COMMIT_COUNT" -gt 0 ]; then
             # Read the file content into a variable for the PR body
+            if [ "$COMMIT_COUNT" -eq 1 ]; then
+              PLURAL=""
+              VERB="was"
+            else
+              PLURAL="s"
+              VERB="were"
+            fi
+
             if [ -f "changelogs/latest.md" ]; then
               BODY_CONTENT=$(cat changelogs/latest.md)
             else
-              BODY_CONTENT="No changelog available."
+              BODY_CONTENT="No changelog available but $COMMIT_COUNT change$PLURAL $VERB made."
             fi
             TITLE+=" + Post Release Changes"
           else
