@@ -108,6 +108,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           path: source
+          ref: main
 
       - name: Checkout Production Branch
         uses: actions/checkout@v6
@@ -127,6 +128,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          echo "Synchronising changelogs from production branch."
+          git status
+          echo "Porcelain output:"
+          git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
             git add .
             git commit -m "cd: synchronise changelogs from production."

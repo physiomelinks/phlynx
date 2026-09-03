@@ -222,4 +222,4 @@ When the staging pull request has been created, check the staged changes, change
 Finally, check https://phlynx.com to ensure the new version is live and working as expected.
 
 Following this process will create an official release of PhLynx and update the online version of the application.
-You can also release an unofficial version of PyLynx by following this process but skipping changing the version number in **package.json** and creating a new tag.
+You can also release an unofficial version of PhLynx by following this process but skipping changing the version number in **package.json** and creating a new tag.
