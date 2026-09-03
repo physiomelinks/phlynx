@@ -80,7 +80,7 @@
     "vue3-libcellml.js": "^0.5.1"
   },
   "devDependencies": {
-    "@hsorby/changelog": "^3.0.2",
+    "@hsorby/changelog": "^3.0.3",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/coverage-v8": "^4.0.18",

@@ -89,7 +89,7 @@
           </Tabs>
 
           <div class="build-info-footer">
-            <div class="version-badge">v{{ appVersion }}</div>
+            <div class="version-badge" data-testid="build-version">v{{ appVersion }}</div>
 
             <div class="info-row">
               <span
