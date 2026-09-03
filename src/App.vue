@@ -6,7 +6,7 @@
       </div> -->
       <div class="brand">
         <img src="/phlynxlogo.svg" alt="PhLynx Logo" class="centred-image" />
-        <strong>PhLynx v{{ appVersion }}</strong>
+        <strong data-testid="app-version">PhLynx v{{ appVersion }}</strong>
       </div>
       <div v-show="isWorkspaceActive" class="session-name" @dblclick="startEditing">
         <strong
