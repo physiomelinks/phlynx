@@ -13,7 +13,7 @@ permissions:
 
 # Allow only one concurrent deployment.
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           cache: 'yarn'
- 
+
       - name: Install Dependencies
         run: yarn
 
@@ -43,7 +43,7 @@ jobs:
         run: |
           yarn build
           cp dist/index.html dist/404.html
-        
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
@@ -95,3 +95,40 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --generate-notes
+
+  synchronise-changelogs:
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v6
+        with:
+          path: source
+
+      - name: Checkout Production Branch
+        uses: actions/checkout@v6
+        with:
+          path: production
+          ref: production
+
+      - name: Synchronise changelogs
+        run: |
+          rsync -av --delete production/changelogs/ source/changelogs/
+          cp production/docs/reference/change-log.md source/docs/reference/change-log.md
+
+      - name: Commit and push changes
+        run: |
+          cd source
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "cd: synchronise changelogs from production."
+            git push origin main
+          fi

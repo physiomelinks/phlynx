@@ -154,12 +154,13 @@
 
           <Button
             iconOnly
+            :disabled="true"
             style="margin-left: 10px"
             icon="pi pi-cog"
             size="small"
             variant="text"
             severity="info"
-            v-tooltip.bottom="{ value: 'Adjust settings', showDelay: 300 }"
+            v-tooltip.bottom="{ value: 'Settings coming soon', showDelay: 300 }"
             @click="onOpenSettingsDialog"
           />
 
