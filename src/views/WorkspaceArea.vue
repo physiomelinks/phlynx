@@ -631,6 +631,8 @@ import {
   NEW_INSTANCE_MODULE_REF,
   PHLYNX_PROJECT_IDENTIFIER,
   PHLYNX_PROJECT_VERSION,
+  INSTANCE_PARAMETER_COMPONENT_NAMES,
+  GLOBAL_PARAMETER_COMPONENT_NAMES,
   NUM_GHOST_HANDLES_TOP_BOT,
   NUM_GHOST_HANDLES_LEFT_RIGHT,
 } from '../utils/constants'
@@ -1808,7 +1810,10 @@ async function loadFlowSnapshot(fileName, flowSnapshot, parameterData = {}, { no
   let nodeNameToIdMap = new Map()
   // Convert nodeData to nodes format expected by the workspace.
   const nodes = flowSnapshot.nodeData.map((node) => {
-    // Update variables with parameter data if available.
+    if (INSTANCE_PARAMETER_COMPONENT_NAMES.has(node.data.name) || GLOBAL_PARAMETER_COMPONENT_NAMES.has(node.data.name)) {
+      return null
+    }
+
     if (parameterData[node.data.name]) {
       const paramVars = parameterData[node.data.name]
       node.data.variables = node.data.variables.map((variable) => {
@@ -1847,7 +1852,20 @@ async function loadFlowSnapshot(fileName, flowSnapshot, parameterData = {}, { no
       delete node.data.mathHash
     }
     return node
-  })
+  }).filter((node) => node !== null)
+
+  const nodeIdsAfterParamFilter = new Set(nodes.map((n) => n.id))
+  const edgesAfterParamFilter = flowSnapshot.edges.filter(
+    (edge) => nodeIdsAfterParamFilter.has(edge.source) && nodeIdsAfterParamFilter.has(edge.target)
+  )
+
+  const connectedNodeIds = new Set()
+  for (const edge of edgesAfterParamFilter) {
+    connectedNodeIds.add(edge.source)
+    connectedNodeIds.add(edge.target)
+  }
+  const finalNodes = nodes.filter((node) => connectedNodeIds.has(node.id))
+  const finalEdges = edgesAfterParamFilter
 
   // Clear the current workspace before loading the new snapshot without creating
   // an extra history step for the reset itself; the imported graph is then added
@@ -1856,7 +1874,7 @@ async function loadFlowSnapshot(fileName, flowSnapshot, parameterData = {}, { no
 
   historyStore.startBatch()
   try {
-    const newNodes = nodes.map((node) => {
+    const newNodes = finalNodes.map((node) => {
       nodeNameToIdMap.set(node.data.name, node.id)
       const allHandles = normaliseHandleSlots([
         ...node.data.handles,
@@ -1867,7 +1885,7 @@ async function loadFlowSnapshot(fileName, flowSnapshot, parameterData = {}, { no
     })
 
     addNodes(newNodes)
-    addEdges(flowSnapshot.edges)
+    addEdges(finalEdges)
     const currentLastSaveName = sessionMetadataStore.lastSaveName
     sessionMetadataStore.setLastSaveName(stripExtension(fileName))
     historyStore.addCommand({
