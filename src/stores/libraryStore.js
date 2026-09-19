@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-import { normaliseConfig } from '../utils/config'
-import { GHOST_MATH_REF } from '../utils/constants'
+import { normaliseConfig, buildModule, parseMathRef } from '../utils/config'
+import { GHOST_MATH_REF, NEW_MODULE_MATH_REF } from '../utils/constants'
 import { cyrb53 } from '../utils/misc'
 
 function mergeIntoStore(newModules, target) {
@@ -186,6 +186,7 @@ export const useLibraryStore = defineStore('library', () => {
     components.forEach((component) => {
       const mathRef = `${filename}:${component.name}`
       addMath(mathRef, component.math)
+      createModuleForMath(mathRef)
     })
   }
 
@@ -195,6 +196,16 @@ export const useLibraryStore = defineStore('library', () => {
       addMathHashEntry(mathRef, math)
       updateStubStatus(mathRef)
     }
+  }
+
+  function createModuleForMath(mathRef) {
+    if ([GHOST_MATH_REF, NEW_MODULE_MATH_REF].includes(mathRef)) return
+
+    const { componentName } = parseMathRef(mathRef)
+    const moduleRef = `${componentName}:default`
+    const math = availableMath.value.get(mathRef)
+    const module = buildModule(moduleRef, mathRef, math)
+    addModule(module)
   }
 
   // Move one moduleRef from one mathRef's Set to another

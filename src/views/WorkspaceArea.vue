@@ -416,9 +416,6 @@
                 :data="props.data"
                 :selected="props.selected"
                 :class="getNodeClass(props)"
-                @open-port-editor-dialog="onOpenPortEditorDialog"
-                @open-cellml-editor-dialog="onOpenCellMLEditorDialog"
-                @open-parameter-editor-dialog="onOpenParameterEditorDialog"
                 @open-instance-editor="onOpenInstanceEditorDialog"
                 @open-context-menu="onNodeContextMenu"
                 :ref="(el) => (nodeRefs[props.id] = el)"
@@ -453,32 +450,6 @@
     :existing-names="allNodeNames"
     :default-tab="instanceEditorDefaultTab"
     @confirm="onInstanceEditConfirm"
-  />
-
-  <PortEditorDialog
-    v-model="portEditorDialogVisible"
-    :id="currentEditingNode?.id"
-    :initial-name="currentEditingNode?.initialName"
-    :initial-ports="currentEditingNode?.initialPorts"
-    :variables="currentEditingNode?.variables"
-    :existing-names="allNodeNames"
-    @confirm="onPortEditConfirm"
-  />
-
-  <CellMLEditorDialog
-    v-model="cellMLEditorDialogVisible"
-    :id="currentEditingNode?.id"
-    :name="currentEditingNode?.name"
-    :math-ref="currentEditingNode?.mathRef || ''"
-    :variables="currentEditingNode?.variables"
-    @save="handleCellMLSave"
-  />
-
-  <ParameterEditorDialog
-    v-model="parameterEditorDialogVisible"
-    :id="currentEditingNode?.id"
-    :variables="currentEditingNode?.variables"
-    @save="handleParameterSave"
   />
 
   <SaveDialog v-model="saveDialogVisible" :default-name="sessionMetadataStore.lastSaveName" @confirm="onSaveConfirm" />
