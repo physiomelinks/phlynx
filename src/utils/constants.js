@@ -121,9 +121,11 @@ export const MAX_VISIBLE_TAGS = 1
 
 export const MAIN_NODE_TYPE = 'instanceNode'
 export const GHOST_NODE_TYPE = 'ghostNode'
-export const GHOST_MODULE_FILENAME = 'ghost_module.cellml'
+export const GHOST_MODULE_FILENAME = 'ghost_modules.cellml'
 export const GHOST_MATH_REF = `${GHOST_MODULE_FILENAME}:ghost`
 export const GHOST_MODULE_REF = 'ghost:ghost'
+export const NEW_MODULE_FILENAME = 'template_modules.cellml'
+export const NEW_MODULE_MATH_REF = `${NEW_MODULE_FILENAME}:new_module`
 export const NEW_MODULE_REF = 'new_module:phlynx'
 
 export const GHOST_MODULE_DEFINITION = {

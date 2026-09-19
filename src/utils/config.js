@@ -1,5 +1,6 @@
-import { PORT_TYPE_OPTIONS } from "./constants"
-import { toRaw } from "vue"
+import { PORT_TYPE_OPTIONS } from './constants'
+import { toRaw } from 'vue'
+import { extractVariablesFromMath } from './cellml'
 
 export function parseMathRef(mathRef) {
   const [componentFile, componentName] = mathRef.split(':')
@@ -17,6 +18,15 @@ export function normaliseConfig(config) {
     mathRef: `${config.component_file}:${config.component_type}`,
     ports: normalisePorts(config),
     variables: normaliseVariables(config.variables_and_units),
+  }
+}
+
+export function buildModule(moduleRef, mathRef, math) {
+  return {
+    moduleRef: moduleRef,
+    mathRef: mathRef,
+    ports: [],
+    variables: extractVariablesFromMath(math),
   }
 }
 
